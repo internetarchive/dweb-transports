@@ -1,0 +1,38 @@
+{
+  "name": "dweb-transports",
+  "version": "0.0.1",
+  "description": "Internet Archive Decentralized Web Transports Library",
+  "dependencies": {
+    "cids": "latest",
+    "ipfs": "latest",
+    "ipld-dag-pb": "latest",
+    "ipfs-unixfs": "latest",
+    "readable-stream": "latest",
+    "node-fetch": "latest",
+    "webtorrent": "latest",
+    'yjs': "latest",
+    'y-memory': "latest",
+    'y-array': "latest",
+    'y-text': "latest",
+    'y-map': "latest",
+    'y-ipfs-connector': "latest",
+    'y-indexeddb': "latest"
+  },
+  "keywords": [],
+  "license": "AGPL-3.0",
+  "author": {
+    "name": "Mitra Ardron",
+    "email": "mitra@archive.org",
+    "url": "http://www.mitra.biz"
+  },
+  "devDependencies": {
+    "browserify": "^14.5.0",
+    "watchify": "^3.11.0"
+  },
+  "scripts": {
+    "bundle": "cd src; browserify ./dweb-transports_all.js > ../dist/dweb_transports_bundle.js",
+    "watch": "watchify src/dweb-transports_all.js -o dist/dweb_transports_bundle.js --verbose",
+    "test": "cd src; node ./test.js",
+    "help": "echo 'test (test it)'; echo 'bundle (packs into ../examples)'; echo 'watch: continually bundles whenever files change'"
+  }
+}
