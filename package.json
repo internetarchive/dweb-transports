@@ -1,7 +1,12 @@
 {
-  "name": "dweb-transports",
-  "version": "0.0.1",
-  "description": "Internet Archive Decentralized Web Transports Library",
+  "author": {
+    "name": "Mitra Ardron",
+    "email": "mitra@archive.org",
+    "url": "http://www.mitra.biz"
+  },
+  "bugs": {
+    "url": "https://github.com/mitra42/dweb-transports/issues"
+  },
   "dependencies": {
     "cids": "latest",
     "ipfs": "latest",
@@ -18,21 +23,25 @@
     "y-ipfs-connector": "latest",
     "y-indexeddb": "latest"
   },
-  "keywords": [],
-  "license": "AGPL-3.0",
-  "author": {
-    "name": "Mitra Ardron",
-    "email": "mitra@archive.org",
-    "url": "http://www.mitra.biz"
-  },
+  "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {
     "browserify": "^14.5.0",
     "watchify": "^3.11.0"
   },
+  "homepage": "https://github.com/mitra42/dweb-transports#readme",
+  "keywords": [],
+  "license": "AGPL-3.0",
+  "main": "index.js",
+  "name": "dweb-transports",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mitra42/dweb-transports.git"
+  },
   "scripts": {
-    "bundle": "cd src; browserify ./dweb-transports_all.js > ../dist/dweb_transports_bundle.js",
-    "watch": "watchify src/dweb-transports_all.js -o dist/dweb_transports_bundle.js --verbose",
+    "bundle": "browserify ./index.js > ./dist/dweb_transports_bundle.js",
+    "watch": "watchify ./index.js -o dist/dweb_transports_bundle.js --verbose",
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'bundle (packs into ../examples)'; echo 'watch: continually bundles whenever files change'"
-  }
+  },
+  "version": "0.0.1"
 }
