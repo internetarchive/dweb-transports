@@ -66,14 +66,17 @@ class TransportWEBTORRENT extends Transport {
         return t;
     }
 
-    async p_setup1(verbose) {
+    async p_setup1(verbose, cb) {
         try {
             this.status = Transport.STATUS_STARTING;
+            if (cb) cb(this);
             await this.p_webtorrentstart(verbose);
+            await this.p_status(verbose);
         } catch(err) {
             console.error("WebTorrent failed to connect",err);
             this.status = Transport.STATUS_FAILED;
         }
+        if (cb) cb(this);
         return this;
     }
 
@@ -88,7 +91,6 @@ class TransportWEBTORRENT extends Transport {
         } else {
             this.status = Transport.STATUS_FAILED;
         }
-
         return this.status;
     }
 

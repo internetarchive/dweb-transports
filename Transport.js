@@ -11,6 +11,10 @@ class Transport {
         /*
         Doesnt do anything, its all done by SuperClasses,
         Superclass should merge with default options, call super
+
+        Fields:
+        statuselement:  If set is an HTML Element that should be adjusted to indicate status.
+        name:   Short name of element e.g. HTTP IPFS WEBTORRENT
         */
     }
 
@@ -38,7 +42,7 @@ class Transport {
 
             return t.p_setup2(verbose);     // And connect
     }
-    togglePaused() {
+    togglePaused(cb) { //TODO-API
         switch (this.status) {
             case Transport.STATUS_CONNECTED:
                 this.status = Transport.STATUS_PAUSED;
@@ -47,6 +51,7 @@ class Transport {
                 this.status = Transport.STATUS_CONNECTED;   // Superclass might change to STATUS_STARTING if needs to stop/restart
                 break;
         }
+        if (cb) cb(this);
     }
 
     supports(url, func) {

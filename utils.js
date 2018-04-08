@@ -115,4 +115,6 @@ utils.p_timeout = function(promise, ms, errorstr) {
     ]);
 }
 
+/*TODO backport these to utils.js in main repo */
+
 exports = module.exports = utils;

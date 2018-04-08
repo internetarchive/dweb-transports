@@ -110,7 +110,7 @@ class TransportYJS extends Transport {
         return t;
     }
 
-    async p_setup2(verbose) {
+    async p_setup2(verbose, cb) {
         /*
         This sets up for Y connections, which are opened each time a resource is listed, added to, or listmonitored.
         p_setup2 is defined because IPFS will have started during the p_setup1 phase.
@@ -118,12 +118,15 @@ class TransportYJS extends Transport {
         */
         try {
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
+            if (cb) cb(this);
             this.options.yarray.connector.ipfs = Transports.ipfs(verbose).ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
             this.yarrays = {};
+            await this.p_status(verbose);
         } catch(err) {
             console.error("YJS failed to start",err);
             this.status = Transport.STATUS_FAILED;
         }
+        if (cb) cb(this);
         return this;
     }
 

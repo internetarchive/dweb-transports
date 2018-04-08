@@ -62,7 +62,11 @@ class TransportHTTP extends Transport {
             throw err;
         }
     }
-    async p_setup1(verbose) {
+    async p_setup1(verbose, cb) {
+        this.status = Transport.STATUS_STARTING;
+        if (cb) cb(this);
+        await this.p_status(verbose);
+        if (cb) cb(this);
         return this;
     }
 

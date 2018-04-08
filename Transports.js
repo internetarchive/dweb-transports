@@ -432,17 +432,17 @@ class Transports {
 
     // Setup Transports - setup0 is called once, and should return quickly, p_setup1 and p_setup2 are asynchronous and p_setup2 relies on p_setup1 having resolved.
 
-    static setup0(transports, options, verbose) {
+    static setup0(tabbrevs, options, verbose, cb) {
         /*
         Setup Transports for a range of classes
-        transports is abbreviation HTTP, IPFS, LOCAL or list of them e.g. "HTTP,IPFS"
+        tabbrevs is abbreviation HTTP, IPFS, LOCAL or list of them e.g. "HTTP,IPFS"
         Handles "LOCAL" specially, turning into a HTTP to a local server (for debugging)
 
         returns array of transport instances
          */
         // "IPFS" or "IPFS,LOCAL,HTTP"
         let localoptions = {http: {urlbase: "http://localhost:4244"}};
-        return transports.map((tabbrev) => {
+        return tabbrevs.map((tabbrev) => {
             let transportclass;
             if (tabbrev === "LOCAL") {
                 transportclass = this._transportclasses["HTTP"];
@@ -458,15 +458,15 @@ class Transports {
             }
         }).filter(f => !!f); // Trim out any undefined
     }
-    static async p_setup1(verbose) {
+    static async p_setup1(verbose, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports.map((t) => t.p_setup1(verbose)));
+        await Promise.all(this._transports.map((t) => t.p_setup1(verbose, cb)))
     }
-    static async p_setup2(verbose) {
+    static async p_setup2(verbose, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports.map((t) => t.p_setup2(verbose)));
+        await Promise.all(this._transports.map((t) => t.p_setup2(verbose, cb)))
     }
     static async test(verbose) {
         if (verbose) {console.log("Transports.test")}
