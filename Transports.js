@@ -500,7 +500,7 @@ class Transports {
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
             if (!!options.statuselement) {
-                while (statuselement.lastChild) {el.removeChild(el.lastChild); }   // Remove any exist status
+                while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
                             let el = utils.createElement("LI",

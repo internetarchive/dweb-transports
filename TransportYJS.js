@@ -292,7 +292,7 @@ class TransportYJS extends Transport {
     async p_getall(url, {verbose=false}={}) {
         let y = await this.p_connection(url, verbose);
         let keys = y.share.map.keys();   // Surprisingly this is sync, the p_connection should have synchronised
-        return this._p_get(y, keys. {verbose});
+        return this._p_get(y, keys, {verbose});
     }
     async p_rawfetch(url, {verbose=false}={}) {
         return { // See identical structure in TransportHTTP
