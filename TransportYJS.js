@@ -139,7 +139,7 @@ class TransportYJS extends Transport {
         return this.status;
     }
 
-    async p_rawlist(url, verbose) {
+    async p_rawlist(url, {verbose=false}={}) {
     /*
     Fetch all the objects in a list, these are identified by the url of the public key used for signing.
     (Note this is the 'signedby' parameter of the p_rawadd call, not the 'url' parameter
@@ -197,7 +197,7 @@ class TransportYJS extends Transport {
         //TODO-REVERSE this needs implementing once list structure on IPFS more certain
         throw new errors.ToBeImplementedError("Undefined function TransportYJS.rawreverse"); }
 
-    async p_rawadd(url, sig, verbose) {
+    async p_rawadd(url, sig, {verbose=false}={}) {
         /*
         Store a new list item, it should be stored so that it can be retrieved either by "signedby" (using p_rawlist) or
         by "url" (with p_rawreverse). The underlying transport does not need to guarantee the signature,
@@ -219,7 +219,7 @@ class TransportYJS extends Transport {
         y.share.array.push([value]);
     }
 
-    p_newlisturls(cl, verbose) {
+    p_newlisturls(cl, {verbose=false}={}) {
         let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
             .find(parsedurl =>
                 (parsedurl.protocol === "ipfs" && parsedurl.pathname.includes('/ipfs/'))
@@ -233,7 +233,7 @@ class TransportYJS extends Transport {
 
     // Support for Key-Value pairs as per
     // https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#
-    async p_newdatabase(pubkey, verbose) {
+    async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
             pubkey = pubkey.keypair.signingexport()
@@ -245,14 +245,14 @@ class TransportYJS extends Transport {
 
     //TODO maybe change the listmonitor / monitor code for to use "on" and the structure of PP.events
     //TODO but note https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy about Proxy which might be suitable, prob not as doesnt map well to lists
-    async p_newtable(pubkey, table, verbose) {
+    async p_newtable(pubkey, table, {verbose=false}={}) {
         if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
-        let database = await this.p_newdatabase(pubkey, verbose);
+        let database = await this.p_newdatabase(pubkey, {verbose});
         // If have use cases without a database, then call p_newdatabase first
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
     }
 
-    async p_set(url, keyvalues, value, verbose) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
         let y = await this.p_connection(url, verbose);
         if (typeof keyvalues === "string") {
             y.share.map.set(keyvalues, JSON.stringify(value));
@@ -260,7 +260,7 @@ class TransportYJS extends Transport {
             Object.keys(keyvalues).map((key) => y.share.map.set(key, keyvalues[key]));
         }
     }
-    _p_get(y, keys, verbose) {
+    _p_get(y, keys, {verbose=false}={}) {
         if (Array.isArray(keys)) {
             return keys.reduce(function(previous, key) {
                 let val = y.share.map.get(key);
@@ -272,11 +272,11 @@ class TransportYJS extends Transport {
             return typeof val === "string" ? JSON.parse(val) : val;  // Surprisingly this is sync, the p_connection should have synchronised
         }
     }
-    async p_get(url, keys, verbose) {  //TODO-KEYVALUE-API - return dict or single
-        return this._p_get(await this.p_connection(url, verbose), keys);
+    async p_get(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API - return dict or single
+        return this._p_get(await this.p_connection(url, verbose), keys, {verbose});
     }
 
-    async p_delete(url, keys, verbose) {  //TODO-KEYVALUE-API
+    async p_delete(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API
         let y = await this.p_connection(url, verbose);
         if (typeof keys === "string") {
             y.share.map.delete(keys);
@@ -285,19 +285,19 @@ class TransportYJS extends Transport {
         }
     }
 
-    async p_keys(url, verbose) {
+    async p_keys(url, {verbose=false}={}) {
         let y = await this.p_connection(url, verbose);
         return y.share.map.keys();   // Surprisingly this is sync, the p_connection should have synchronised
     }
-    async p_getall(url, verbose) {
+    async p_getall(url, {verbose=false}={}) {
         let y = await this.p_connection(url, verbose);
         let keys = y.share.map.keys();   // Surprisingly this is sync, the p_connection should have synchronised
-        return this._p_get(y, keys);
+        return this._p_get(y, keys. {verbose});
     }
     async p_rawfetch(url, {verbose=false}={}) {
         return { // See identical structure in TransportHTTP
             table: "keyvaluetable",         //TODO-KEYVALUE its unclear if this is the best way, as maybe want to know the real type of table e.g. domain
-            _map: await this.p_getall(url, verbose)
+            _map: await this.p_getall(url, {verbose})
         };   // Data struc is ok as SmartDict.p_fetch will pass to KVT constructor
     }
     async monitor(url, callback, verbose) {

@@ -29,25 +29,29 @@ to your package.json file in the dependencies section.
 * Clone this repo and cd to it.
 * `npm bundle` will create dist/dweb_transports_bundle.js
 * Add `<SCRIPT type="text/javascript" src="dweb_transports_bundle.js"></SCRIPT>` to your `<HEAD>`
-* TODO need to split out necessary from htmlutils so p_connect exposed
 
 Then code like this should work. 
 
 ```
-async function main() {
+async function main(url) {
     try {
-        // Connect to a set of transports, that the user can override
-        // p_connect will look for "?transport=HTTP" etc to override defaults
-        await p_connect({defaulttransport: ["HTTP", "IPFS"]});
-        // Code you want to happen after connection goes here
-        
-        // Fetch some data from a service, specifiying two places to get it
-        foo = await DwebTransports.p_fetch(["http://bar.com/foo.json", "ipfs:/ipfs/Q1abc"], verbose);                
+        // and if not found will use the defaulttransports specified here.
+        await DwebTransports.p_connect({
+            statuselement: document.getElementById("statuselement"),    // Where to build status indicator
+            defaulttransports: ["HTTP","IPFS"],                         // Default transports if not specified
+            transports: searchparams.getAll("transport")    // Allow override default from URL parameters
+        }, verbose);                                        // Pass verbose global parameter from command line
+        // Any code you want to run after connected to transports goes here.
     } catch(err) {
+        console.log("App Error:", err);
         alert(err.message);
     }
 }
 var searchparams = new URL(window.location.href).searchParams;
-// Allow specifying ?verbose=true in URL to get debugging 
+// Allow specifying ?verbose=true in URL to get debugging, and transport=HTTP etc
 var verbose = searchparams.get("verbose") || false;
 ```
+
+See [example_block.html](./example_block.html) for an example of connecting, storing and retrieving.
+
+

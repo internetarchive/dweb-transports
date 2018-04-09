@@ -70,10 +70,9 @@ class TransportHTTP extends Transport {
         return this;
     }
 
-    async p_status(verbose) {    //TODO-BACKPORT
+    async p_status(verbose) {
         /*
-        Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
-        resolves to: String representing type connected (always HTTP) and online if online.
+        Return a numeric code for the status of a transport.
          */
         try {
             this.info = await this.p_info(verbose);
@@ -194,7 +193,7 @@ class TransportHTTP extends Transport {
         }
     }
 
-    p_rawlist(url, verbose) {
+    p_rawlist(url, {verbose=false}={}) {
         // obj being loaded
         // Locate and return a block, based on its url
         if (!url) throw new errors.CodingError("TransportHTTP.p_rawlist: requires url");
@@ -202,7 +201,7 @@ class TransportHTTP extends Transport {
     }
     rawreverse() { throw new errors.ToBeImplementedError("Undefined function TransportHTTP.rawreverse"); }
 
-    async p_rawstore(data, verbose) {
+    async p_rawstore(data, {verbose=false}={}) {
         /*
         Store data on http server,
         data:   string
@@ -218,7 +217,7 @@ class TransportHTTP extends Transport {
 
     }
 
-    p_rawadd(url, sig, verbose) { //TODO-BACKPORT turn date into ISO before adding
+    p_rawadd(url, sig, {verbose=false}={}) { //TODO-BACKPORT turn date into ISO before adding
         //verbose=true;
         if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms",url, sig);
         if (verbose) console.log("rawadd", url, sig);
@@ -226,7 +225,7 @@ class TransportHTTP extends Transport {
         return this.p_POST(this._url(url, servercommands.rawadd), "application/json", value, verbose); // Returns immediately
     }
 
-    p_newlisturls(cl, verbose) {
+    p_newlisturls(cl, {verbose=false}={}) {
        let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
             .find(parsedurl =>
                 (parsedurl.protocol === "https" && parsedurl.host === "gateway.dweb.me" && parsedurl.pathname.includes('/content/rawfetch'))
@@ -242,7 +241,7 @@ class TransportHTTP extends Transport {
 
     // Support for Key-Value pairs as per
     // https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#
-    async p_newdatabase(pubkey, verbose) {
+    async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
             pubkey = pubkey.keypair.signingexport()
@@ -253,15 +252,15 @@ class TransportHTTP extends Transport {
     }
 
 
-    async p_newtable(pubkey, table, verbose) {
+    async p_newtable(pubkey, table, {verbose=false}={}) {
         if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
-        let database = await this.p_newdatabase(pubkey, verbose);
+        let database = await this.p_newdatabase(pubkey, {verbose});
         // If have use cases without a database, then call p_newdatabase first
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
     }
 
     //TODO-KEYVALUE needs signing with private key of list
-    async p_set(url, keyvalues, value, verbose) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
         if (!url || !keyvalues) throw new errors.CodingError("TransportHTTP.p_set: invalid parms",url, keyvalyes);
         if (verbose) console.log("p_set", url, keyvalues, value);
         if (typeof keyvalues === "string") {
@@ -276,25 +275,24 @@ class TransportHTTP extends Transport {
     _keyparm(key) {
         return `key=${encodeURIComponent(key)}`
     }
-    //TODO-KEYALUE got to here on KEYVALUE in HTTP
-    async p_get(url, keys, verbose) {
+    async p_get(url, keys, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys)
         let res = await this.p_GET(this._url(url, servercommands.get, parmstr), {verbose});
         return Array.isArray(keys) ? res : res[keys]
     }
 
-    async p_delete(url, keys, verbose) {  //TODO-KEYVALUE-API need to think this one through
+    async p_delete(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API need to think this one through
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =  keys.map(k => this._keyparm(k)).join('&');
         await this.p_GET(this._url(url, servercommands.delete, parmstr), {verbose});
     }
 
-    async p_keys(url, verbose) {
+    async p_keys(url, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         return await this.p_GET(this._url(url, servercommands.keys), {verbose});
     }
-    async p_getall(url, verbose) {
+    async p_getall(url, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         return await this.p_GET(this._url(url, servercommands.getall), {verbose});
     }
@@ -302,12 +300,12 @@ class TransportHTTP extends Transport {
     async p_rawfetch(url, verbose) {
         return {
             table: "keyvaluetable",
-            _map: await this.p_getall(url, verbose)
+            _map: await this.p_getall(url, {verbose})
         };   // Data struc is ok as SmartDict.p_fetch will pass to KVT constructor
     }
     */
 
-    p_info(verbose) { return this.p_GET(`${this.urlbase}/info`, {verbose}); } //TODO-BACKPORT
+    p_info(verbose) { return this.p_GET(`${this.urlbase}/info`, {verbose}); }
 
     static async p_test(opts={}, verbose=false) {
         if (verbose) {console.log("TransportHTTP.test")}

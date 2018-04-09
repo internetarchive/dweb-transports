@@ -127,7 +127,7 @@ class TransportIPFS extends Transport {
 
     async p_status(verbose) {
         /*
-        Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
+            Return a numeric code for the status of a transport.
          */
         this.status =  (await this.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
         return this.status;
@@ -253,7 +253,7 @@ class TransportIPFS extends Transport {
         }
     }
 
-    async p_rawstore(data, verbose) {
+    async p_rawstore(data, {verbose}) {
         /*
         Store a blob of data onto the decentralised transport.
         Returns a promise that resolves to the url of the data
@@ -268,9 +268,7 @@ class TransportIPFS extends Transport {
         //https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/DAG.md#dagput
         //let res = await this.ipfs.dag.put(buf,{ format: 'dag-cbor', hashAlg: 'sha2-256' });
         const res = (await this.ipfs.files.add(buf,{ "cid-version": 1, hashAlg: 'sha2-256'}))[0];
-        //TODO-IPFS has been suggested to move this to files.add with no filename.
         return TransportIPFS.urlFrom(res);
-        //return this.ipfs.files.put(buf).then((block) => TransportIPFS.urlFrom(block.cid));
     }
 
     // Based on https://github.com/ipfs/js-ipfs/pull/1231/files
@@ -350,7 +348,7 @@ class TransportIPFS extends Transport {
             const qbf = "The quick brown fox";
             const qbf_url = "ipfs:/ipfs/zdpuAscRnisRkYnEyJAp1LydQ3po25rCEDPPEDMymYRfN1yPK"; // Expected url
             const testurl = "1114";  // Just a predictable number can work with
-            const url = await transport.p_rawstore(qbf, verbose);
+            const url = await transport.p_rawstore(qbf, {verbose});
             if (verbose) console.log("rawstore returned", url);
             const newcid = TransportIPFS.cidFrom(url);  // Its a CID which has a buffer in it
             console.assert(url === qbf_url, "url should match url from rawstore");
