@@ -4,6 +4,9 @@
     "email": "mitra@archive.org",
     "url": "http://www.mitra.biz"
   },
+  "browser": {
+    "node-fetch": false
+  },
   "bugs": {
     "url": "https://github.com/mitra42/dweb-transports/issues"
   },

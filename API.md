@@ -257,13 +257,13 @@ _transportclasses   All classes whose code is loaded e.g. {HTTP: TransportHTTP, 
 returns Array of transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
 
-#####static _connectedNames()
+#####static async p_connectedNames()
 ```
-returns Array of names transports that are connected (i.e. status=STATUS_CONNECTED)
+resolves to: Array of names transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
-#####static connectedNamesParm
+#####static async p_connectedNamesParm
 ```
-returns part of URL string for transports e.g. 'transport=HTTP&transport=IPFS"
+resolves to: part of URL string for transports e.g. 'transport=HTTP&transport=IPFS"
 ```
 
 #####static validFor(urls, func, options) {
@@ -334,7 +334,7 @@ options {
 }
 
 ```
-#####static urlsFrom(url)
+#####static async p_urlsFrom(url)
 Utility to convert to urls form wanted for Transports functions, e.g. from user input
 ```
 url:    Array of urls, or string representing url or representing array of urls

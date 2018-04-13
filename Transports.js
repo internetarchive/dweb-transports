@@ -18,14 +18,14 @@ class Transports {
          */
         return this._transports.filter((t) => (!t.status));
     }
-    static connectedNames() {
+    static async p_connectedNames() {
         /*
         Return an array of the names of connected transports
          */
         return this._connected().map(t => t.name);
     }
-    static connectedNamesParm() {
-        return this.connectedNames().map(n => "transport="+n).join('&')
+    static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
+        return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
     static validFor(urls, func, options) {
         /*
@@ -488,18 +488,19 @@ class Transports {
         /*
             This is a standardish starting process, feel free to subclass or replace !
             It will connect to a set of standard transports and is intended to work inside a browser.
-            options = { defaulttransports: ["IPFS"]; statuselement: el }
+            options = { defaulttransports: ["IPFS"], statuselement: el, http: {}, ipfs: {} }
          */
         if (verbose) console.group("p_connect ---");
         try {
             options = options || {};
             let setupoptions = {};
             let tabbrevs = options.transports;    // Array of transport abbreviations
-            if (!tabbrevs.length) { tabbrevs = options.defaulttransports || [] }
-            if (!tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
+            if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
+            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
             if (!!options.statuselement) {
+                //TODO-SW need to return status through messages
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
@@ -520,7 +521,7 @@ class Transports {
         if (verbose) console.groupEnd("p_connect ---");
     }
 
-    static urlsFrom(url) {    //TODO backport to main repo - copy from htmlutils to utils
+    static async p_urlsFrom(url) {    //TODO backport to main repo - copy from htmlutils to utils
         /* Utility to convert to urls form wanted for Transports functions, e.g. from user input
         url:    Array of urls, or string representing url or representing array of urls
         return: Array of strings representing url
@@ -535,6 +536,14 @@ class Transports {
         }
         if (!Array.isArray(url)) throw new Error(`Unparsable url: ${url}`);
         return url;
+    }
+
+    static async p_httpfetchurls(urls) {
+        /*
+        Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
+        this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.
+         */
+        return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
     }
 
     static async test(verbose) {
