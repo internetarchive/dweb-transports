@@ -225,10 +225,11 @@ returns:            Dictionary of Key:Value pairs, note take care if this could 
 ```
 
 ###Transports - other functions
-#####static async p_f_createReadStream(url, verbose, options)
+#####static async p_f_createReadStream(url, {wanturl, verbose})
 Provide a function of the form needed by <VIDEO> tag and renderMedia library etc
 ```
 url    Urlsof stream
+wanturl True if want the URL of the stream (for service workers)
 returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
 ```
 
@@ -353,7 +354,7 @@ static async p_rawlist(urls, {verbose})|[sigs]|Tries all and combines results
 static async p_rawadd(urls, sig, {verbose})||Tries on all urls, error if none succeed
 static listmonitor(urls, cb)||Tries on all urls (so note cb may be called multiple times)
 static p_newlisturls(cl, {verbose})|[urls]|Tries all and combines results
-static async p_f_createReadStream(urls, verbose, options)|f(opts)=>stream|Returns first success
+static async p_f_createReadStream(urls, options)|f(opts)=>stream|Returns first success
 static async p_get(urls, keys, {verbose})|currently returns on first success, TODO - will combine results and relay across transports
 static async p_set(urls, keyvalues, value, {verbose})|Tries all, error if none succeed
 static async p_delete(urls, keys, {verbose})|Tries all, error if none succeed

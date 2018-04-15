@@ -96,14 +96,14 @@ class TransportWEBTORRENT extends Transport {
 
     webtorrentparseurl(url) {
         /* Parse a URL
-        url:    URL as string or already parsed into Url
+        url:    URL as string or already parsed into Url - should start magnet: or in future might support dweb:/magnet/; some other formats might be supported
         returns:    torrentid, path
          */
         if (!url) {
             throw new errors.CodingError("TransportWEBTORRENT.p_rawfetch: requires url");
         }
 
-        const urlstring = typeof url === "string" ? url : url.href
+        const urlstring = (typeof url === "string" ? url : url.href)
         const index = urlstring.indexOf('/');
 
         if (index === -1) {
@@ -159,12 +159,10 @@ class TransportWEBTORRENT extends Transport {
         const file = torrent.files.find(file => {
             return file.path === filePath;
         });
-
         if (!file) {
             //debugger;
             throw new errors.TransportError("Requested file (" + path + ") not found within torrent ");
         }
-
         return file;
     }
 
@@ -189,7 +187,7 @@ class TransportWEBTORRENT extends Transport {
             const { torrentId, path } = this.webtorrentparseurl(url);
             this.p_webtorrentadd(torrentId)
                 .then((torrent) => {
-                    torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want
+                    torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
                     const file = this.webtorrentfindfile(torrent, path);
                     file.getBuffer((err, buffer) => {
                         if (err) {
@@ -202,16 +200,50 @@ class TransportWEBTORRENT extends Transport {
         });
     }
 
-    async p_f_createReadStream(url, verbose) {  //TODO-API
-        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", url);
+    async _p_fileTorrentFromUrl(url) {
+        /*
+        Then open a webtorrent for the file specified in the path part of the url
+        url:    of form magnet:... or magnet/:...
+        return: Web Torrent file
+         */
         try {
             const {torrentId, path} = this.webtorrentparseurl(url);
             let torrent = await this.p_webtorrentadd(torrentId);
-            let filet = this.webtorrentfindfile(torrent, path);
+            torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
+            return this.webtorrentfindfile(torrent, path);
+        } catch(err) {
+            console.log(`p_fileFrom failed on ${url} ${err.message}`);
+            throw(err);
+        };
+
+    }
+    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {  //TODO-API
+        /*
+        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
+
+
+        No assumption is made about the data in terms of size or structure.
+
+        This is the initializtion step, which returns a function suitable for <VIDEO>
+
+        Returns a new Promise that resolves to function for a node.js readable stream.
+
+        Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
+
+        :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean verbose: true for debugging output
+        :resolves to: f({start, end}) => stream (The readable stream.)
+        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
+         */
+        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", url);
+        try {
+            let filet = this._p_fileTorrentFromUrl(url);
             let self = this;
-            return function (opts) {
-                return self.createReadStream(filet, opts, verbose);
-            };
+            if (wanturl) {
+                return url;
+            } else {
+                return function (opts) { return self.createReadStream(filet, opts, verbose); };
+            }
         } catch(err) {
             console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
             throw(err);
@@ -220,33 +252,29 @@ class TransportWEBTORRENT extends Transport {
 
     createReadStream(file, opts, verbose) {
         /*
-        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
+        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
 
-            magnet:xyzabc/path/to/file
-
-        (Where xyzabc is the typical magnet uri contents)
-
-        No assumption is made about the data in terms of size or structure.         Returns a new Promise that resolves to a node.js readable stream.
-
-        Node.js readable stream docs:
-        https://nodejs.org/api/stream.html#stream_readable_streams
-
-        :param string url: URL of object being retrieved
+        :param file:    Webtorrent "file" as returned by webtorrentfindfile
+        :param opts: { start: byte to start from; end: optional end byte }
         :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
-        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
         if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
-
         try {
             const through = new stream.PassThrough();
             const fileStream = file.createReadStream(opts);
             fileStream.pipe(through);
             return through;
         } catch(err) {
+            console.log("TransportWEBTORRENT caught error", err)
             if (typeof through.destroy === 'function') through.destroy(err)
             else through.emit('error', err)
         };
+    }
+
+    async p_createReadStream(url, opts, verbose) {
+        let filet = await this._p_fileTorrentFromUrl(url);
+        return this.createReadStream(filet, opts, verbose);
     }
 
     static async p_test(opts, verbose) {

@@ -33,7 +33,10 @@ class Transports {
          */
         return this._transports.map((t) => { return {"name": t.name, "status": t.status}})
     }
-
+    static async p_urlsValidFor(urls, func, options) {
+        // Need a async version of this for serviceworker and TransportsProxy
+        return this.validFor(urls, func, options).map((ut) => ut[0]);
+    }
     static validFor(urls, func, options) {
         /*
         Finds an array or Transports that can support this URL.
@@ -63,6 +66,11 @@ class Transports {
     static ipfs(verbose) {
         // Find an ipfs transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "IPFS")
+    }
+
+    static webtorrent(verbose) {
+        // Find an ipfs transport if it exists, so for example ServiceWorker.p_respondWebTorrent can use it.
+        return Transports._connected().find((t) => t.name === "WEBTORRENT")
     }
 
     static async p_resolveNames(urls) {
@@ -233,12 +241,12 @@ class Transports {
 
     // Stream handling ===========================================
     
-    static async p_f_createReadStream(urls, verbose, options) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
+    static async p_f_createReadStream(urls, {verbose=false, wanturl=false}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
         urls:   Urls of the stream
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
-        let tt = this.validFor(urls, "createReadStream", options); //[ [Url,t],[Url,t]]  // Passing options - most callers will ignore TODO-STREAM support options in validFor
+        let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
             throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
         }
@@ -246,7 +254,7 @@ class Transports {
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                return await t.p_f_createReadStream(url, verbose);
+                return await t.p_f_createReadStream(url, {verbose, wanturl} );
             } catch (err) {
                 errs.push(err);
                 console.log("Could not retrieve ", url.href, "from", t.name, err.message);
@@ -510,12 +518,10 @@ class Transports {
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
-            //TODO-SW copy this statuselement buildout somewhere for proxy too
             if (options.statuscb) {
                 this.statuscb = options.statuscb;
             }
             if (!!options.statuselement) {
-                //TODO-SW need to return status through messages
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
