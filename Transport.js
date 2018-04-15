@@ -13,7 +13,8 @@ class Transport {
         Superclass should merge with default options, call super
 
         Fields:
-        statuselement:  If set is an HTML Element that should be adjusted to indicate status.
+        statuselement:  If set is an HTML Element that should be adjusted to indicate status (this is managed by Transports, just stored on Transport)
+        statuscb: Callback when status changes
         name:   Short name of element e.g. HTTP IPFS WEBTORRENT
         */
     }

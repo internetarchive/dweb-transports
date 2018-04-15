@@ -27,6 +27,13 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
+    static async p_statuses(t) { //TODO-API
+        /*
+        Return a dictionary of statuses of transports
+         */
+        return this._transports.map((t) => { return {"name": t.name, "status": t.status}})
+    }
+
     static validFor(urls, func, options) {
         /*
         Finds an array or Transports that can support this URL.
@@ -476,11 +483,15 @@ class Transports {
     }
 
     static async refreshstatus(t) {
+        //Note "this' undefined as called as callback
         let statusclasses = ["transportstatus0","transportstatus1","transportstatus2","transportstatus3","transportstatus4"];
         let el = t.statuselement;
         if (el) {
             el.classList.remove(...statusclasses);
             el.classList.add(statusclasses[t.status]);
+        }
+        if (Transports.statuscb) {
+            Transports.statuscb(t);
         }
     }
 
@@ -499,13 +510,17 @@ class Transports {
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
+            //TODO-SW copy this statuselement buildout somewhere for proxy too
+            if (options.statuscb) {
+                this.statuscb = options.statuscb;
+            }
             if (!!options.statuselement) {
                 //TODO-SW need to return status through messages
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
                             let el = utils.createElement("LI",
-                                {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t},
+                                {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t, name: t.name}, //TODO-SW figure out how t osend this back
                                 t.name);
                             t.statuselement = el;   // Save status element on transport
                             return el;
