@@ -217,14 +217,13 @@ class TransportWEBTORRENT extends Transport {
         };
 
     }
+
     async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {  //TODO-API
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
-
-
         No assumption is made about the data in terms of size or structure.
 
-        This is the initializtion step, which returns a function suitable for <VIDEO>
+        This is the initialisation step, which returns a function suitable for <VIDEO>
 
         Returns a new Promise that resolves to function for a node.js readable stream.
 
