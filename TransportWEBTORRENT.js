@@ -240,6 +240,7 @@ class TransportWEBTORRENT extends Transport {
             let filet = this._p_fileTorrentFromUrl(url);
             let self = this;
             if (wanturl) {
+                console.log("XXX@WT:242 returning",url)
                 return url;
             } else {
                 return function (opts) { return self.createReadStream(filet, opts, verbose); };
@@ -259,12 +260,14 @@ class TransportWEBTORRENT extends Transport {
         :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
          */
+        verbose = true; //TODO-SW just for debugging
         if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
         try {
             const through = new stream.PassThrough();
             const fileStream = file.createReadStream(opts);
             fileStream.pipe(through);
             return through;
+            //return fileStream;  //TODO-SW-WT this was "return through" and will need to be for non-SW cases
         } catch(err) {
             console.log("TransportWEBTORRENT caught error", err)
             if (typeof through.destroy === 'function') through.destroy(err)
