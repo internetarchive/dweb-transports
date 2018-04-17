@@ -259,32 +259,49 @@ class TransportWEBTORRENT extends Transport {
         :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
          */
-        verbose = true; //TODO-SW just for debugging
         if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
         try {
             const through = new stream.PassThrough();
             const fileStream = file.createReadStream(opts);
             fileStream.pipe(through);
             return through;
-            //return fileStream;  //TODO-SW-WT this was "return through" and will need to be for non-SW cases
         } catch(err) {
             console.log("TransportWEBTORRENT caught error", err)
             if (typeof through.destroy === 'function') through.destroy(err)
             else through.emit('error', err)
-        };
+        }
     }
 
-    async p_createReadStream(url, opts, verbose) {
+    async p_createReadableStream(url, opts, verbose) {
+        //Return a readable stream (suitable for a HTTP response) from a node type stream from webtorrent.
         let filet = await this._p_fileTorrentFromUrl(url);
-        return this.createReadStream(filet, opts, verbose);
+        return new ReadableStream({
+            start (controller) {
+                console.log('start', url, opts);
+                // Create a webtorrent file stream
+                const filestream = filet.createReadStream(opts);
+                // When data comes out of webtorrent node.js style stream, put it into the WHATWG stream
+                filestream.on('data', value => {
+                    controller.enqueue(value)
+                });
+                filestream.on('end', () => {
+                    controller.close()
+                })
+            },
+            cancel (reason) {
+                throw new errors.TransportError(`cancelled ${url}, ${opts} ${reason}`);
+            }
+        });
     }
+
+
 
     static async p_test(opts, verbose) {
         try {
             let transport = await this.p_setup(opts, verbose); // Assumes IPFS already setup
             if (verbose) console.log(transport.name, "setup");
             let res = await transport.p_status(verbose);
-            console.assert(res === Transport.STATUS_CONNECTED)
+            console.assert(res === Transport.STATUS_CONNECTED);
 
             // Creative commons torrent, copied from https://webtorrent.io/free-torrents
             let bigBuckBunny = 'magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F&xs=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2Fbig-buck-bunny.torrent/Big Buck Bunny.en.srt';
