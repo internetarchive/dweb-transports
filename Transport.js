@@ -43,7 +43,7 @@ class Transport {
 
             return t.p_setup2(verbose, cb);     // And connect
     }
-    togglePaused(cb) { //TODO-API
+    togglePaused(cb) { //TODO-API  //TODO-SW move to Transports > TransportsProxy > UI
         switch (this.status) {
             case Transport.STATUS_CONNECTED:
                 this.status = Transport.STATUS_PAUSED;
