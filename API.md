@@ -24,7 +24,15 @@ Note: I am gradually (March2018) changing the API to take an opts {} dict which 
 
 The Transport layer provides a layer that is intended to be independent of the underlying storage/transport mechanism.
 
-There is a class “Transport”, which should be subclassed for each supported transport and implement each of these functions, and there is a “Transports” class which manages the list of conencted transports, and directs api calls to them. 
+There are a set of classes:
+* *Transport*: superclass of each supported transport,
+* *TransportHTTP*: Connects to generic http servers, and handles contenthash: through a known gateway
+* *TransportIPFS*: Connects to IPFS, currently via WebSocketsStar (WSS)
+* *TransportYJS*: Implements shared lists, and dictionaries. Uses IPFS for transport
+* *TransportWEBTORRENT*: Integrates to Feross's WebTorrent library
+* *Transports*: manages the list of conencted transports, and directs api calls to them. 
+
+Calls are generally made through the Transports class which knows how to route them to underlying connections.
 
 Documents are retrieved by a list of URLs, where in each URL, the left side helps identify the transport, and the right side can be the internal format of the underlying transport BUT must be identifiable e.g. ipfs:/ipfs/12345abc or https://gateway.dweb.me/content/contenthash/Qm..., this format will evolve if a standard URL for the decentralized space is defined. 
 

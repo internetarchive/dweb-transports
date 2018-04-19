@@ -2,7 +2,8 @@
 utils = {}; //utility functions
 
 // ==== OBJECT ORIENTED JAVASCRIPT ===============
-// This is a general purpose library of functions, the commented out ones come from other this libraries use in other places
+// This is a general purpose library of functions,
+//Parts of this file (consolearr, and createElement) are duplicated in dweb-transport; dweb-transports and dweb-objects repo
 
 // Utility function to print a array of items but just show number and last.
 utils.consolearr  = (arr) => ((arr && arr.length >0) ? [arr.length+" items inc:", arr[arr.length-1]] : arr );
@@ -40,7 +41,7 @@ utils.p_timeout = function(promise, ms, errorstr) {
 }
 
 utils.createElement = function(tag, attrs, children) {        // Note arguments is set to tag, attrs, child1, child2 etc
-    // Note identical version in dweb-transport/js/utils.js and dweb-transports/utils.js
+    // Note identical version in dweb-transport/js/utils.js and dweb-transports/utils.js and dweb-objects/utils.js
     var element = document.createElement(tag);
     for (let name in attrs) {
         let attrname = (name.toLowerCase() === "classname" ? "class" : name);

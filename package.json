@@ -8,7 +8,7 @@
     "node-fetch": false
   },
   "bugs": {
-    "url": "https://github.com/mitra42/dweb-transports/issues"
+    "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
     "cids": "latest",
@@ -31,14 +31,14 @@
     "browserify": "^14.5.0",
     "watchify": "^3.11.0"
   },
-  "homepage": "https://github.com/mitra42/dweb-transports#readme",
+  "homepage": "https://github.com/internetarchive/dweb-transports#readme",
   "keywords": [],
   "license": "AGPL-3.0",
   "main": "index.js",
   "name": "dweb-transports",
   "repository": {
     "type": "git",
-    "url": "git://github.com/mitra42/dweb-transports.git"
+    "url": "git://github.com/internetarchive/dweb-transports.git"
   },
   "scripts": {
     "bundle": "browserify ./index.js > ./dist/dweb_transports_bundle.js",

@@ -5,7 +5,7 @@ General transport library for Decentralized Web handles multiple underlying tran
 This library is part of a general project at the Internet Archive (archive.org) 
 to support the decentralized web.  
 
-###Goals
+### Goals
 * to allow a single API that can be used for most basic interactions with 
 decentralized transports. 
 * to support multiple URLs, on different transports, so that the (current) underlying unreliability
@@ -54,4 +54,4 @@ var verbose = searchparams.get("verbose") || false;
 
 See [example_block.html](./example_block.html) for an example of connecting, storing and retrieving.
 
-
+See [API.md](./API.md) for the detailed API.
