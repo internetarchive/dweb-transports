@@ -20,22 +20,18 @@ class Transports {
     }
     static async p_connectedNames() {
         /*
-        Return an array of the names of connected transports
+        resolves to: an array of the names of connected transports
          */
         return this._connected().map(t => t.name);
     }
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
-    static async p_statuses(t) { //TODO-API
+    static async p_statuses() { //TODO-API
         /*
-        Return a dictionary of statuses of transports
+        resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
          */
         return this._transports.map((t) => { return {"name": t.name, "status": t.status}})
-    }
-    static async p_urlsValidFor(urls, func, options) {
-        // Need a async version of this for serviceworker and TransportsProxy
-        return this.validFor(urls, func, options).map((ut) => ut[0]);
     }
     static validFor(urls, func, options) {
         /*
@@ -45,6 +41,7 @@ class Transports {
 
         urls:       Array of urls
         func:       Function to check support for: fetch, store, add, list, listmonitor, reverse - see supportFunctions on each Transport class
+        options:    For future use
         returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
          */
         console.assert((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func), "Transports.validFor failed - coding error - urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
@@ -58,6 +55,10 @@ class Transports {
                         this._connected().filter((t) => (t.supports(url, func))) // [ t1, t2 ]
                             .map((t) => [url, t]))); // [[ u, t1], [u, t2]]
         }
+    }
+    static async p_urlsValidFor(urls, func, options) {
+        // Need a async version of this for serviceworker and TransportsProxy
+        return this.validFor(urls, func, options).map((ut) => ut[0]);
     }
     static http(verbose) {
         // Find an http transport if it exists, so for example YJS can use it.
@@ -221,13 +222,13 @@ class Transports {
 
     }
 
-    static listmonitor(urls, cb) {
+    static listmonitor(urls, cb, opts={}) {
         /*
         Add a listmonitor for each transport - note this means if multiple transports support it, then will get duplicate events back if everyone else is notifying all of them.
          */
         // Note cant do p_resolveNames since sync but should know real urls of resource by here.
         this.validFor(urls, "listmonitor")
-            .map(([u, t]) => t.listmonitor(u, cb));
+            .map(([u, t]) => t.listmonitor(u, cb, opts));
     }
 
     static async p_newlisturls(cl, {verbose=false}={}) {
@@ -559,7 +560,7 @@ class Transports {
         return url;
     }
 
-    static async p_httpfetchurls(urls) {
+    static async p_httpfetchurl(urls) {
         /*
         Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
         this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.

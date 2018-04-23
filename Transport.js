@@ -19,31 +19,47 @@ class Transport {
         */
     }
 
-    setup0(options, verbose) {
+    static setup0(options, verbose) {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         throw new errors.IntentionallyUnimplementedError("Intentionally undefined function Transport.setup0 should have been subclassed");
         }
 
-    p_setup1(options, verbose) { return this; }
-    p_setup2(options, verbose) { return this; }
+    p_setup1(options, verbose) {
+        /*
+        Setup the resource and open any P2P connections etc required to be done just once. Asynchronous and should leave status=STATUS_STARTING until it resolves, or STATUS_FAILED if fails.
 
+        cb (t)=>void   If set, will be called back as status changes (so could be multiple times)
+        Resolves to    the Transport instance
+        */
+        return this;
+    }
+    p_setup2(options, verbose) {
+        /*
+        Works like p_setup1 but runs after p_setup1 has completed for all transports. This allows for example YJS to wait for IPFS to be connected in TransportIPFS.setup1() and then connect itself using the IPFS object.
+
+        cb (t)=>void   If set, will be called back as status changes (so could be multiple times)
+        Resolves to    the Transport instance
+        */
+        return this;
+    }
     static async p_setup(options, verbose, cb) {
-            /*
-            Setup the resource and open any P2P connections etc required to be done just once.
-            In almost all cases this will call the constructor of the subclass
+        /*
+        A deprecated utility to simply setup0 then p_setup1 then p_setup2 to allow a transport to be started in one step, normally Transports.p_setup should be called instead.
+        */
+        let t = await this.setup0(options, verbose) // Sync version that doesnt connect
+            .p_setup1(verbose, cb); // And connect
 
-            :param obj options: Data structure required by underlying transport layer (format determined by that layer)
-            :param boolean verbose: true for debugging output
-            :resolve Transport: Instance of subclass of Transport
-             */
-            let t = await this.setup0(options, verbose) // Sync version that doesnt connect
-                .p_setup1(verbose, cb); // And connect
-
-            return t.p_setup2(verbose, cb);     // And connect
+        return t.p_setup2(verbose, cb);     // And connect
     }
     togglePaused(cb) { //TODO-API  //TODO-SW move to Transports > TransportsProxy > UI
+        /*
+        Switch the state of the transport between STATUS_CONNECTED and STATUS_PAUSED,
+        in the paused state it will not be used for transport but, in some cases, will still do background tasks like serving files.
+
+        cb(transport)=>void a callback called after this is run, may be used for example to change the UI
+         */
         switch (this.status) {
             case Transport.STATUS_CONNECTED:
                 this.status = Transport.STATUS_PAUSED;
@@ -53,6 +69,14 @@ class Transport {
                 break;
         }
         if (cb) cb(this);
+    }
+
+    async p_status(verbose) {
+        /*
+        Check the status of the underlying transport. This may update the "status" field from the underlying transport.
+        returns:    a numeric code for the status of a transport.
+        */
+        return this.status;
     }
 
     supports(url, func) {
@@ -99,15 +123,19 @@ class Transport {
 
     //noinspection JSUnusedLocalSymbols
 
-    p_rawfetch(url, {verbose=false}={}) {
+    p_rawfetch(url, {timeoutMS=undefined, start=undefined, end=undefined, relay=false, verbose=false}={}) {
         /*
         Fetch some bytes based on a url, no assumption is made about the data in terms of size or structure.
         Where required by the underlying transport it should retrieve a number if its "blocks" and concatenate them.
         Returns a new Promise that resolves currently to a string.
         There may also be need for a streaming version of this call, at this point undefined.
 
-        :param string url: URL of object being retrieved
-        :param boolean verbose: true for debugging output
+        :param string url:  URL of object being retrieved
+        :param verbose:     true for debugging output
+        :param timeoutMS    Max time to wait on transports that support it (IPFS for fetch)
+        :param start,end    Inclusive byte range wanted (must be supported, uses a "slice" on output if transport ignores it.
+        :param relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
+
         :resolve string: Return the object being fetched, (note currently returned as a string, may refactor to return Buffer)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
@@ -248,6 +276,15 @@ class Transport {
         returns:    Dictionary of Key:Value pairs, note take care if this could be large.
          */
         throw new errors.ToBeImplementedError("Undefined function Transport.p_keys");
+    }
+    static async p_f_createReadStream(url, {wanturl=false, verbose=false}) {
+        /*
+        Provide a function of the form needed by tag and renderMedia library etc
+
+        url    Urls of stream
+        wanturl True if want the URL of the stream (for service workers)
+        returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
+        */
     }
     // ------ UTILITY FUNCTIONS, NOT REQD TO BE SUBCLASSED ----
 

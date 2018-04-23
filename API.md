@@ -3,7 +3,7 @@ Mitra Ardron, Internet Archive,  mitra@mitra.biz
 
 This doc provides a concise API specification for the Dweb Javascript Libraries. 
 
-It was last revised (to match the code) on 9 March 2018. 
+It was last revised (to match the code) on 23 April 2018. 
 
 If you find any discrepancies please add an issue here.
 
@@ -27,7 +27,7 @@ The Transport layer provides a layer that is intended to be independent of the u
 There are a set of classes:
 * *Transport*: superclass of each supported transport,
 * *TransportHTTP*: Connects to generic http servers, and handles contenthash: through a known gateway
-* *TransportIPFS*: Connects to IPFS, currently via WebSocketsStar (WSS)
+* *TransportIPFS*: Connects to IPFS, currently (April 2018) via WebSocketsStar (WSS)
 * *TransportYJS*: Implements shared lists, and dictionaries. Uses IPFS for transport
 * *TransportWEBTORRENT*: Integrates to Feross's WebTorrent library
 * *Transports*: manages the list of conencted transports, and directs api calls to them. 
@@ -47,7 +47,7 @@ Fields|&nbsp;
 options | Holds options passed to constructor
 name|Short name of transport e.g. “HTTP”, “IPFS”
 supportURLs|Array of url prefixes supported e.g. [‘ipfs’,’http’]
-supportFunctions|Array of functions supported on those urls, current full list would be: `['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase", "listmonitor"]`
+supportFunctions|Array of functions supported on those urls, current (April 2018) full list would be: `['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase", "listmonitor"]`
 status|Numeric indication of transport status: Started(0); Failed(1); Starting(2); Loaded(3)
 
 ###Setup of a transport
@@ -83,12 +83,22 @@ cb (t)=>void   If set, will be called back as status changes (so could be multip
 Resolves to    the Transport instance
 ```
 
-#####p_setup(options, verbose, cb) 
+#####async p_setup(options, verbose, cb) 
 A deprecated utility to simply setup0 then p_setup1 then p_setup2 to allow a transport to be started
 in one step, normally `Transports.p_setup` should be called instead.
 
-#####p_status (verbose)
-Return a numeric code for the status of a transport.
+####togglePaused(cb)
+Switch the state of the transport between STATUS_CONNECTED and STATUS_PAUSED, 
+in the paused state it will not be used for transport but, in some cases, will still do background tasks like serving files. 
+```
+cb(transport)=>void a callback called after this is run, may be used for example to change the UI
+```
+
+#####async p_status (verbose)
+Check the status of the underlying transport. This may update the "status" field from the underlying transport.
+```
+returns:    a numeric code for the status of a transport.        
+```
 
 Code|Name|Means
 ---|---|---
@@ -119,7 +129,7 @@ timeoutMS    Max time to wait on transports that support it (IPFS for fetch)
 start,end    Inclusive byte range wanted (must be supported, uses a "slice" on output if transport ignores it.
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
 verbose      boolean - True for debugging output
-Resolves to  string The object being fetched, (note currently returned as a string, may refactor to return Buffer)
+Resolves to  string The object being fetched, (note currently (April 2018) returned as a string, may refactor to return Buffer)
 throws:      TransportError if url invalid - note this happens immediately, not as a catch in the promise
 ```
 
@@ -162,11 +172,12 @@ verbose     boolean - True for debugging output
 Resolves to Array objects as stored on the list (see p_rawlist for format)
 ```
 
-#####listmonitor (url, cb) 
+#####listmonitor (url, cb, {verbose}) 
 Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 ```
 url        Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
 cb(obj)    function(obj)  Callback for each new item added to the list
+verbose    boolean - True for debugging output
            obj is same format as p_rawlist or p_rawreverse
 ```
 
@@ -236,7 +247,7 @@ returns:            Dictionary of Key:Value pairs, note take care if this could 
 #####static async p_f_createReadStream(url, {wanturl, verbose})
 Provide a function of the form needed by <VIDEO> tag and renderMedia library etc
 ```
-url    Urlsof stream
+url     Urls of stream
 wanturl True if want the URL of the stream (for service workers)
 returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
 ```
@@ -244,8 +255,9 @@ returns f(opts) => stream returning bytes from opts.start || start of file to op
 #####supports(url, funcl)
 Determines if the Transport supports url’s of this form. For example TransportIPFS supports URLs starting ipfs:
 ```
-url        identifier of resource to fetch or list
-Returns        True if this Transport supports that type of URL
+url       identifier of resource to fetch or list
+Returns   True if this Transport supports that type of URL
+throw     TransportError if invalid URL
 ```
 
 #####p_info()
@@ -270,9 +282,14 @@ returns Array of transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
 resolves to: Array of names transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
-#####static async p_connectedNamesParm
+#####static async p_connectedNamesParm()
 ```
 resolves to: part of URL string for transports e.g. 'transport=HTTP&transport=IPFS"
+```
+
+#####static async p_statuses()
+```
+resolves to: a dictionary of statuses of transports e.g. { TransportHTTP: STATUS_CONNECTED }
 ```
 
 #####static validFor(urls, func, options) {
@@ -280,10 +297,14 @@ Finds an array or Transports that are STARTED and can support this URL.
 ```
 urls:       Array of urls
 func:       Function to check support for: fetch, store, add, list, listmonitor, reverse
-        - see supportFunctions on each Transport class
+            - see supportFunctions on each Transport class
 options     For future use
 Returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
 ```
+
+#####static async p_urlsValidFor(urls, func, options) {
+Async version of validFor for serviceworker and TransportsProxy
+
 
 #####static http(verbose)
 ```
@@ -295,14 +316,21 @@ returns instance of TransportHTTP if connected
 returns instance of TransportIPFS if connected
 ```
 
+#####static webtorrent(verbose)
+```
+returns instance of TransportWEBTORRENT if connected
+```
+
 #####static async p_resolveNames(urls)
+See Naming below
 ```
 urls    mix of urls and names
 names   if namingcb is set, will convert any names to URLS (this requires higher level libraries)
 ```
 
 #####static async resolveNamesWith(cb)
-Called by higher level libraries that provide name resolution function
+Called by higher level libraries that provide name resolution function. 
+See Naming below
 ```
 cb(urls) => urls    Provide callback function 
 ```
@@ -327,11 +355,12 @@ Call p_setup1 on all transports that were created in setup0().  Completes when a
 #####static async p_setup2(verbose, cb)
 Call p_setup2 on all transports that were created in setup0().  Completes when all setups are complete. 
 
-#####static asunc refreshstatus(t)
+#####static async refreshstatus(t)
 Set the class of t.statuselement (if set) to transportstatus0..transportstatus4 depending on its status.
 ```
 t   Instance of transport
 ```
+
 ####static async p_connect({options}, verbose)
 Main connection process for a browser based application, 
 ```
@@ -343,8 +372,16 @@ options {
 }
 
 ```
+
 #####static async p_urlsFrom(url)
 Utility to convert to urls form wanted for Transports functions, e.g. from user input
+```
+url:    Array of urls, or string representing url or representing array of urls
+return: Array of strings representing url
+```
+
+#####static async p_httpfetchurl(url)
+Return URLS suitable for caller to pass to fetch.
 ```
 url:    Array of urls, or string representing url or representing array of urls
 return: Array of strings representing url
@@ -360,14 +397,14 @@ static async p_rawstore(data, {verbose})|[urls]|Tries all and combines results
 static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})|data|See note
 static async p_rawlist(urls, {verbose})|[sigs]|Tries all and combines results
 static async p_rawadd(urls, sig, {verbose})||Tries on all urls, error if none succeed
-static listmonitor(urls, cb)||Tries on all urls (so note cb may be called multiple times)
+static listmonitor(urls, cb, {verbose})||Tries on all urls (so note cb may be called multiple times)
 static p_newlisturls(cl, {verbose})|[urls]|Tries all and combines results
 static async p_f_createReadStream(urls, options)|f(opts)=>stream|Returns first success
-static async p_get(urls, keys, {verbose})|currently returns on first success, TODO - will combine results and relay across transports
+static async p_get(urls, keys, {verbose})|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
 static async p_set(urls, keyvalues, value, {verbose})|Tries all, error if none succeed
 static async p_delete(urls, keys, {verbose})|Tries all, error if none succeed
-static async p_keys(urls, {verbose}|[keys]|currently returns on first success, TODO - will combine results and relay across transports
-static async p_getall(urls, {verbose})|dict|currently returns on first success, TODO - will combine results and relay across transports
+static async p_keys(urls, {verbose}|[keys]|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
+static async p_getall(urls, {verbose})|dict|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
 static async p_newdatabase(pubkey, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_newtable(pubkey, table, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_connection(urls, verbose)||Tries all parallel
@@ -381,6 +418,116 @@ start,end    Inclusive byte range wanted - passed to
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
 ```
 
-###TODO documentation
-* options to each Transport
-* Other useful functions on each transport esp http p_GET etc
+##TransportHTTP
+A subclass of Transport for handling HTTP connections - both directly and for contenthash: urls.
+
+It looks at `options { http }` for its options.
+
+Option|Default|Meaning
+------|-------|-------
+urlbase|https://gateway.dweb.me:443|Connect to gateway.dweb.me for contenthash urls
+
+supportURLS = `http:*, https:*, contenthash:*` (TODO: may in the future support `dweb:/contenthash/*`)
+supportFunctions:  
+    `fetch, store, add, list, reverse, newlisturls, get, set, keys, getall, delete, newtable, newdatabase`
+supportFeatures: 
+    `fetch.range` i.e. it will fetch a range of bytes if specified in {start, end} to p_rawfetch()
+
+###Other useful functions
+The HTTP Transport can be used for utility functions as well as via the Transports interface. 
+e.g. Transports.http().p_httpfetch("http://foo.com/bar", {method: 'GET'} )
+
+#####p_httpfetch(url, init, verbose)
+Fetch a url.
+If the result
+
+url:    HTTP or HTTPS url
+init:   Init parameter to fetch (see for docs)
+verbose:    boolean for debugging
+returns:    Depends on mime type;
+    If application/json returns a Object, 
+    If text/* returns text
+    Oherwise    Buffer
+
+#####p_GET(url, {start, end, verbose})
+Shortcut to do a HTTP/POST get, sets `mode: cors, redirect: follow, keepalive: true, cache: default`
+
+start:  First byte to retrieve
+end:    Last byte to retrieve (undefined means end of file)
+
+Note that it passes start and end as the Range header, most servers support it, 
+but it does not (yet) explicitly check the result. 
+
+#####p_POST(url, type, data, verbose)
+Shortcut to do a HTTP/HTTPS POST. sets same options as p_GET
+
+data:   Data to send to fetch, typically the body, 
+type:   Currently not passed as header{Content-type} because fetch appears to ignore it.
+
+##TransportIPFS
+A subclass of Transport for handling IPFS connections
+
+The code works, however there are a number of key IPFS issues <TODO document here> that mean that not 
+every IPFS `CID` will be resolvable, since:
+* IPFS javascript doesnt yet support CIDv1 so can't recognize the CIDs starting with "z"
+* WSS only can find blocks known about by peers connected to the same star. 
+* urlstore on the archive.org gateway is not advertising the files in a way that WSS finds them. 
+* Protocol Labs (IPFS)) have been unable to get WSS to connect to our gateway machine 
+
+Other parts of this code work but just note that usage should be aware that problems may be to do
+with your specific configuration and use cases.
+
+It looks at `options { ipfs }` for its options.
+
+Option|Default|Meaning
+------|-------|-------
+repo|/tmp/dweb_ipfsv2700|Local file system (only relevant if running under Node)
+config Addresses |Swarm: ['/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']}|Connects currently (April 2018) to ipfs.io, this may change.
+EXPERIMENTAL pubsub|true|Requires pubsub for list monitoring etc
+
+supportURLS = `ipfs:*` (TODO: may in the future support `dweb:/ipfs/*`)
+SupportFunctions (note YJS uses IPFS and supports some other functions): 
+    `fetch, store`
+SupportFeatures: 
+    fetch.range Not supported (currently April 2018))
+    
+Currently there is code for p_f_createReadStream. It works but because of some other IPFS issues is disabled.
+
+##TransportYJS
+A subclass of Transport for handling YJS connections.
+Uses IPFS as its transport (other transports are possible with YJS and may be worth experimenting with)
+
+supportURLS = `yjs:*` (TODO: may in the future support `dweb:/yjs/*`)
+supportFunctions (note YJS uses IPFS and supports some other functions): 
+    `fetch, add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
+supportFeatures: 
+    fetch.range Not supported (currently April 2018)
+
+##TransportWEBTORRENT
+A subclass of Transport for handling WEBTORRENT connections (similar to, with interworking with BitTorrent)
+
+Note that currently (April 2018) this won't work properly in the ServiceWorker (SW) because SW dont support WebRTC
+When used with a SW, it will attempt to retrieve from the http backup URL that is in many magnet links.
+In the SW it will also generate errors about trackers because the only reason to use trackers is to get the WebRTC links.
+
+supportURLS = `magnet:*` (TODO: may in the future support `dweb:/magnet/*`)
+supportFunctions:
+    `fetch, createReadStream`
+supportFeatures: 
+    fetch.range Not supported (currently April 2018)
+
+##Naming
+Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 
+See p_resolveNames(urls) and resolveNamesWith(cb)
+
+In practice this means that an application should do.
+```
+require('dweb-transports)
+require('dweb-objects/Domain)   # Sets the callbacks.
+```
+When setup this way, then calls to most functions that take an array of urls will first try and expand names.
+
+The format of names currently (April 2018) is under development but its likely to be something like 
+`dweb:/arc/archive.org/details/foo` 
+to allow smooth integration with existing HTTP urls that are moving to decentralization. 
+

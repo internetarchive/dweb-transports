@@ -130,7 +130,7 @@ class TransportIPFS extends Transport {
             Return a numeric code for the status of a transport.
          */
         this.status =  (await this.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
-        return this.status;
+        return super.p_status(verbose);
     }
 
     // Everything else - unless documented here - should be opaque to the actual structure of a CID

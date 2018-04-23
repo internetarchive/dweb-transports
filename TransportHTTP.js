@@ -82,12 +82,12 @@ class TransportHTTP extends Transport {
             console.log(this.name, ": Error in p_status.info",err.message);
             this.status = Transport.STATUS_FAILED;
         }
-        return this.status;
+        return super.p_status(verbose);
     }
 
     async p_httpfetch(httpurl, init, verbose) { // Embrace and extend "fetch" to check result etc.
         /*
-        Fetch a url based from default server at command/multihash
+        Fetch a url
 
         url: optional (depends on command)
         resolves to: data as text or json depending on Content-Type header
@@ -105,7 +105,7 @@ class TransportHTTP extends Transport {
                 if (contenttype === "application/json") {
                     return response.json(); // promise resolving to JSON
                 } else if (contenttype.startsWith("text")) { // Note in particular this is used for responses to store
-                    return response.text(); // promise resolving to arrayBuffer (was returning text, but distorts binaries (e.g. jpegs)
+                    return response.text();
                 } else { // Typically application/octetStream when don't know what fetching
                     return new Buffer(await response.arrayBuffer()); // Convert arrayBuffer to Buffer which is much more usable currently
                 }

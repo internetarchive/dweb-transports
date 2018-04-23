@@ -136,7 +136,7 @@ class TransportYJS extends Transport {
         For YJS, its online if IPFS is.
          */
         this.status =  (await this.options.yarray.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
-        return this.status;
+        return super.p_status(verbose);
     }
 
     async p_rawlist(url, {verbose=false}={}) {
@@ -163,7 +163,7 @@ class TransportYJS extends Transport {
         }
     }
 
-    listmonitor(url, callback, verbose) {
+    listmonitor(url, callback, {verbose}) {
         /*
          Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 

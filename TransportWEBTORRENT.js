@@ -91,7 +91,7 @@ class TransportWEBTORRENT extends Transport {
         } else {
             this.status = Transport.STATUS_FAILED;
         }
-        return this.status;
+        return super.p_status(verbose);
     }
 
     webtorrentparseurl(url) {
