@@ -41,7 +41,7 @@
     "url": "git://github.com/internetarchive/dweb-transports.git"
   },
   "scripts": {
-    "bundle": "browserify ./index.js > ./dist/dweb-transports-bundle.js",
+    "build": "browserify ./index.js > ./dist/dweb-transports-bundle.js",
     "watch": "watchify ./index.js -o dist/dweb-transports-bundle.js --verbose",
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'bundle (packs into ../examples)'; echo 'watch: continually bundles whenever files change'"
