@@ -236,7 +236,7 @@ class TransportWEBTORRENT extends Transport {
          */
         if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", url);
         try {
-            let filet = this._p_fileTorrentFromUrl(url);
+            let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
             if (wanturl) {
                 console.log("XXX@WT:242 returning",url)
@@ -260,14 +260,16 @@ class TransportWEBTORRENT extends Transport {
         :returns stream: The readable stream.
          */
         if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
+        let through;
         try {
-            const through = new stream.PassThrough();
+            through = new stream.PassThrough();
             const fileStream = file.createReadStream(opts);
             fileStream.pipe(through);
             return through;
         } catch(err) {
             console.log("TransportWEBTORRENT caught error", err)
-            if (typeof through.destroy === 'function') through.destroy(err)
+            if (typeof through.destroy === 'function')
+                through.destroy(err)
             else through.emit('error', err)
         }
     }
