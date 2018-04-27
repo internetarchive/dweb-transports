@@ -1,7 +1,7 @@
 #dweb-transports  API
 Mitra Ardron, Internet Archive,  mitra@mitra.biz
 
-This doc provides a concise API specification for the Dweb Javascript Libraries. 
+This doc provides a concise API specification for the Dweb Javascript Transports Libraries. 
 
 It was last revised (to match the code) on 23 April 2018. 
 

@@ -3,7 +3,7 @@ General transport library for Decentralized Web handles multiple underlying tran
 
 ## Background
 This library is part of a general project at the Internet Archive (archive.org) 
-to support the decentralized web.  
+to support the decentralized web.
 
 ### Goals
 * to allow a single API that can be used for most basic interactions with 
@@ -14,9 +14,8 @@ decentralized transports.
 ### Node Installation
 * Clone this repo. 
 * Until this is in npm, add the line
-`"dweb-transports": "git+https://git@github.com/mitra42/dweb-transports.git",`
+`"dweb-transports": "git+https://git@github.com/internetarchive/dweb-transports.git",`
 to your package.json file in the dependencies section. 
-* (TODO Note location above will change to an internetarchive repo)
 * `npm install dweb-transports`  will install the dependencies including IPFS & WebTorrent
 
 `const DwebTransports = require(dweb-transport)` will add all Transports to a Javascript file.
@@ -24,7 +23,6 @@ to your package.json file in the dependencies section.
 * Then see usage API below
 
 ### Installation and usage in the Browser
-* TODO installation of dev dependencies
 * Install npm & node
 * Clone this repo and cd to it.
 * `npm bundle` will create dist/dweb_transports_bundle.js
@@ -55,3 +53,15 @@ var verbose = searchparams.get("verbose") || false;
 See [example_block.html](./example_block.html) for an example of connecting, storing and retrieving.
 
 See [API.md](./API.md) for the detailed API.
+
+##See related:
+
+* [Archive.org](http://dweb.archive.org/details) bootstrap into the Archive's page
+* [Examples](http://dweb.me/examples) examples
+
+###Repos:
+* *dweb-transports:* Common API to underlying transports (http, webtorrent, ipfs, yjs)
+* *dweb-objects:* Object model for Dweb inc Lists, Authentication, Key/Value, Naming
+* *dweb-serviceworker:* Run Transports in ServiceWorker (experimental)
+* *dweb-archive:* Decentralized Archive webpage and bootstrapping 
+* *dweb-transport:* Original Repo, still includes examples but being split into smaller repos
