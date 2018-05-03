@@ -13,18 +13,18 @@
   "dependencies": {
     "cids": "latest",
     "ipfs": "latest",
-    "ipld-dag-pb": "latest",
     "ipfs-unixfs": "latest",
-    "readable-stream": "latest",
+    "ipld-dag-pb": "^0.13.1",
     "node-fetch": "latest",
-    "webtorrent": "latest",
-    "yjs": "latest",
-    "y-memory": "latest",
+    "readable-stream": "latest",
+    "webtorrent": "^0.99.3",
     "y-array": "latest",
-    "y-text": "latest",
-    "y-map": "latest",
+    "y-indexeddb": "latest",
     "y-ipfs-connector": "latest",
-    "y-indexeddb": "latest"
+    "y-map": "latest",
+    "y-memory": "latest",
+    "y-text": "latest",
+    "yjs": "latest"
   },
   "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {

@@ -226,7 +226,8 @@ class TransportIPFS extends Transport {
                     throw new errors.TransportError("Not yet supporting paths in p_rawfetch");
                 } //TODO-PATH
             let buff;
-            if (res.value instanceof DAGNode) { // Its file or something added with the HTTP API for example, TODO not yet handling multiple files
+            //if (res.value instanceof DAGNode) { // Its file or something added with the HTTP API for example, TODO not yet handling multiple files
+            if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.
                 if (verbose) console.log("IPFS p_rawfetch looks like its a file", url);
                 //console.log("Case a or b" - we can tell the difference by looking at (res.value._links.length > 0) but dont need to
                 // as since we dont know if we are on node or browser best way is to try the files.cat and if it fails try the block to get an approximate file);
