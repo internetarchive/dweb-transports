@@ -7,10 +7,9 @@ See https://github.com/ipfs/js-ipfs but note its often out of date relative to t
 
 const IPFS = require('ipfs');
 const CID = require('cids');
-// noinspection NpmUsedModulesInstalled
-const dagPB = require('ipld-dag-pb');
-// noinspection Annotator
-const DAGNode = dagPB.DAGNode; // So can check its type
+//Removed next two as not needed if use "Kludge" flagged below.
+//const dagPB = require('ipld-dag-pb');
+//const DAGNode = dagPB.DAGNode; // So can check its type
 const unixFs = require('ipfs-unixfs');
 
 // Library packages other than IPFS

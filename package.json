@@ -14,7 +14,6 @@
     "cids": "latest",
     "ipfs": "latest",
     "ipfs-unixfs": "latest",
-    "ipld-dag-pb": "^0.13.1",
     "node-fetch": "latest",
     "readable-stream": "latest",
     "webtorrent": "^0.99.3",
