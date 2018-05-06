@@ -271,6 +271,8 @@ The Transports Class manages multiple transports
 _transports         List of transports loaded (internal)
 namingcb            If set will be called cb(urls) => urls  to convert to urls from names. 
 _transportclasses   All classes whose code is loaded e.g. {HTTP: TransportHTTP, IPFS: TransportIPFS}
+_optionspaused      Saves paused option for setup
+
 ```
 
 #####static _connected()

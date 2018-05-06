@@ -347,5 +347,5 @@ Transport.STATUS_CONNECTED = 0; // Connected - all other numbers are some versio
 Transport.STATUS_FAILED = 1;    // Failed to connect
 Transport.STATUS_STARTING = 2;  // In the process of connecting
 Transport.STATUS_LOADED = 3;    // Code loaded, but haven't tried to connect. (this is typically hard coded in subclasses constructor)
-Transport.STATUS_PAUSED = 4;    // It was launched, probably connected, but now paused so will be ignored by validFor
+Transport.STATUS_PAUSED = 4;    // It was launched, probably connected, but now paused so will be ignored by validFor // Note this is copied to dweb-archive/Nav.js so check if change
 exports = module.exports = Transport;

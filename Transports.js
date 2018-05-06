@@ -2,12 +2,19 @@ const Url = require('url');
 const errors = require('./Errors');
 const utils = require('./utils');
 
-/*
-Handles multiple transports, API should be (almost) the same as for an individual transport)
- */
 
 
 class Transports {
+    /*
+    Handles multiple transports, API should be (almost) the same as for an individual transport)
+
+    Fields:
+    _transports         List of transports loaded (internal)
+    namingcb            If set will be called cb(urls) => urls  to convert to urls from names.
+    _transportclasses   All classes whose code is loaded e.g. {HTTP: TransportHTTP, IPFS: TransportIPFS}
+    _optionspaused       Saves paused option for setup
+    */
+
     constructor(options, verbose) {
         if (verbose) console.log("Transports(%o)",options);
     }
@@ -483,12 +490,16 @@ class Transports {
     static async p_setup1(verbose, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports.map((t) => t.p_setup1(verbose, cb)))
+        await Promise.all(this._transports
+            .filter((t) => (! this._optionspaused.includes(t.name)))
+            .map((t) => t.p_setup1(verbose, cb)))
     }
     static async p_setup2(verbose, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports.map((t) => t.p_setup2(verbose, cb)))
+        await Promise.all(this._transports
+            .filter((t) => (! this._optionspaused.includes(t.name)))
+            .map((t) => t.p_setup2(verbose, cb)))
     }
 
     static async refreshstatus(t) {
@@ -504,21 +515,24 @@ class Transports {
         }
     }
 
-    static async p_connect(options, verbose) {
+    static async p_connect(options, verbose) { //TODO-API paused
         /*
             This is a standardish starting process, feel free to subclass or replace !
             It will connect to a set of standard transports and is intended to work inside a browser.
-            options = { defaulttransports: ["IPFS"], statuselement: el, http: {}, ipfs: {} }
+            options = { defaulttransports: ["IPFS"], statuselement: el, http: {}, ipfs: {}; paused: ["IPFS"] }
          */
         if (verbose) console.group("p_connect ---");
         try {
             options = options || {};
             let setupoptions = {};
             let tabbrevs = options.transports;    // Array of transport abbreviations
+            let tpaused = options.paused;       // Array of transports paused
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
+            tpaused = tpaused.map(n => n.toUpperCase());    // In case its input by user instead of saved state in history
             let transports = this.setup0(tabbrevs, options, verbose);
+            this._optionspaused = options.paused;
             if (options.statuscb) {
                 this.statuscb = options.statuscb;
             }
