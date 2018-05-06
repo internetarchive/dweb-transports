@@ -34,7 +34,7 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
-    static async p_statuses() { //TODO-API
+    static async p_statuses() {
         /*
         resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
          */
@@ -91,7 +91,7 @@ class Transports {
             return urls;
         }
     }
-    static resolveNamesWith(cb) { //TODO-API
+    static resolveNamesWith(cb) {
         // Set a callback for p_resolveNames
         this.namingcb = cb;
     }
@@ -515,7 +515,7 @@ class Transports {
         }
     }
 
-    static async p_connect(options, verbose) { //TODO-API paused
+    static async p_connect(options, verbose) {
         /*
             This is a standardish starting process, feel free to subclass or replace !
             It will connect to a set of standard transports and is intended to work inside a browser.

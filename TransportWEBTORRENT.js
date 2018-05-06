@@ -218,7 +218,7 @@ class TransportWEBTORRENT extends Transport {
 
     }
 
-    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {  //TODO-API
+    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
         No assumption is made about the data in terms of size or structure.

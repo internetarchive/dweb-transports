@@ -109,7 +109,7 @@ class TransportIPFS extends Transport {
         return t;
     }
 
-    async p_setup1(verbose, cb) { //TODO-API
+    async p_setup1(verbose, cb) {
         try {
             if (verbose) console.log("IPFS starting and connecting");
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
@@ -309,7 +309,7 @@ class TransportIPFS extends Transport {
             console.log(err.message);
         }
     }
-    async p_f_createReadStream(url, {verbose=false}={}) {  // Asynchronously return a function that can be used in createReadStream  TODO-API
+    async p_f_createReadStream(url, {verbose=false}={}) {  // Asynchronously return a function that can be used in createReadStream
         verbose = true;
         if (verbose) console.log("p_f_createReadStream",url);
         const mh = TransportIPFS.multihashFrom(url);

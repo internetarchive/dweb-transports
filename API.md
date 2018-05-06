@@ -369,6 +369,7 @@ Main connection process for a browser based application,
 options {
     transports  Array of abbreviations of transports e.g. ["HTTP","IPFS"] as provided in URL
     defaulttransports   Array of abbreviations of transports to use if transports is unset
+    paused          Array of abbreviations of transports that should be paused (not started)
     statuselement   HTML element to build status display under
     ...             Entire options is passed to each setup0 and will include options for each Transport
 }
