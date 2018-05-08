@@ -26,6 +26,15 @@ class TransportError extends Error {
 }
 errors.TransportError = TransportError;
 
+class TimeoutError extends Error {
+    constructor(message) {
+        super(message || "Timed out");
+        this.name = "TimeoutError"
+    }
+}
+errors.TimeoutError = TimeoutError;
+
+
 /*---- Below here are errors copied from previous Dweb-Transport and not currently used */
 /*
 class ObsoleteError extends Error {

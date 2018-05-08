@@ -1,3 +1,4 @@
+const errors = require('./Errors');
 
 utils = {}; //utility functions
 
@@ -26,12 +27,13 @@ utils.p_timeout = function(promise, ms, errorstr) {
     promise:    A promise we want to watch to completion
     ms:         Time in milliseconds to allow it to run
     errorstr:   Error message in reject error
+    throws:     TimeoutError on timeout with message = errorstr
      */
     let timer = null;
 
     return Promise.race([
         new Promise((resolve, reject) => {
-            timer = setTimeout(reject, ms, errorstr || `Timed out in ${ms}ms`);
+            timer = setTimeout(reject, ms, new errors.TimeoutError(errorstr || `Timed out in ${ms}ms`));
         }),
         promise.then((value) => {
             clearTimeout(timer);
