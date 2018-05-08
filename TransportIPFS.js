@@ -3,8 +3,9 @@ This is a shim to the IPFS library, (Lists are handled in YJS or OrbitDB)
 See https://github.com/ipfs/js-ipfs but note its often out of date relative to the generic API doc.
 */
 
-// IPFS components
+const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
 
+// IPFS components
 const IPFS = require('ipfs');
 const CID = require('cids');
 //Removed next two as not needed if use "Kludge" flagged below.
@@ -158,30 +159,46 @@ class TransportIPFS extends Transport {
         if (typeof(url) === "string") url = Url.parse(url);
         if (url && url["pathname"]) { // On browser "instanceof Url" isn't valid)
             const patharr = url.pathname.split('/');
-            if ((url.protocol !== "ipfs:") || (patharr[1] !== 'ipfs') || (patharr.length < 3))
-                throw new errors.TransportError("TransportIPFS.cidFrom bad format for url should be ipfs:/ipfs/...: " + url.href);
+            if ((!["ipfs:","dweb:"].includes(url.protocol)) || (patharr[1] !== 'ipfs') || (patharr.length < 3))
+                throw new errors.TransportError("TransportIPFS.cidFrom bad format for url should be dweb: or ipfs:/ipfs/...: " + url.href);
             if (patharr.length > 3)
-                throw new errors.TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be ipfs:/ipfs/...: " + url.href);
+                throw new errors.TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be dweb: or ipfs:/ipfs/...: " + url.href);
             return new CID(patharr[2]);
         } else {
             throw new errors.CodingError("TransportIPFS.cidFrom: Cant convert url",url);
         }
     }
 
+    static _stringFrom(url) {
+        // Tool for ipfsFrom and ipfsGatewayFrom
+        if (url instanceof CID)
+            return "/ipfs/"+url.toBaseEncodedString();
+        if (typeof url === 'object' && url.path) { // It better be URL which unfortunately is hard to test
+            return url.path;
+        }
+    }
     static ipfsFrom(url) {
         /*
         Convert to a ipfspath i.e. /ipfs/Qm....
         Required because of strange differences in APIs between files.cat and dag.get  see https://github.com/ipfs/js-ipfs/issues/1229
          */
-        if (url instanceof CID)
-            return "/ipfs/"+url.toBaseEncodedString();
-        if (typeof(url) !== "string") { // It better be URL which unfortunately is hard to test
-            url = url.path;
-        }
+        url = this._stringFrom(url); // Convert CID or Url to a string hopefully containing /ipfs/
         if (url.indexOf('/ipfs/') > -1) {
             return url.slice(url.indexOf('/ipfs/'));
         }
         throw new errors.CodingError(`TransportIPFS.ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
+    }
+
+    static ipfsGatewayFrom(url) { //TODO-API
+        /*
+        url: CID, Url, or a string
+        returns:    https://ipfs.io/ipfs/<cid>
+         */
+        url = this._stringFrom(url); // Convert CID or Url to a string hopefully containing /ipfs/
+        if (url.indexOf('/ipfs/') > -1) {
+            return "https://ipfs.io" + url.slice(url.indexOf('/ipfs/'));
+        }
+        throw new errors.CodingError(`TransportIPFS.ipfsGatewayFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
 
     static multihashFrom(url) {
@@ -207,7 +224,7 @@ class TransportIPFS extends Transport {
         Returns a new Promise that resolves currently to a string.
         There may also be need for a streaming version of this call, at this point undefined since we havent (currently) got a use case..
 
-        :param string url: URL of object being retrieved
+        :param string url: URL of object being retrieved {ipfs|dweb}:/ipfs/<cid> or /
         :param boolean verbose: true for debugging output
         :resolve buffer: Return the object being fetched. (may in the future return a stream and buffer externally)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
@@ -218,7 +235,7 @@ class TransportIPFS extends Transport {
         const ipfspath = TransportIPFS.ipfsFrom(url) // Need because dag.get has different requirement than file.cat
 
         try {
-            const res = await utils.p_timeout(this.ipfs.dag.get(cid), timeoutMS);
+            const res = await utils.p_timeout(this.ipfs.dag.get(cid), timeoutMS);   // Will reject and throw TimeoutError if times out
             // noinspection Annotator
             if (res.remainderPath.length)
                 { // noinspection ExceptionCaughtLocallyJS
@@ -247,9 +264,16 @@ class TransportIPFS extends Transport {
             }
             if (verbose) console.log(`IPFS fetched ${buff.length} from ${ipfspath}`);
             return buff;
-        } catch (err) {
-            console.log("Caught misc error in TransportIPFS.p_rawfetch");
-            throw err;
+        } catch (err) { // TimeoutError or could be some other error from IPFS etc
+            console.log("Caught misc error in TransportIPFS.p_rawfetch trying IPFS", err.message);
+            try {
+                return await utils.p_timeout(
+                    httptools.p_GET(TransportIPFS.ipfsGatewayFrom(url)), // Returns a buffer
+                    timeoutMS)
+            } catch (err) {
+                console.log("Caught misc error in TransportIPFS.p_rawfetch trying gateway", err.message);
+                throw err;
+            }
         }
     }
 

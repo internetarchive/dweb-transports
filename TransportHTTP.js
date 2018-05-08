@@ -1,26 +1,8 @@
-const errors = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
-const nodefetch = require('node-fetch'); // Note, were using node-fetch-npm which had a warning in webpack see https://github.com/bitinn/node-fetch/issues/421 and is intended for clients
+const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
 const Url = require('url');
 
-//var fetch,Headers,Request;
-//if (typeof(Window) === "undefined") {
-if (typeof(fetch) === "undefined") {
-    //var fetch = require('whatwg-fetch').fetch; //Not as good as node-fetch-npm, but might be the polyfill needed for browser.safari
-    //XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;  // Note this doesnt work if set to a var or const, needed by whatwg-fetch
-    console.log("Node loaded");
-    fetch = nodefetch;
-    Headers = fetch.Headers;      // A class
-    Request = fetch.Request;      // A class
-} /* else {
-    // If on a browser, need to find fetch,Headers,Request in window
-    console.log("Loading browser version of fetch,Headers,Request");
-    fetch = window.fetch;
-    Headers = window.Headers;
-    Request = window.Request;
-} */
-//TODO-HTTP to work on Safari or mobile will require a polyfill, see https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch for comment
 
 defaulthttpoptions = {
     urlbase: 'https://gateway.dweb.me:443'
@@ -85,84 +67,6 @@ class TransportHTTP extends Transport {
         return super.p_status(verbose);
     }
 
-    async p_httpfetch(httpurl, init, verbose) { // Embrace and extend "fetch" to check result etc.
-        /*
-        Fetch a url
-
-        url: optional (depends on command)
-        resolves to: data as text or json depending on Content-Type header
-        throws: TransportError if fails to fetch
-         */
-        try {
-            if (verbose) console.log("httpurl=%s init=%o", httpurl, init);
-            //console.log('CTX=',init["headers"].get('Content-Type'))
-            // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
-            let response = await fetch(new Request(httpurl, init));
-            // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
-            // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
-            if (response.ok) {
-                let contenttype = response.headers.get('Content-Type');
-                if (contenttype === "application/json") {
-                    return response.json(); // promise resolving to JSON
-                } else if (contenttype.startsWith("text")) { // Note in particular this is used for responses to store
-                    return response.text();
-                } else { // Typically application/octetStream when don't know what fetching
-                    return new Buffer(await response.arrayBuffer()); // Convert arrayBuffer to Buffer which is much more usable currently
-                }
-            }
-            // noinspection ExceptionCaughtLocallyJS
-            throw new errors.TransportError(`Transport Error ${response.status}: ${response.statusText}`);
-        } catch (err) {
-            // Error here is particularly unhelpful - if rejected during the COrs process it throws a TypeError
-            console.log("Note error from fetch might be misleading especially TypeError can be Cors issue:",httpurl);
-            if (err instanceof errors.TransportError) {
-                throw err;
-            } else {
-                throw new errors.TransportError(`Transport error thrown by ${httpurl}: ${err.message}`);
-            }
-        }
-    }
-
-    async p_GET(httpurl, opts={}) {
-        /*  Locate and return a block, based on its url
-            Throws TransportError if fails
-            opts {
-                start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
-                verbose }
-            resolves to: URL that can be used to fetch the resource, of form contenthash:/contenthash/Q123
-        */
-        let headers = new Headers();
-        if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${opts.end || ""}`);
-        let init = {    //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
-            method: 'GET',
-            headers: headers,
-            mode: 'cors',
-            cache: 'default',
-            redirect: 'follow',  // Chrome defaults to manual
-            keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
-        };
-        return await this.p_httpfetch(httpurl, init, opts.verbose); // This s a real http url
-    }
-    async p_POST(httpurl, type, data, verbose) {
-        // Locate and return a block, based on its url
-        // Throws TransportError if fails
-        //let headers = new window.Headers();
-        //headers.set('content-type',type); Doesn't work, it ignores it
-        let init = {
-            //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
-            //https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name for headers tat cant be set
-            method: 'POST',
-            headers: {}, //headers,
-            //body: new Buffer(data),
-            body: data,
-            mode: 'cors',
-            cache: 'default',
-            redirect: 'follow',  // Chrome defaults to manual
-            keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
-        };
-        return await this.p_httpfetch(httpurl, init, verbose);
-    }
-
     _cmdurl(command) {
         return  `${this.urlbase}/${command}`
     }
@@ -190,7 +94,7 @@ class TransportHTTP extends Transport {
                 table: "keyvaluetable",
                 }
         } else {
-            return await this.p_GET(this._url(url, servercommands.rawfetch), opts);
+            return await httptools.p_GET(this._url(url, servercommands.rawfetch), opts);
         }
     }
 
@@ -198,7 +102,7 @@ class TransportHTTP extends Transport {
         // obj being loaded
         // Locate and return a block, based on its url
         if (!url) throw new errors.CodingError("TransportHTTP.p_rawlist: requires url");
-        return this.p_GET(this._url(url, servercommands.rawlist), {verbose});
+        return httptools.p_GET(this._url(url, servercommands.rawlist), {verbose});
     }
     rawreverse() { throw new errors.ToBeImplementedError("Undefined function TransportHTTP.rawreverse"); }
 
@@ -211,7 +115,7 @@ class TransportHTTP extends Transport {
          */
         //PY: res = self._sendGetPost(True, "rawstore", headers={"Content-Type": "application/octet-stream"}, urlargs=[], data=data, verbose=verbose)
         console.assert(data, "TransportHttp.p_rawstore: requires data");
-        let res = await this.p_POST(this._cmdurl(servercommands.rawstore), "application/octet-stream", data, verbose); // resolves to URL
+        let res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), "application/octet-stream", data, verbose); // resolves to URL
         let parsedurl = Url.parse(res);
         let pathparts = parsedurl.pathname.split('/');
         return `contenthash:/contenthash/${pathparts.slice(-1)}`
@@ -223,7 +127,7 @@ class TransportHTTP extends Transport {
         if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms",url, sig);
         if (verbose) console.log("rawadd", url, sig);
         let value = JSON.stringify(sig.preflight(Object.assign({},sig)))+"\n";
-        return this.p_POST(this._url(url, servercommands.rawadd), "application/json", value, verbose); // Returns immediately
+        return httptools.p_POST(this._url(url, servercommands.rawadd), "application/json", value, verbose); // Returns immediately
     }
 
     p_newlisturls(cl, {verbose=false}={}) {
@@ -266,10 +170,10 @@ class TransportHTTP extends Transport {
         if (verbose) console.log("p_set", url, keyvalues, value);
         if (typeof keyvalues === "string") {
             let kv = JSON.stringify([{key: keyvalues, value: value}]);
-            await this.p_POST(this._url(url, servercommands.set), "application/json", kv, verbose); // Returns immediately
+            await httptools.p_POST(this._url(url, servercommands.set), "application/json", kv, verbose); // Returns immediately
         } else {
             let kv = JSON.stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
-            await this.p_POST(this._url(url, servercommands.set), "application/json", kv, verbose); // Returns immediately
+            await httptools.p_POST(this._url(url, servercommands.set), "application/json", kv, verbose); // Returns immediately
         }
     }
 
@@ -279,23 +183,23 @@ class TransportHTTP extends Transport {
     async p_get(url, keys, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys)
-        let res = await this.p_GET(this._url(url, servercommands.get, parmstr), {verbose});
+        let res = await httptools.p_GET(this._url(url, servercommands.get, parmstr), {verbose});
         return Array.isArray(keys) ? res : res[keys]
     }
 
     async p_delete(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API need to think this one through
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =  keys.map(k => this._keyparm(k)).join('&');
-        await this.p_GET(this._url(url, servercommands.delete, parmstr), {verbose});
+        await httptools.p_GET(this._url(url, servercommands.delete, parmstr), {verbose});
     }
 
     async p_keys(url, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        return await this.p_GET(this._url(url, servercommands.keys), {verbose});
+        return await httptools.p_GET(this._url(url, servercommands.keys), {verbose});
     }
     async p_getall(url, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        return await this.p_GET(this._url(url, servercommands.getall), {verbose});
+        return await httptools.p_GET(this._url(url, servercommands.getall), {verbose});
     }
     /* Make sure doesnt shadow regular p_rawfetch
     async p_rawfetch(url, verbose) {
@@ -306,7 +210,7 @@ class TransportHTTP extends Transport {
     }
     */
 
-    p_info(verbose) { return this.p_GET(`${this.urlbase}/info`, {verbose}); }
+    p_info(verbose) { return httptools.p_GET(`${this.urlbase}/info`, {verbose}); }
 
     static async p_test(opts={}, verbose=false) {
         if (verbose) {console.log("TransportHTTP.test")}
