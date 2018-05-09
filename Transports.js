@@ -526,13 +526,11 @@ class Transports {
             options = options || {};
             let setupoptions = {};
             let tabbrevs = options.transports;    // Array of transport abbreviations
-            let tpaused = options.paused || [];       // Array of transports paused - defaults to none
+            this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
-            tpaused = tpaused.map(n => n.toUpperCase());    // In case its input by user instead of saved state in history
             let transports = this.setup0(tabbrevs, options, verbose);
-            this._optionspaused = options.paused;
             if (options.statuscb) {
                 this.statuscb = options.statuscb;
             }
