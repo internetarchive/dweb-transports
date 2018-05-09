@@ -526,7 +526,7 @@ class Transports {
             options = options || {};
             let setupoptions = {};
             let tabbrevs = options.transports;    // Array of transport abbreviations
-            let tpaused = options.paused;       // Array of transports paused
+            let tpaused = options.paused || [];       // Array of transports paused - defaults to none
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
