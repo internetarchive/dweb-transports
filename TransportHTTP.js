@@ -9,7 +9,7 @@ defaulthttpoptions = {
 };
 
 servercommands = {  // What the server wants to see to return each of these
-    rawfetch: "content/rawfetch",
+    rawfetch: "contenthash/",   // was content/rawfetch which should still work.
     rawstore: "contenturl/rawstore",
     rawadd: "void/rawadd",
     rawlist: "metadata/rawlist",
@@ -133,8 +133,9 @@ class TransportHTTP extends Transport {
     p_newlisturls(cl, {verbose=false}={}) {
        let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
             .find(parsedurl =>
-                (parsedurl.protocol === "https" && parsedurl.host === "gateway.dweb.me" && parsedurl.pathname.includes('/content/rawfetch'))
-                || (parsedurl.protocol === "contenthash:" && (parsedurl.pathname.split('/')[1] === "contenthash")));
+                ((parsedurl.protocol === "https:" && parsedurl.host === "gateway.dweb.me"
+                    && (parsedurl.pathname.includes('/content/rawfetch') || parsedurl.pathname.includes('/contenthash/')))
+                || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
         if (!u) {
             u = `contenthash:/contenthash/${ cl.keypair.verifyexportmultihashsha256_58() }`; // Pretty random, but means same test will generate same list and server is expecting base58 of a hash
         }
