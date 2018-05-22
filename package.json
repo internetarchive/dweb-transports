@@ -11,6 +11,7 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
+    "big.js": "5.0.3",
     "cids": "latest",
     "ipfs": "latest",
     "ipfs-unixfs": "latest",
