@@ -141,13 +141,6 @@ class TransportWEBTORRENT extends Transport {
                     resolve(torrent);
                 });
             }
-
-            if (typeof window !== "undefined") {   // Check running in browser
-                window.WEBTORRENT_TORRENT = torrent;
-                torrent.once('close', () => {
-                    window.WEBTORRENT_TORRENT = null
-                })
-            }
         });
     }
 
@@ -208,9 +201,18 @@ class TransportWEBTORRENT extends Transport {
          */
         try {
             const {torrentId, path} = this.webtorrentparseurl(url);
-            let torrent = await this.p_webtorrentadd(torrentId);
+            const torrent = await this.p_webtorrentadd(torrentId);
             torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
-            return this.webtorrentfindfile(torrent, path);
+            const file = this.webtorrentfindfile(torrent, path);
+            if (typeof window !== "undefined") {   // Check running in browser
+                window.WEBTORRENT_TORRENT = torrent;
+                window.WEBTORRENT_FILE = file;
+                torrent.once('close', () => {
+                    window.WEBTORRENT_TORRENT = null;
+                    window.WEBTORRENT_FILE = null;
+                })
+            }
+            return file
         } catch(err) {
             console.log(`p_fileFrom failed on ${url} ${err.message}`);
             throw(err);
