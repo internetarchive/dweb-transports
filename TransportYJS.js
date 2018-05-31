@@ -252,7 +252,7 @@ class TransportYJS extends Transport {
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
     }
 
-    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key
         let y = await this.p_connection(url, verbose);
         if (typeof keyvalues === "string") {
             y.share.map.set(keyvalues, JSON.stringify(value));
@@ -272,11 +272,11 @@ class TransportYJS extends Transport {
             return typeof val === "string" ? JSON.parse(val) : val;  // Surprisingly this is sync, the p_connection should have synchronised
         }
     }
-    async p_get(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API - return dict or single
+    async p_get(url, keys, {verbose=false}={}) {
         return this._p_get(await this.p_connection(url, verbose), keys, {verbose});
     }
 
-    async p_delete(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API
+    async p_delete(url, keys, {verbose=false}={}) {
         let y = await this.p_connection(url, verbose);
         if (typeof keys === "string") {
             y.share.map.delete(keys);

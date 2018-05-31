@@ -328,7 +328,7 @@ class Transports {
         }
     }
 
-    static async p_delete(urls, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API
+    static async p_delete(urls, keys, {verbose=false}={}) {
         /* Delete a key or a list of keys
          kv:    Either dict or a string
          value: if kv is a string, this is the value to set
@@ -555,7 +555,7 @@ class Transports {
         if (verbose) console.groupEnd("p_connect ---");
     }
 
-    static async p_urlsFrom(url) {    //TODO backport to main repo - copy from htmlutils to utils
+    static async p_urlsFrom(url) {
         /* Utility to convert to urls form wanted for Transports functions, e.g. from user input
         url:    Array of urls, or string representing url or representing array of urls
         return: Array of strings representing url

@@ -1,8 +1,6 @@
 const nodefetch = require('node-fetch'); // Note, were using node-fetch-npm which had a warning in webpack see https://github.com/bitinn/node-fetch/issues/421 and is intended for clients
 const errors = require('./Errors'); // Standard Dweb Errors
 
-//TODO-API move separate out httptools to own part of API.md
-
 //var fetch,Headers,Request;
 //if (typeof(Window) === "undefined") {
 if (typeof(fetch) === "undefined") {

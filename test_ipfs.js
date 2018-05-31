@@ -93,9 +93,7 @@ async function test_files_cat(cid, expected, expectfailure) {
         if (expectfailure && !tryexpectedfailures) return;
         console.log("testing via files.cat")
         cid = ipfsFrom(cid);    // Turn it into the /ipfs/Q... form that files.cat now expects
-        console.log("XXX@95 passing cid=",cid);
         buff = await ipfs.files.cat(cid); //Error: Groups are not supported in the blocks case - never returns from this call.
-        console.log("XXX@97")
         check_result("files.cat", buff, expected, expectfailure);
     } catch(err) {
         console.log("Error thrown in files.cat", err);

@@ -239,7 +239,6 @@ class TransportWEBTORRENT extends Transport {
             let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
             if (wanturl) {
-                console.log("XXX@WT:242 returning",url)
                 return url;
             } else {
                 return function (opts) { return self.createReadStream(filet, opts, verbose); };

@@ -89,8 +89,8 @@ class TransportHTTP extends Transport {
         //if (!(url && url.includes(':') ))
         //    throw new errors.CodingError("TransportHTTP.p_rawfetch bad url: "+url);
         if (((typeof url === "string") ? url : url.href).includes('/getall/table')) {
-            console.log("XXX@176 - probably dont want to be calling p_rawfetch on a KeyValueTable, especially since dont know if its keyvaluetable or subclass"); //TODO-NAMING
-            return {
+            throw new Error("Probably dont want to be calling p_rawfetch on a KeyValueTable, especially since dont know if its keyvaluetable or subclass"); //TODO-NAMING
+            return { // I'm not sure what this return would have done  - looks half finished to me?
                 table: "keyvaluetable",
                 }
         } else {
@@ -122,7 +122,7 @@ class TransportHTTP extends Transport {
 
     }
 
-    p_rawadd(url, sig, {verbose=false}={}) { //TODO-BACKPORT turn date into ISO before adding
+    p_rawadd(url, sig, {verbose=false}={}) {
         //verbose=true;
         if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms",url, sig);
         if (verbose) console.log("rawadd", url, sig);
@@ -166,7 +166,7 @@ class TransportHTTP extends Transport {
     }
 
     //TODO-KEYVALUE needs signing with private key of list
-    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key   //TODO-KEYVALUE-API
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key
         if (!url || !keyvalues) throw new errors.CodingError("TransportHTTP.p_set: invalid parms",url, keyvalyes);
         if (verbose) console.log("p_set", url, keyvalues, value);
         if (typeof keyvalues === "string") {
@@ -188,7 +188,7 @@ class TransportHTTP extends Transport {
         return Array.isArray(keys) ? res : res[keys]
     }
 
-    async p_delete(url, keys, {verbose=false}={}) {  //TODO-KEYVALUE-API need to think this one through
+    async p_delete(url, keys, {verbose=false}={}) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =  keys.map(k => this._keyparm(k)).join('&');
         await httptools.p_GET(this._url(url, servercommands.delete, parmstr), {verbose});

@@ -190,7 +190,7 @@ class TransportIPFS extends Transport {
         throw new errors.CodingError(`TransportIPFS.ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
 
-    static ipfsGatewayFrom(url) { //TODO-API
+    static ipfsGatewayFrom(url) {
         /*
         url: CID, Url, or a string
         returns:    https://ipfs.io/ipfs/<cid>

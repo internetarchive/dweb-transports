@@ -53,7 +53,7 @@ class Transport {
 
         return t.p_setup2(verbose, cb);     // And connect
     }
-    togglePaused(cb) { //TODO-SW move to Transports > TransportsProxy > UI
+    togglePaused(cb) {
         /*
         Switch the state of the transport between STATUS_CONNECTED and STATUS_PAUSED,
         in the paused state it will not be used for transport but, in some cases, will still do background tasks like serving files.

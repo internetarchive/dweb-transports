@@ -18,8 +18,8 @@ decentralized transports.
 to your package.json file in the dependencies section. 
 * `npm install dweb-transports`  will install the dependencies including IPFS & WebTorrent
 
-`const DwebTransports = require(dweb-transport)` will add all Transports to a Javascript file.
-* TODO writeup how to require only some of the transports.
+`const DwebTransports = require("dweb-transports")` will add all Transports to a Javascript file.
+* TODO-API writeup how to require only some of the transports.
 * Then see usage API below
 
 ### Installation and usage in the Browser
