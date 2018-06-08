@@ -21,6 +21,22 @@ if (typeof(fetch) === "undefined") {
 
 httptools = {};
 
+async function loopfetch(req, ms, count, what) {
+    let lasterr;
+    while (count--) {
+        try {
+            return await fetch(req);
+        } catch(err) {
+            lasterr = err;
+            console.log("Delaying", what,"by", ms, "because", err.message);
+            await new Promise(resolve => {setTimeout(() => { resolve(); },ms)})
+            ms = ms*(1+Math.random()); // Spread out delays incase all requesting same time
+        }
+    }
+    console.log("Looping",what,"failed");
+    throw(lasterr);
+}
+
 httptools.p_httpfetch = async function(httpurl, init, verbose) { // Embrace and extend "fetch" to check result etc.
     /*
     Fetch a url
@@ -33,7 +49,9 @@ httptools.p_httpfetch = async function(httpurl, init, verbose) { // Embrace and 
         if (verbose) console.log("httpurl=%s init=%o", httpurl, init);
         //console.log('CTX=',init["headers"].get('Content-Type'))
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
-        let response = await fetch(new Request(httpurl, init));
+        let req = new Request(httpurl, init);
+        //let response = await fetch(new Request(httpurl, init)).catch(err => console.exception(err));
+        let response = await loopfetch(req, 500, 10, "fetching "+httpurl);
         // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
         // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
         if (response.ok) {

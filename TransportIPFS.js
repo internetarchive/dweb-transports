@@ -236,7 +236,7 @@ class TransportIPFS extends Transport {
         const ipfspath = TransportIPFS.ipfsFrom(url) // Need because dag.get has different requirement than file.cat
 
         try {
-            const res = await utils.p_timeout(this.ipfs.dag.get(cid), timeoutMS);   // Will reject and throw TimeoutError if times out
+            const res = await utils.p_timeout(this.ipfs.dag.get(cid), timeoutMS, "Timed out IPFS fetch of "+TransportIPFS._stringFrom(cid));   // Will reject and throw TimeoutError if times out
             // noinspection Annotator
             if (res.remainderPath.length)
                 { // noinspection ExceptionCaughtLocallyJS
@@ -268,9 +268,10 @@ class TransportIPFS extends Transport {
         } catch (err) { // TimeoutError or could be some other error from IPFS etc
             console.log("Caught misc error in TransportIPFS.p_rawfetch trying IPFS", err.message);
             try {
+                let ipfsurl = TransportIPFS.ipfsGatewayFrom(url)
                 return await utils.p_timeout(
-                    httptools.p_GET(TransportIPFS.ipfsGatewayFrom(url)), // Returns a buffer
-                    timeoutMS)
+                    httptools.p_GET(ipfsurl), // Returns a buffer
+                    timeoutMS, "Timed out IPFS fetch of "+ipfsurl)
             } catch (err) {
                 console.log("Caught misc error in TransportIPFS.p_rawfetch trying gateway", err.message);
                 throw err;
