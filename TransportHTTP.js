@@ -9,7 +9,7 @@ defaulthttpoptions = {
 };
 
 servercommands = {  // What the server wants to see to return each of these
-    rawfetch: "contenthash/",   // was content/rawfetch which should still work.
+    rawfetch: "contenthash",   // was content/rawfetch which should still work.
     rawstore: "contenturl/rawstore",
     rawadd: "void/rawadd",
     rawlist: "metadata/rawlist",
