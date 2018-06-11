@@ -13,7 +13,7 @@
   "dependencies": {
     "cids": "latest",
     "ipfs": "latest",
-    "ipfs-unixfs": "latest",
+    "ipfs-unixfs": "^0.1.15",
     "node-fetch": "latest",
     "readable-stream": "latest",
     "webtorrent": "^0.99.3",
