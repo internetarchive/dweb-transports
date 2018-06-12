@@ -50,8 +50,9 @@ class Transports {
         func:       Function to check support for: fetch, store, add, list, listmonitor, reverse - see supportFunctions on each Transport class
         options:    For future use
         returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
+        throws:     CodingError if urls empty or [undefined...]
          */
-        console.assert((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func), "Transports.validFor failed - coding error - urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+        console.assert((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func), "Coding Error: Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
         if (!(urls && urls.length > 0)) {
             return this._connected().filter((t) => (t.supports(undefined, func)))
                 .map((t) => [undefined, t]);
@@ -165,10 +166,11 @@ class Transports {
             }
         returns:	string - arbitrary bytes retrieved.
         throws:     TransportError with concatenated error messages if none succeed.
+        throws:     CodingError if urls empty or [undefined ... ]
          */
         let verbose = opts.verbose;
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
-        let tt = this.validFor(urls, "fetch"); //[ [Url,t],[Url,t]]
+        let tt = this.validFor(urls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
             throw new errors.TransportError("Transports.p_fetch cant find any transport for urls: " + urls);
         }
@@ -189,7 +191,7 @@ class Transports {
             } catch (err) {
                 failedtransports.push(t);
                 errs.push(err);
-                console.log("Could not retrieve ", url.href, "from", t.name, err.message);
+                console.log("Could not retrieve ", url && url.href, "from", t && t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
