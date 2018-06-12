@@ -5,7 +5,7 @@ const Url = require('url');
 
 
 defaulthttpoptions = {
-    urlbase: 'https://gateway.dweb.me:443'
+    urlbase: 'https://dweb.me:443'
 };
 
 servercommands = {  // What the server wants to see to return each of these
@@ -133,7 +133,7 @@ class TransportHTTP extends Transport {
     p_newlisturls(cl, {verbose=false}={}) {
        let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
             .find(parsedurl =>
-                ((parsedurl.protocol === "https:" && parsedurl.host === "gateway.dweb.me"
+                ((parsedurl.protocol === "https:" && ["gateway.dweb.me", "dweb.me"].includes(parsedurl.host)
                     && (parsedurl.pathname.includes('/content/rawfetch') || parsedurl.pathname.includes('/contenthash/')))
                 || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
         if (!u) {

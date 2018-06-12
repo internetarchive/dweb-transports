@@ -34,7 +34,7 @@ There are a set of classes:
 
 Calls are generally made through the Transports class which knows how to route them to underlying connections.
 
-Documents are retrieved by a list of URLs, where in each URL, the left side helps identify the transport, and the right side can be the internal format of the underlying transport BUT must be identifiable e.g. ipfs:/ipfs/12345abc or https://gateway.dweb.me/content/contenthash/Qm..., this format will evolve if a standard URL for the decentralized space is defined. 
+Documents are retrieved by a list of URLs, where in each URL, the left side helps identify the transport, and the right side can be the internal format of the underlying transport BUT must be identifiable e.g. ipfs:/ipfs/12345abc or https://dweb.me/contenthash/Qm..., this format will evolve if a standard URL for the decentralized space is defined. 
 
 The actual urls used might change as the Decentralized Web universe reaches consensus (for example dweb:/ipfs/Q123 is an alternative seen in some places)
 
@@ -64,7 +64,7 @@ Resolves to    Instance of subclass of Transport
 ```
 Default options should be set in each transport, but can be overwritten, 
 for example to overwrite the options for HTTP call it with  
-`options={ http: { urlbase: “https://gateway.dweb.me:443/” } }`
+`options={ http: { urlbase: “https://dweb.me:443/” } }`
 
 ##### async p_setup1 (verbose, cb) 
 Setup the resource and open any P2P connections etc required to be done just once. 
@@ -460,7 +460,7 @@ It looks at `options { http }` for its options.
 
 Option|Default|Meaning
 ------|-------|-------
-urlbase|https://gateway.dweb.me:443|Connect to gateway.dweb.me for contenthash urls
+urlbase|https://dweb.me:443|Connect to dweb.me for contenthash urls
 supportURLS|http:*, https:*, contenthash:*}| (TODO: may in the future support `dweb:/contenthash/*`)
 supportFunctions|fetch, store, add, list, reverse, newlisturls, get, set, keys, getall, delete, newtable, newdatabase|
 supportFeatures|fetch.range|it will fetch a range of bytes if specified in {start, end} to p_rawfetch()

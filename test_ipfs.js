@@ -16,8 +16,8 @@ let defaultipfsoptions = {
     //start: false,
     config: {
         Addresses: { Swarm: [ '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']},
-        //Bootstrap: ['/dns4/gateway.dweb.me/tcp/443/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'],
-        //Bootstrap: ['/dns4/gateway.dweb.me/tcp/443/ws/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'],
+        //Bootstrap: ['/dns4/dweb.me/tcp/443/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'],
+        //Bootstrap: ['/dns4/dweb.me/tcp/443/ws/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'],
     },
     EXPERIMENTAL: {
         pubsub: true
