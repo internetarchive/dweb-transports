@@ -352,7 +352,7 @@ class TransportIPFS extends Transport {
             if (throughstream && throughstream.destroy) throughstream.destroy();
             throughstream = new stream.PassThrough();
 
-            self.p_offsetStream(       // Ignore promise returned, this will right to the stream asynchronously
+            self.p_offsetStream(       // Ignore promise returned, this will write to the stream asynchronously
                 throughstream,
                 links,          // Uses the array of links created above in this function
                 opts ? opts.start : 0,
