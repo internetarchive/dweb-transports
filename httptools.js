@@ -23,7 +23,8 @@ httptools = {};
 
 async function loopfetch(req, ms, count, what) {
     let lasterr;
-    while (count--) {
+    let loopguard = window && window.loopguard; // Optional global parameter, will cancel any loops if changes
+    while (count-- && (loopguard === (window && window.loopguard)) ) {
         try {
             return await fetch(req);
         } catch(err) {
@@ -34,7 +35,12 @@ async function loopfetch(req, ms, count, what) {
         }
     }
     console.log("Looping",what,"failed");
-    throw(lasterr);
+    if (loopguard !== (window && window.loopguard)) {
+        console.log("Looping exited because of page change "+ what);
+        throw new Error("Looping exited because of page change "+ what)
+    } else {
+        throw(lasterr);
+    }
 }
 
 httptools.p_httpfetch = async function(httpurl, init, verbose) { // Embrace and extend "fetch" to check result etc.
