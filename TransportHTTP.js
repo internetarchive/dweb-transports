@@ -88,6 +88,8 @@ class TransportHTTP extends Transport {
          */
         //if (!(url && url.includes(':') ))
         //    throw new errors.CodingError("TransportHTTP.p_rawfetch bad url: "+url);
+        if (url.href.includes('contenthash//'))
+            console.error("XXX@91",url)
         if (((typeof url === "string") ? url : url.href).includes('/getall/table')) {
             throw new Error("Probably dont want to be calling p_rawfetch on a KeyValueTable, especially since dont know if its keyvaluetable or subclass"); //TODO-NAMING
             return { // I'm not sure what this return would have done  - looks half finished to me?
