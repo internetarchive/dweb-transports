@@ -23,8 +23,8 @@ httptools = {};
 
 async function loopfetch(req, ms, count, what) {
     let lasterr;
-    let loopguard = window && window.loopguard; // Optional global parameter, will cancel any loops if changes
-    while (count-- && (loopguard === (window && window.loopguard)) ) {
+    let loopguard = (typeof window != "undefined") && window.loopguard; // Optional global parameter, will cancel any loops if changes
+    while (count-- && (loopguard === ((typeof window != "undefined") && window.loopguard)) ) {
         try {
             return await fetch(req);
         } catch(err) {
