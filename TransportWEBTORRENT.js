@@ -32,7 +32,7 @@ class TransportWEBTORRENT extends Transport {
         this.options = options;         // Dictionary of options
         this.name = "WEBTORRENT";       // For console log etc
         this.supportURLs = ['magnet'];
-        this.supportFunctions = ['fetch']; //TODO-STREAM reenable video on WT 'createReadStream'];
+        this.supportFunctions = ['fetch', 'createReadStream'];
         this.status = Transport.STATUS_LOADED;
     }
 
