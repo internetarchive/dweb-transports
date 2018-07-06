@@ -52,7 +52,10 @@ class Transports {
         returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
         throws:     CodingError if urls empty or [undefined...]
          */
-        console.assert((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func), "Coding Error: Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+        if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func)))   {
+            console.warn("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+            return [];
+        }
         if (!(urls && urls.length > 0)) {
             return this._connected().filter((t) => (t.supports(undefined, func)))
                 .map((t) => [undefined, t]);
@@ -169,10 +172,12 @@ class Transports {
         throws:     CodingError if urls empty or [undefined ... ]
          */
         let verbose = opts.verbose;
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
-        let tt = this.validFor(urls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
+        if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
+        let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
+        let tt = this.validFor(resolvedurls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
-            throw new errors.TransportError("Transports.p_fetch cant find any transport for urls: " + urls);
+            throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + resolvedurls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
