@@ -123,7 +123,7 @@ class TransportYJS extends Transport {
             this.yarrays = {};
             await this.p_status(verbose);
         } catch(err) {
-            console.error("YJS failed to start",err);
+            console.error(this.name,"failed to start",err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);
@@ -231,8 +231,6 @@ class TransportYJS extends Transport {
     }
 
 
-    // Support for Key-Value pairs as per
-    // https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#
     async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
@@ -252,7 +250,12 @@ class TransportYJS extends Transport {
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
     }
 
-    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table
+        /*
+        Set key values
+        keyvalues:  string (key) in which case value should be set there OR
+                object in which case value is ignored
+         */
         let y = await this.p_connection(url, verbose);
         if (typeof keyvalues === "string") {
             y.share.map.set(keyvalues, JSON.stringify(value));
@@ -302,7 +305,7 @@ class TransportYJS extends Transport {
     }
     async monitor(url, callback, verbose) {
         /*
-         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
+         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_getall to get any more items not returned by p_getall.
          Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
 
          :param url:         string Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd

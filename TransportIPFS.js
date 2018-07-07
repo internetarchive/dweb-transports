@@ -119,7 +119,7 @@ class TransportIPFS extends Transport {
             await this.p_ipfsstart(verbose);    // Throws Error("websocket error") and possibly others.
             this.status = await this.p_status(verbose);
         } catch(err) {
-            console.error("IPFS failed to connect",err);
+            console.error(this.name, "failed to connect", err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);

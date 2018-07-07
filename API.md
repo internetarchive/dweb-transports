@@ -30,6 +30,7 @@ There are a set of classes:
 * *TransportIPFS*: Connects to IPFS, currently (April 2018) via WebSocketsStar (WSS)
 * *TransportYJS*: Implements shared lists, and dictionaries. Uses IPFS for transport
 * *TransportWEBTORRENT*: Integrates to Feross's WebTorrent library
+* *TransportGUN*: Integrates to the Gun DB
 * *Transports*: manages the list of conencted transports, and directs api calls to them. 
 
 Calls are generally made through the Transports class which knows how to route them to underlying connections.
@@ -323,6 +324,11 @@ returns instance of TransportIPFS if connected
 returns instance of TransportWEBTORRENT if connected
 ```
 
+##### static gun(verbose)
+```
+returns instance of TransportGUN if connected
+```
+
 ##### static async p_resolveNames(urls)
 See Naming below
 ```
@@ -345,7 +351,7 @@ t:        Add a Transport instance to _transports
 ##### static setup0(transports, options, verbose, cb)
 Calls setup0 for each transport based on its short name. Specially handles ‘LOCAL’ as a transport pointing at a local http server (for testing).
 ```
-transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’ORBITDB’]
+transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’GUN’]
 options         Passed to setup0 on each transport
 cb              Callback to be called each time status changes
 Returns:        Array of transport instances
@@ -518,6 +524,14 @@ supportFunctions:
 supportFeatures: 
     fetch.range Not supported (currently April 2018)
 
+## TransportGUN
+A subclass of Transport for handling GUN connections (decentralized database)
+
+supportURLS = `gun:*` (TODO: may in the future support `dweb:/gun/*`)
+supportFunctions 
+    `add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
+supportFeatures: 
+
 ## Naming
 Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 
 See p_resolveNames(urls) and resolveNamesWith(cb)
@@ -533,3 +547,13 @@ The format of names currently (April 2018) is under development but its likely t
 `dweb:/arc/archive.org/details/foo` 
 to allow smooth integration with existing HTTP urls that are moving to decentralization. 
 
+## Adding a Transport
+The following steps are needed to add a transport. 
+
+* Add a line to package.json/dependencies for any packages needed
+* Add lines to index.js; 
+* Add function to return the instance to Transports.js 
+* Add to list in Transports.p_connect()
+* Add to API.md
+* Look for any "SEE-OTHER-ADDTRANSPORT" in case not on this list
+* Edit a copy of the closest Transport to what you are building

@@ -15,7 +15,7 @@ class Transport {
         Fields:
         statuselement:  If set is an HTML Element that should be adjusted to indicate status (this is managed by Transports, just stored on Transport)
         statuscb: Callback when status changes
-        name:   Short name of element e.g. HTTP IPFS WEBTORRENT
+        name:   Short name of element e.g. HTTP IPFS WEBTORRENT GUN
         */
     }
 

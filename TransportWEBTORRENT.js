@@ -73,7 +73,7 @@ class TransportWEBTORRENT extends Transport {
             await this.p_webtorrentstart(verbose);
             await this.p_status(verbose);
         } catch(err) {
-            console.error("WebTorrent failed to connect",err);
+            console.error(this.name, "failed to connect", err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);

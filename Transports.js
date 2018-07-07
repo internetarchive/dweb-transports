@@ -71,6 +71,9 @@ class Transports {
         // Need a async version of this for serviceworker and TransportsProxy
         return this.validFor(urls, func, options).map((ut) => ut[0]);
     }
+
+    // SEE-OTHER-ADDTRANSPORT
+
     static http(verbose) {
         // Find an http transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "HTTP")
@@ -84,6 +87,12 @@ class Transports {
         // Find an ipfs transport if it exists, so for example ServiceWorker.p_respondWebTorrent can use it.
         return Transports._connected().find((t) => t.name === "WEBTORRENT")
     }
+
+    static gun(verbose) {
+        // Find a GUN transport if it exists
+        return Transports._connected().find((t) => t.name === "GUN")
+    }
+
 
     static async p_resolveNames(urls) {
         /* If and only if TransportNAME was loaded (it might not be as it depends on higher level classes like Domain and SmartDict)
@@ -535,7 +544,7 @@ class Transports {
             let tabbrevs = options.transports;    // Array of transport abbreviations
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
-            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
+            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
             if (options.statuscb) {
