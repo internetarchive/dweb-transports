@@ -200,7 +200,7 @@ class Transport {
         throw new errors.ToBeImplementedError("Undefined function Transport.p_rawreverse");
     }
 
-    listmonitor(url, callback, verbose) {
+    listmonitor(url, callback, {verbose=false, current=false}={}) {
         /*
         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 

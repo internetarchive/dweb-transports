@@ -139,6 +139,8 @@ class TransportYJS extends Transport {
         return super.p_status(verbose);
     }
 
+    // ======= LISTS ========
+
     async p_rawlist(url, {verbose=false}={}) {
     /*
     Fetch all the objects in a list, these are identified by the url of the public key used for signing.
@@ -163,7 +165,7 @@ class TransportYJS extends Transport {
         }
     }
 
-    listmonitor(url, callback, {verbose}) {
+    listmonitor(url, callback, {verbose=false, current=false}={}) {
         /*
          Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 
@@ -174,6 +176,9 @@ class TransportYJS extends Transport {
           */
         let y = this.yarrays[typeof url === "string" ? url : url.href];
         console.assert(y,"Should always exist before calling listmonitor - async call p__yarray(url) to create");
+        if (current) {
+            y.share.array.toArray.map(callback);
+        }
         y.share.array.observe((event) => {
             if (event.type === 'insert') { // Currently ignoring deletions.
                 if (verbose) console.log('resources inserted', event.values);
@@ -230,6 +235,7 @@ class TransportYJS extends Transport {
         return [u,u];
     }
 
+    // ======= KEY VALUE TABLES ========
 
     async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
@@ -303,7 +309,7 @@ class TransportYJS extends Transport {
             _map: await this.p_getall(url, {verbose})
         };   // Data struc is ok as SmartDict.p_fetch will pass to KVT constructor
     }
-    async monitor(url, callback, verbose) {
+    async monitor(url, callback, {verbose=false, current=false}={}) {
         /*
          Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_getall to get any more items not returned by p_getall.
          Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
@@ -317,6 +323,14 @@ class TransportYJS extends Transport {
         let y = this.yarrays[url];
         if (!y) {
             throw new errors.CodingError("Should always exist before calling monitor - async call p__yarray(url) to create");
+        }
+        if (current) {
+            // Iterate over existing items with callback
+            y.share.map.keys()
+                .forEach(k => {
+                    let val = y.share.map.get[k];
+                    callback({type: "set", key: k, value: (typeof val === "string" ? JSON.parse(val) : val)});
+                })
         }
         y.share.map.observe((event) => {
             if (['add','update'].includes(event.type)) { // Currently ignoring deletions.
@@ -334,6 +348,24 @@ class TransportYJS extends Transport {
             }
         })
     }
+
+    static async p_test(opts={}, verbose=false) {
+        if (verbose) {console.log("TransportHTTP.test")}
+        try {
+            let transport = await this.p_setup(opts, verbose);
+            if (verbose) console.log("HTTP connected");
+            let res = await transport.p_info(verbose);
+            if (verbose) console.log("TransportHTTP info=",res);
+            res = await transport.p_status(verbose);
+            console.assert(res === Transport.STATUS_CONNECTED);
+            await transport.p_test_kvt("NACL%20VERIFY", verbose);
+        } catch(err) {
+            console.log("Exception thrown in TransportHTTP.test:", err.message);
+            throw err;
+        }
+    }
+
+
 
 }
 TransportYJS.Y = Y; // Allow node tests to find it

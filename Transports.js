@@ -456,14 +456,16 @@ class Transports {
             .map(([u, t]) => t.p_connection(u, verbose)));
     }
 
-    static monitor(urls, cb, verbose) {
+    static monitor(urls, cb, {verbose=false, current=false}={}) {
         /*
         Add a listmonitor for each transport - note this means if multiple transports support it, then will get duplicate events back if everyone else is notifying all of them.
         Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
+        cb:         function({type, key, value})
+        current:    If true then then send all current entries as well
          */
         //Cant' its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         this.validFor(urls, "monitor")
-            .map(([u, t]) => t.monitor(u, cb, verbose));
+            .map(([u, t]) => t.monitor(u, cb, {verbose, current}));
     }
 
     // Setup and connection

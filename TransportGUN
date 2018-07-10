@@ -14,7 +14,11 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 let defaultoptions = {
+    peers: [ "http://xxxx:yyyy/gun" ]
+    //localstore: true                     #True is default
 }
+#TODO-GUN check dweb-objects for calls to monitor or listmonitor and make sure put {verbose} instead of "verbose"
+#TODO-GUN - setup superpeer - mkdir; node install gun; cd node_modules/gun/server; npm start - starts server by default on port 8080, or set an "env" - see http.js
 
 class TransportGUN extends Transport {
     /*
@@ -30,8 +34,9 @@ class TransportGUN extends Transport {
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
-        #TODO-GUN doesnt really support lists yet, its "set" function only handles other gun objects.
-        this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor']; // TODO-GUN check this:  ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',]
+        #TODO-GUN doesnt really support lists yet, its "set" function only handles other gun objects and doesnt order them
+        this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor'];
+                    //Not supporting lists or blobs:  ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',]
         this.status = Transport.STATUS_LOADED;
     }
 
@@ -39,16 +44,13 @@ class TransportGUN extends Transport {
         /*
         Utility function to get Gun object for this URL
         url:        URL string to find list of
-        resolves:   Gun a connection to use for get's etc.
+        resolves:   Gun a connection to use for get's etc, undefined if fails
         */
         if (typeof url === "string")
             url = Url.parse(url);
         patharray = url.pathstring.split('/')   //[ 'gun', database, table ]
         patharray.shift;    // Loose "gun"
-        g = this.gun;
-        while (patharray.length) {
-            g = g.get(patharray.shift());   //TODO-GUN-TEST will this work if database never initialized
-        }
+        g = this.gun.path(patharray);           // Not sure how this could become undefined as it will return g before the path is walked, but if do a lookup on this "g" then should get undefined
         return g;
     }
 
@@ -59,7 +61,8 @@ class TransportGUN extends Transport {
         */
         let combinedoptions = Transport.mergeoptions(defaultoptions, options);
         console.log("GUN options %o", combinedoptions); // Log even if !verbose
-        let t = new TransportGUN(combinedoptions, verbose);   // Note doesnt start IPFS or OrbitDB
+        let t = new TransportGUN(combinedoptions, verbose);     // Note doesnt start IPFS or OrbitDB
+        t.gun = new Gun(t.options.gun);                         // This doesnt connect, just creates db structure
         Dweb.Transports.addtransport(t);
         return t;
     }
@@ -72,7 +75,7 @@ class TransportGUN extends Transport {
         try {
             this.status = Dweb.Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
-            this.gun = new Gun(this.options.gun);   // TODO-GUN how do I know if this succeeded
+            //TODO-GUN-TEST - try connect and retrieve info then look at ._.opt.peers
             await this.p_status(verbose);
         } catch(err) {
             console.error(this.name,"failed to start",err);
@@ -84,27 +87,107 @@ class TransportGUN extends Transport {
 
     async p_status(verbose) {
         /*
-        Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
+        Return an integer for the status of a transport see Transport
          */
-        this.status = Dweb.Transport.STATUS_CONNECTED;  //TODO-GUN how do I know if/when I'm connected (see comment on p_setup1 as well)
+        //TODO-GUN-TEST - try connect and retrieve info then look at ._.opt.peers
+        this.status = Transport.STATUS_CONNECTED;  //TODO-GUN how do I know if/when I'm connected (see comment on p_setup1 as well)
         return this.status;
     }
+    // ===== LISTS ========
 
-    async p_newdatabase(pubkey, {verbose=false}={}) {
+    async p_rawlist(url, {verbose=false}={}) {
+    /*
+    Fetch all the objects in a list, these are identified by the url of the public key used for signing.
+    (Note this is the 'signedby' parameter of the p_rawadd call, not the 'url' parameter
+    Returns a promise that resolves to the list.
+    Each item of the list is a dict: {"url": url, "date": date, "signature": signature, "signedby": signedby}
+    List items may have other data (e.g. reference ids of underlying transport)
+
+    :param string url: String with the url that identifies the list.
+    :param boolean verbose: true for debugging output
+    :resolve array: An array of objects as stored on the list.
+     */
+        try {
+            let g = await this.p_connection(url, verbose);
+            let res = g.once(data => Object.keys(data).sort().map(k => data[k]))
+            // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
+            if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
+            return res;
+        } catch(err) {
+            console.log("TransportGUN.p_rawlist failed",err.message);
+            throw(err);
+        }
+    }
+
+    listmonitor(url, callback, {verbose=false, current=false}={}) {
         /*
-        Request a new database
-        For GUN it doesnt actually create anything, just generates the URLs
-        TODO-GUN how to make globally accessible if normalized to my UUID
-        TODO-GUN how to get a private Url that enables me to write to it?
+         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 
-        returns: {publicurl: "gun:/gun/<publickey>", privateurl:  "gun:/gun/<publickey>">
+         url:       string Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
+         callback:  function(obj)  Callback for each new item added to the list
+                        obj is same format as p_rawlist or p_rawreverse
+         current    true if should send list of existing elements
+         verbose:   true for debugging output
+          */
+        let g = await this.p_connection(url, verbose);
+        if (!current) {
+            g.once(data => this.monitored = data); // Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
+            g.map.on((v, k) => {
+                if (v !== this.monitored[k]) {
+                    this.monitored[k] = v;
+                    callback(JSON.parse(v));
+                }
+            });
+        } else {
+            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+        }
+    }
+
+    async p_rawadd(url, sig, {verbose=false}={}) {
+        /*
+        Store a new list item, it should be stored so that it can be retrieved either by "signedby" (using p_rawlist) or
+        by "url" (with p_rawreverse). The underlying transport does not need to guarantee the signature,
+        an invalid item on a list should be rejected on higher layers.
+
+        :param string url: String identifying list to post to
+        :param Signature sig: Signature object containing at least:
+            date - date of signing in ISO format,
+            urls - array of urls for the object being signed
+            signature - verifiable signature of date+urls
+            signedby - urls of public key used for the signature
+        :param boolean verbose: true for debugging output
+        :resolve undefined:
         */
+        console.assert(url && sig.urls.length && sig.signature && sig.signedby.length, "TransportGUN.p_rawadd args", url, sig);
+        if (verbose) console.log("TransportGUN.p_rawadd", typeof url === "string" ? url : url.href, sig);
+        (await this.p_connection(url, verbose)
+        .set( JSON.stringify( sig.preflight( Object.assign({}, sig))));
+    }
+
+    async p_newlisturls(cl, {verbose=false}={}) {
+        return await this._p_newgun(pubkey, {verbose});
+    }
+
+    //=======KEY VALUE TABLES ========
+
+    async _p_newgun(pubkey, {verbose=false}={}) {
         if (pubkey.hasOwnProperty("keypair"))
             pubkey = pubkey.keypair.signingexport()
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
         let u =  `gun:/gun/${encodeURIComponent(pubkey)}`;
         return {"publicurl": u, "privateurl": u};
+    }
+    async p_newdatabase(pubkey, {verbose=false}={}) {
+        /*
+        Request a new database
+        For GUN it doesnt actually create anything, just generates the URLs
+        TODO-GUN-TODO simple version first - userid based on my keypair first, then switch to Gun's userid and its keypair
+        Include gun/sea.js; user.create(<alias>,<passphrase>); user.auth(<alias>,<passphrase>); # See gun.eco/docs/Auth
+
+        returns: {publicurl: "gun:/gun/<publickey>", privateurl:  "gun:/gun/<publickey>">
+        */
+        return await this._p_newgun(pubkey, {verbose});
     }
 
     async p_newtable(pubkey, table, {verbose=false}={}) {
@@ -164,54 +247,52 @@ class TransportGUN extends Transport {
         return Object.keys(kvs);
     }
     async p_getall(url, {verbose=false}={}) {
-        let table = await this.p_connection(url, verbose);
-        return this._p_once(table));
+        return this._p_once(await this.p_connection(url, verbose));
     }
 
-    async monitor(url, callback, verbose) {
+    async monitor(url, callback, {verbose=false, current=false}={}) {
         /*
          Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_getall to get any more items not returned by p_getall.
          Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => GUN.monitor)(b: dispatchEvent)
 
-         :param url:         string Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
-         :param callback:    function({type, key, value})  Callback for each new item added to the list
+         url:         string Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
+         callback:    function({type, key, value})  Callback for each new item added to the list (type = "set"|"delete")
 
-         :param verbose:     boolean - true for debugging output
+         verbose:     boolean - true for debugging output
+         current            Send existing items to the callback as well
           */
-        url = typeof url === "string" ? url : url.href;
-        let conn = this.p_connection(url, verbose);
         # See https://github.com/amark/gun/wiki/API#map for why this
         # What we really want is to have the callback called once for each changed BUT
         # conn.map().on(cb) will also get called for each initial value
         # conn.on(cb) and then throwing away initial call would be ok, except it streams so cb might be called with first half of data and then rest
         # TODO-GUN - waiting on an option for the above to have compliant monitor, for now just make sure to ignore dupes and note that GUN doesnt support list/add/listmonitor anyway
-        conn.map().on((v, k) => callback("set", k, JSON.parse(v)));
+        let g = await this.p_connection(url, verbose);
+        if (!current) {
+            g.once(data => this.monitored = data); // Keep a copy
+            g.map.on((v, k) => {
+                if (v !== this.monitored[k]) {
+                    this.monitored[k] = v;
+                    callback("set", k, JSON.parse(v)));
+                }
+            });
+        } else {
+            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+        }
     }
 
-
-    static async test(transport, verbose) { //TODO-GUN rewrite this
+    static async p_test(verbose) { //TODO-GUN rewrite this based on code in YJS
         if (verbose) {console.log("TransportGUN.test")}
         try {
-            let testurl = "1114";  // Just a predictable number can work with
-            let res = await transport.p_rawlist(testurl, verbose);
-            let listlen = res.length;   // Holds length of list run intermediate
-            if (verbose) console.log("rawlist returned ", ...Dweb.utils.consolearr(res));
-            transport.listmonitor(testurl, (obj) => console.log("Monitored", obj), verbose);
-            let sig = new Dweb.Signature({urls: ["123"], date: new Date(Date.now()), signature: "Joe Smith", signedby: [testurl]}, verbose);
-            await transport.p_rawadd(testurl, sig, verbose);
-            if (verbose) console.log("TransportIPFS.p_rawadd returned ");
-            res = await transport.p_rawlist(testurl, verbose);
-            if (verbose) console.log("rawlist returned ", ...Dweb.utils.consolearr(res)); // Note not showing return
-            await delay(500);
-            res = await transport.p_rawlist(testurl, verbose);
-            console.assert(res.length === listlen + 1, "Should have added one item");
+            let t = this.setup0({}, verbose);
+            await t.p_setup1(verbose); // Not passing cb yet
+            await t.p_setup2(verbose); // Not passing cb yet - this one does nothing on GUN
+            this.p_test_kvt("XXX", {verbose});
         } catch(err) {
-            console.log("Exception thrown in TransportORBITDB.test:", err.message);
+            console.log("Exception thrown in TransportGUN.test:", err.message);
             throw err;
         }
     }
 
 }
 Transports._transportclasses["GUN"] = TransportGUN;
-TransportGUN.GUN = GUN; // Allow node tests to find it
 exports = module.exports = TransportGUN;

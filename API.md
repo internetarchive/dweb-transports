@@ -173,12 +173,13 @@ verbose     boolean - True for debugging output
 Resolves to Array objects as stored on the list (see p_rawlist for format)
 ```
 
-##### listmonitor (url, cb, {verbose}) 
+##### listmonitor (url, cb, {verbose, current}) 
 Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 ```
 url        Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
 cb(obj)    function(obj)  Callback for each new item added to the list
-verbose    boolean - True for debugging output
+verbose    true for debugging output
+current    true to send existing members as well as new
            obj is same format as p_rawlist or p_rawreverse
 ```
 
@@ -406,7 +407,7 @@ static async p_rawstore(data, {verbose})|[urls]|Tries all and combines results
 static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})|data|See note
 static async p_rawlist(urls, {verbose})|[sigs]|Tries all and combines results
 static async p_rawadd(urls, sig, {verbose})||Tries on all urls, error if none succeed
-static listmonitor(urls, cb, {verbose})||Tries on all urls (so note cb may be called multiple times)
+static listmonitor(urls, cb, {verbose, current})||Tries on all urls (so note cb may be called multiple times)
 static p_newlisturls(cl, {verbose})|[urls]|Tries all and combines results
 static async p_f_createReadStream(urls, options)|f(opts)=>stream|Returns first success
 static async p_get(urls, keys, {verbose})|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
@@ -417,7 +418,7 @@ static async p_getall(urls, {verbose})|dict|currently (April 2018) returns on fi
 static async p_newdatabase(pubkey, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_newtable(pubkey, table, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_connection(urls, verbose)||Tries all parallel
-static monitor(urls, cb, verbose)||Tries all sequentially
+static monitor(urls, cb, {verbose, current})||Tries all sequentially
 
 ##### static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})
 Tries to fetch on all valid transports until successful. See Transport.p_rawfetch
