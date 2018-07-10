@@ -145,7 +145,7 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
         if (!tt.length) {
-            throw new errors.TransportError('Transports.p_rawlist: Cant find transport for urls:'+urls.join(','));
+            throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
         }
         let errs = [];
         let ttlines = await Promise.all(tt.map(async function([url, t]) {

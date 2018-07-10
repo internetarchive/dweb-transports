@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "cids": "latest",
+    "gun": "latest",
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "latest",
-    "gun": "latest",
     "readable-stream": "latest",
     "webtorrent": "^0.99.3",
     "y-array": "latest",

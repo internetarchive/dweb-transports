@@ -2,8 +2,9 @@
 This Transport layers uses GUN.
 */
 const Url = require('url');
+process.env.GUN_ENV = "false";
 const Gun = require('gun');
-require('gun/lib/path.js')
+require('gun/lib/path.js');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -12,14 +13,24 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 // Utility packages (ours) And one-liners
-function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
+//unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
     //peers: [ "http://xxxx:yyyy/gun" ]   // TODO-GUN get server setup and then replace this URL
     //localstore: true                     #True is default
 };
-//TODO-GUN check dweb-objects for calls to monitor or listmonitor and make sure put {verbose} instead of "verbose"
-//TODO-GUN - setup superpeer - mkdir; node install gun; cd node_modules/gun/server; npm start - starts server by default on port 8080, or set an "env" - see http.js
+//To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
+//Make sure to open of the port (typically in /etc/ferm)
+//TODO-GUN - figure out how to make server persistent - started by systemctl etc and incorporate in dweb-gateway/scripts/install.sh
+
+/*
+    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL
+
+    .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed, for now see other TODO-GUN-UNDERSCORE for the workaround
+    .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones. for now, see other TODO-GUN-CURRENT for the workaround
+    There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on, see other TODO-GUN-DELETE for the workaround
+    GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times). See TODO-GUN-PROMISES for workaround
+ */
 
 class TransportGUN extends Transport {
     /*
@@ -35,9 +46,8 @@ class TransportGUN extends Transport {
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
-        //TODO-GUN doesnt really support lists yet, its "set" function only handles other gun objects and doesnt order them
-        this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor'];
-                    //Not supporting lists or blobs:  ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',]
+        this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
+                                 'add', 'list', 'listmonitor', 'newlisturls']
         this.status = Transport.STATUS_LOADED;
     }
 
@@ -72,7 +82,7 @@ class TransportGUN extends Transport {
     async p_setup1(verbose, cb) {
         /*
         This sets up for GUN.
-        Throws: TODO-GUN document errors that can occur
+        Throws: TODO-GUN-DOC document possible error behavior
         */
         try {
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
@@ -112,7 +122,7 @@ class TransportGUN extends Transport {
      */
         try {
             let g = this.connection(url, verbose);
-            let res = g.once(data => Object.keys(data).sort().map(k => data[k]));
+            //let res = g.once(data => Object.keys(data).filter(k => k !== '_').sort().map(k => data[k])); //See TODO-GUN-UNDERSCORE
             // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
             if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
             return res;
@@ -133,10 +143,10 @@ class TransportGUN extends Transport {
          verbose:   true for debugging output
           */
         let g = this.connection(url, verbose);
-        if (!current) {
+        if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => this.monitored = data); // Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
             g.map.on((v, k) => {
-                if (v !== this.monitored[k]) {
+                if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
                     this.monitored[k] = v;
                     callback(JSON.parse(v));
                 }
@@ -162,6 +172,7 @@ class TransportGUN extends Transport {
         :param boolean verbose: true for debugging output
         :resolve undefined:
         */
+        // noinspection JSUnresolvedVariable
         console.assert(url && sig.urls.length && sig.signature && sig.signedby.length, "TransportGUN.p_rawadd args", url, sig);
         if (verbose) console.log("TransportGUN.p_rawadd", typeof url === "string" ? url : url.href, sig);
         this.connection(url, verbose)
@@ -170,7 +181,8 @@ class TransportGUN extends Transport {
 
     // noinspection JSCheckFunctionSignatures
     async p_newlisturls(cl, {verbose=false}={}) {
-        return await this._p_newgun(cl, {verbose});
+        let u = await this._p_newgun(cl, {verbose});
+        return [ u, u];
     }
 
     //=======KEY VALUE TABLES ========
@@ -181,19 +193,19 @@ class TransportGUN extends Transport {
             pubkey = pubkey.keypair.signingexport();
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
-        let u =  `gun:/gun/${encodeURIComponent(pubkey)}`;
-        return {"publicurl": u, "privateurl": u};
+        return `gun:/gun/${encodeURIComponent(pubkey)}`;
     }
     async p_newdatabase(pubkey, {verbose=false}={}) {
         /*
         Request a new database
         For GUN it doesnt actually create anything, just generates the URLs
-        TODO-GUN-TODO simple version first - userid based on my keypair first, then switch to Gun's userid and its keypair
+        TODO-GUN simple version first - userid based on my keypair first, then switch to Gun's userid and its keypair
         Include gun/sea.js; user.create(<alias>,<passphrase>); user.auth(<alias>,<passphrase>); # See gun.eco/docs/Auth
 
         returns: {publicurl: "gun:/gun/<publickey>", privateurl:  "gun:/gun/<publickey>">
         */
-        return await this._p_newgun(pubkey, {verbose});
+        let u = await this._p_newgun(pubkey, {verbose});
+        return {publicurl: u, privateurl: u};
     }
 
     async p_newtable(pubkey, table, {verbose=false}={}) {
@@ -219,18 +231,27 @@ class TransportGUN extends Transport {
         if (typeof keyvalues === "string") {
             table.path(keyvalues).put(JSON.stringify(value));
         } else {
-            table.put(keyvalues);   // Store all key-value pairs without destroying any other key/value pairs previously set
+            // Store all key-value pairs without destroying any other key/value pairs previously set
+            console.assert(!Array.isArray(keyvalues), "TransportGUN - shouldnt be passsing an array as the keyvalues");
+            table.put(
+                Object.keys(keyvalues).reduce(
+                    function(previous, key) { previous[key] = JSON.stringify(keyvalues[key]); return previous; },
+                    {}
+            ))
         }
     }
+
     async p_get(url, keys, {verbose=false}={}) {
         let table = this.connection(url, verbose);
         if (Array.isArray(keys)) {
             throw new errors.ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys or use getall and filter");
+            /*
             return keys.reduce(function(previous, key) {
                 let val = table.get(key);
                 previous[key] = typeof val === "string" ? JSON.parse(val) : val;    // Handle undefined
                 return previous;
             }, {});
+            */
         } else {
             let val = await this._p_once(table.get(keys));    // Resolves to value
             return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync
@@ -246,16 +267,22 @@ class TransportGUN extends Transport {
         }
     }
 
-    //TODO-GUN suggest p_once as a good single addition
+    //TODO-GUN-PROMISE suggest p_once as a good single addition
     _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
         return new Promise((resolve, reject) => gun.once(resolve));
     }
+
     async p_keys(url, {verbose=false}={}) {
-        let kvs = await this.p_getall(url, {verbose});
-        return Object.keys(kvs);
+        let res = await this._p_once(this.connection(url, verbose));
+        return Object.keys(res)
+            .filter(k=> (k !== '_') && (res[k] !== null)); //See TODO-GUN-UNDERSCORE and TODO-GUN-DELETE
     }
+
     async p_getall(url, {verbose=false}={}) {
-        return await this._p_once(this.connection(url, verbose));
+        let res = await this._p_once(this.connection(url, verbose));
+        return Object.keys(res)
+            .filter(k=> (k !== '_') && res[k] !== null) //See TODO-GUN-UNDERSCORE and TODO-GUN-DELETE
+            .reduce( function(previous, key) { previous[key] = JSON.parse(res[key]); return previous; }, {});
     }
 
     async monitor(url, callback, {verbose=false, current=false}={}) {
@@ -269,14 +296,8 @@ class TransportGUN extends Transport {
          verbose:     boolean - true for debugging output
          current            Send existing items to the callback as well
           */
-        // See https://github.com/amark/gun/wiki/API#map for why this
-        // What we really want is to have the callback called once for each changed BUT
-        // conn.map().on(cb) will also get called for each initial value
-        // conn.on(cb) and then throwing away initial call would be ok, except it streams so cb might be called with first half of data and then rest
-        // TODO-GUN - waiting on an option for the above to have compliant monitor
-        // TODO-GUN for now making a copy and checking it.
         let g = this.connection(url, verbose);
-        if (!current) {
+        if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => this.monitored = data); // Keep a copy
             g.map.on((v, k) => {
                 if (v !== this.monitored[k]) {
@@ -289,7 +310,7 @@ class TransportGUN extends Transport {
         }
     }
 
-    static async p_test(verbose) { //TODO-GUN rewrite this based on code in YJS
+    static async p_test(verbose) {
         if (verbose) {console.log("TransportGUN.test")}
         try {
             let t = this.setup0({}, verbose);   //TODO-GUN when works with peers commented out, try passing peers: []
@@ -297,12 +318,23 @@ class TransportGUN extends Transport {
             await t.p_setup2(verbose); // Not passing cb yet - this one does nothing on GUN
             // noinspection JSIgnoredPromiseFromCall
             t.p_test_kvt("gun:/gun/NACL", {verbose});
+            //t.p_test_list("gun:/gun/NACL", {verbose}); //TODO test_list needs fixing to not req Signature
         } catch(err) {
             console.log("Exception thrown in TransportGUN.test:", err.message);
             throw err;
         }
     }
 
+    static async demo_bugs() {
+        let gun = new Gun();
+        gun.get('foo').get('bar').put('baz');
+        console.log("Expect {bar: 'baz'} but get {_:..., bar: 'baz'}");
+        gun.get('foo').once(data => console.log(data));
+        gun.get('zip').get('bar').set('alice');
+        console.log("Expect {12345: 'alice'} but get {_:..., 12345: 'alice'}");
+        gun.get('foo').once(data => console.log(data));
+        // Returns extra "_" field
+    }
 }
 Transports._transportclasses["GUN"] = TransportGUN;
 exports = module.exports = TransportGUN;
