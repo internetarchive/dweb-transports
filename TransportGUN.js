@@ -2,10 +2,8 @@
 This Transport layers uses GUN.
 */
 const Url = require('url');
-const Gun = require('gun')
-
-// Utility packages (ours) And one-liners
-function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
+const Gun = require('gun');
+require('gun/lib/path.js')
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -13,12 +11,15 @@ const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const utils = require('./utils'); // Utility functions
 
+// Utility packages (ours) And one-liners
+function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
+
 let defaultoptions = {
-    peers: [ "http://xxxx:yyyy/gun" ]
+    //peers: [ "http://xxxx:yyyy/gun" ]   // TODO-GUN get server setup and then replace this URL
     //localstore: true                     #True is default
-}
-#TODO-GUN check dweb-objects for calls to monitor or listmonitor and make sure put {verbose} instead of "verbose"
-#TODO-GUN - setup superpeer - mkdir; node install gun; cd node_modules/gun/server; npm start - starts server by default on port 8080, or set an "env" - see http.js
+};
+//TODO-GUN check dweb-objects for calls to monitor or listmonitor and make sure put {verbose} instead of "verbose"
+//TODO-GUN - setup superpeer - mkdir; node install gun; cd node_modules/gun/server; npm start - starts server by default on port 8080, or set an "env" - see http.js
 
 class TransportGUN extends Transport {
     /*
@@ -34,24 +35,25 @@ class TransportGUN extends Transport {
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
-        #TODO-GUN doesnt really support lists yet, its "set" function only handles other gun objects and doesnt order them
+        //TODO-GUN doesnt really support lists yet, its "set" function only handles other gun objects and doesnt order them
         this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor'];
                     //Not supporting lists or blobs:  ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',]
         this.status = Transport.STATUS_LOADED;
     }
 
-    async p_connection(url, verbose) {
+    connection(url, verbose) {
         /*
-        Utility function to get Gun object for this URL
+        Utility function to get Gun object for this URL (note this isn't async)
         url:        URL string to find list of
         resolves:   Gun a connection to use for get's etc, undefined if fails
         */
         if (typeof url === "string")
             url = Url.parse(url);
-        patharray = url.pathstring.split('/')   //[ 'gun', database, table ]
-        patharray.shift;    // Loose "gun"
-        g = this.gun.path(patharray);           // Not sure how this could become undefined as it will return g before the path is walked, but if do a lookup on this "g" then should get undefined
-        return g;
+        let patharray = url.pathname.split('/');   //[ 'gun', database, table ]
+        patharray.shift();  // Loose leading ""
+        patharray.shift();    // Loose "gun"
+        if (verbose) console.log("Path=", patharray);
+        return this.gun.path(patharray);           // Not sure how this could become undefined as it will return g before the path is walked, but if do a lookup on this "g" then should get undefined
     }
 
     static setup0(options, verbose) {
@@ -63,7 +65,7 @@ class TransportGUN extends Transport {
         console.log("GUN options %o", combinedoptions); // Log even if !verbose
         let t = new TransportGUN(combinedoptions, verbose);     // Note doesnt start IPFS or OrbitDB
         t.gun = new Gun(t.options.gun);                         // This doesnt connect, just creates db structure
-        Dweb.Transports.addtransport(t);
+        Transports.addtransport(t);
         return t;
     }
 
@@ -73,7 +75,7 @@ class TransportGUN extends Transport {
         Throws: TODO-GUN document errors that can occur
         */
         try {
-            this.status = Dweb.Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
+            this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
             //TODO-GUN-TEST - try connect and retrieve info then look at ._.opt.peers
             await this.p_status(verbose);
@@ -95,6 +97,7 @@ class TransportGUN extends Transport {
     }
     // ===== LISTS ========
 
+    // noinspection JSCheckFunctionSignatures
     async p_rawlist(url, {verbose=false}={}) {
     /*
     Fetch all the objects in a list, these are identified by the url of the public key used for signing.
@@ -108,8 +111,8 @@ class TransportGUN extends Transport {
     :resolve array: An array of objects as stored on the list.
      */
         try {
-            let g = await this.p_connection(url, verbose);
-            let res = g.once(data => Object.keys(data).sort().map(k => data[k]))
+            let g = this.connection(url, verbose);
+            let res = g.once(data => Object.keys(data).sort().map(k => data[k]));
             // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
             if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
             return res;
@@ -129,7 +132,7 @@ class TransportGUN extends Transport {
          current    true if should send list of existing elements
          verbose:   true for debugging output
           */
-        let g = await this.p_connection(url, verbose);
+        let g = this.connection(url, verbose);
         if (!current) {
             g.once(data => this.monitored = data); // Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
             g.map.on((v, k) => {
@@ -143,6 +146,7 @@ class TransportGUN extends Transport {
         }
     }
 
+    // noinspection JSCheckFunctionSignatures
     async p_rawadd(url, sig, {verbose=false}={}) {
         /*
         Store a new list item, it should be stored so that it can be retrieved either by "signedby" (using p_rawlist) or
@@ -160,19 +164,21 @@ class TransportGUN extends Transport {
         */
         console.assert(url && sig.urls.length && sig.signature && sig.signedby.length, "TransportGUN.p_rawadd args", url, sig);
         if (verbose) console.log("TransportGUN.p_rawadd", typeof url === "string" ? url : url.href, sig);
-        (await this.p_connection(url, verbose)
+        this.connection(url, verbose)
         .set( JSON.stringify( sig.preflight( Object.assign({}, sig))));
     }
 
+    // noinspection JSCheckFunctionSignatures
     async p_newlisturls(cl, {verbose=false}={}) {
-        return await this._p_newgun(pubkey, {verbose});
+        return await this._p_newgun(cl, {verbose});
     }
 
     //=======KEY VALUE TABLES ========
 
+    // noinspection JSMethodCanBeStatic
     async _p_newgun(pubkey, {verbose=false}={}) {
         if (pubkey.hasOwnProperty("keypair"))
-            pubkey = pubkey.keypair.signingexport()
+            pubkey = pubkey.keypair.signingexport();
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
         let u =  `gun:/gun/${encodeURIComponent(pubkey)}`;
@@ -209,7 +215,7 @@ class TransportGUN extends Transport {
         keyvalues:  string (key) in which case value should be set there OR
                 object in which case value is ignored
          */
-        let table = await this.p_connection(url, verbose);
+        let table = this.connection(url, verbose);
         if (typeof keyvalues === "string") {
             table.path(keyvalues).put(JSON.stringify(value));
         } else {
@@ -217,21 +223,22 @@ class TransportGUN extends Transport {
         }
     }
     async p_get(url, keys, {verbose=false}={}) {
-        let table = await this.p_connection(url, verbose);
+        let table = this.connection(url, verbose);
         if (Array.isArray(keys)) {
+            throw new errors.ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys or use getall and filter");
             return keys.reduce(function(previous, key) {
                 let val = table.get(key);
                 previous[key] = typeof val === "string" ? JSON.parse(val) : val;    // Handle undefined
                 return previous;
             }, {});
         } else {
-            let val = table.get(keys);
+            let val = await this._p_once(table.get(keys));    // Resolves to value
             return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync
         }
     }
 
     async p_delete(url, keys, {verbose=false}={}) {
-        let table = await this.p_connection(url, verbose);
+        let table = this.connection(url, verbose);
         if (typeof keys === "string") {
             table.path(keys).put(null);
         } else {
@@ -239,15 +246,16 @@ class TransportGUN extends Transport {
         }
     }
 
-    _p_once(table) {
-        return new Promise((resolve, reject) => table.once(resolve));
+    //TODO-GUN suggest p_once as a good single addition
+    _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
+        return new Promise((resolve, reject) => gun.once(resolve));
     }
     async p_keys(url, {verbose=false}={}) {
-        kvs = await this.p_getall(url, {verbose});
+        let kvs = await this.p_getall(url, {verbose});
         return Object.keys(kvs);
     }
     async p_getall(url, {verbose=false}={}) {
-        return this._p_once(await this.p_connection(url, verbose));
+        return await this._p_once(this.connection(url, verbose));
     }
 
     async monitor(url, callback, {verbose=false, current=false}={}) {
@@ -261,18 +269,19 @@ class TransportGUN extends Transport {
          verbose:     boolean - true for debugging output
          current            Send existing items to the callback as well
           */
-        # See https://github.com/amark/gun/wiki/API#map for why this
-        # What we really want is to have the callback called once for each changed BUT
-        # conn.map().on(cb) will also get called for each initial value
-        # conn.on(cb) and then throwing away initial call would be ok, except it streams so cb might be called with first half of data and then rest
-        # TODO-GUN - waiting on an option for the above to have compliant monitor, for now just make sure to ignore dupes and note that GUN doesnt support list/add/listmonitor anyway
-        let g = await this.p_connection(url, verbose);
+        // See https://github.com/amark/gun/wiki/API#map for why this
+        // What we really want is to have the callback called once for each changed BUT
+        // conn.map().on(cb) will also get called for each initial value
+        // conn.on(cb) and then throwing away initial call would be ok, except it streams so cb might be called with first half of data and then rest
+        // TODO-GUN - waiting on an option for the above to have compliant monitor
+        // TODO-GUN for now making a copy and checking it.
+        let g = this.connection(url, verbose);
         if (!current) {
             g.once(data => this.monitored = data); // Keep a copy
             g.map.on((v, k) => {
                 if (v !== this.monitored[k]) {
                     this.monitored[k] = v;
-                    callback("set", k, JSON.parse(v)));
+                    callback("set", k, JSON.parse(v));
                 }
             });
         } else {
@@ -283,10 +292,11 @@ class TransportGUN extends Transport {
     static async p_test(verbose) { //TODO-GUN rewrite this based on code in YJS
         if (verbose) {console.log("TransportGUN.test")}
         try {
-            let t = this.setup0({}, verbose);
+            let t = this.setup0({}, verbose);   //TODO-GUN when works with peers commented out, try passing peers: []
             await t.p_setup1(verbose); // Not passing cb yet
             await t.p_setup2(verbose); // Not passing cb yet - this one does nothing on GUN
-            this.p_test_kvt("XXX", {verbose});
+            // noinspection JSIgnoredPromiseFromCall
+            t.p_test_kvt("gun:/gun/NACL", {verbose});
         } catch(err) {
             console.log("Exception thrown in TransportGUN.test:", err.message);
             throw err;
