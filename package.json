@@ -17,6 +17,7 @@
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "latest",
     "readable-stream": "latest",
+    "webpack": "^4.16.0",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
     "y-indexeddb": "latest",
@@ -30,7 +31,8 @@
   "devDependencies": {
     "browserify": "^14.5.0",
     "watchify": "^3.11.0",
-    "chai": "latest"
+    "chai": "latest",
+    "uglifyjs-webpack-plugin": "latest"
   },
   "homepage": "https://github.com/internetarchive/dweb-transports#readme",
   "keywords": [],
