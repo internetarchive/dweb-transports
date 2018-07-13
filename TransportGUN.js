@@ -16,7 +16,7 @@ const utils = require('./utils'); // Utility functions
 //unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
-    peers: [ "http://dweb.me:4246/gun" ]   // TODO-GUN get server setup and then replace this URL
+    peers: [ "https://dweb.me:4246/gun" ]   // TODO-GUN get server setup and then replace this URL
     //localstore: true                     #True is default
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
