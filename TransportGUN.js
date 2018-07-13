@@ -75,7 +75,7 @@ class TransportGUN extends Transport {
         let combinedoptions = Transport.mergeoptions(defaultoptions, options.gun);
         console.log("GUN options %o", combinedoptions); // Log even if !verbose
         let t = new TransportGUN(combinedoptions, verbose);     // Note doesnt start IPFS or OrbitDB
-        t.gun = new Gun(t.options.gun);                         // This doesnt connect, just creates db structure
+        t.gun = new Gun(t.options);                         // This doesnt connect, just creates db structure
         Transports.addtransport(t);
         return t;
     }
@@ -147,10 +147,10 @@ class TransportGUN extends Transport {
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => {
-                this.monitored = data || []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
+                this.monitored = Object.keys(data) || []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
                 g.map().on((v, k) => {
-                    if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
-                        this.monitored[k] = v;
+                    if (!(this.monitored.includes(k)) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                        this.monitored.push(k)
                         callback(JSON.parse(v));
                     }
                 });
@@ -302,12 +302,14 @@ class TransportGUN extends Transport {
           */
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
-            g.once(data => this.monitored = data); // Keep a copy
-            g.map().on((v, k) => {
-                if (v !== this.monitored[k]) {
-                    this.monitored[k] = v;
-                    callback("set", k, JSON.parse(v));
-                }
+            g.once(data => {
+                this.monitored = Object.assign({},data); //  Make a copy of data (this.monitored = data won't work as just points at same structure)
+                g.map().on((v, k) => {
+                    if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                        this.monitored[k] = v;
+                        callback("set", k, JSON.parse(v));
+                    }
+                });
             });
         } else {
             g.map().on((v, k) => callback("set", k, JSON.parse(v)));
