@@ -220,6 +220,8 @@ class Transports {
         returns:    undefined
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
          */
+        //TODO-REFACTOR remove dependecy on the object having a .preflight, this should be handled one layer up.
+        //TODO-REFACTOR requires changes in: dweb-transports: TransportXyz, Transport, API.md; dweb-objects: CommonList.js, test.js; dweb-serviceworker/TransportsProxy.js;
         //TODO-MULTI-GATEWAY might be smarter about not waiting but Promise.race is inappropriate as returns after a failure as well.
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"

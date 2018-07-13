@@ -3,7 +3,7 @@ This Transport layers uses GUN.
 */
 const Url = require('url');
 process.env.GUN_ENV = "false";
-const Gun = require('gun');
+const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
 require('gun/lib/path.js');
 
 // Other Dweb modules
@@ -20,6 +20,7 @@ let defaultoptions = {
     //localstore: true                     #True is default
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
+//node examples/http.js 4246
 //Make sure to open of the port (typically in /etc/ferm)
 //TODO-GUN - figure out how to make server persistent - started by systemctl etc and incorporate in dweb-gateway/scripts/install.sh
 
@@ -122,7 +123,8 @@ class TransportGUN extends Transport {
      */
         try {
             let g = this.connection(url, verbose);
-            //let res = g.once(data => Object.keys(data).filter(k => k !== '_').sort().map(k => data[k])); //See TODO-GUN-UNDERSCORE
+            let data = await this._p_once(g);
+            let res = data ? Object.keys(data).filter(k => k !== '_').sort().map(k => data[k]) : []; //See TODO-GUN-UNDERSCORE
             // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
             if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
             return res;
@@ -144,15 +146,17 @@ class TransportGUN extends Transport {
           */
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
-            g.once(data => this.monitored = data); // Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
-            g.map.on((v, k) => {
-                if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
-                    this.monitored[k] = v;
-                    callback(JSON.parse(v));
-                }
+            g.once(data => {
+                this.monitored = data || []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
+                g.map().on((v, k) => {
+                    if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                        this.monitored[k] = v;
+                        callback(JSON.parse(v));
+                    }
+                });
             });
         } else {
-            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+            g.map().on((v, k) => callback("set", k, JSON.parse(v)));
         }
     }
 
@@ -299,14 +303,14 @@ class TransportGUN extends Transport {
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => this.monitored = data); // Keep a copy
-            g.map.on((v, k) => {
+            g.map().on((v, k) => {
                 if (v !== this.monitored[k]) {
                     this.monitored[k] = v;
                     callback("set", k, JSON.parse(v));
                 }
             });
         } else {
-            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+            g.map().on((v, k) => callback("set", k, JSON.parse(v)));
         }
     }
 
@@ -318,7 +322,7 @@ class TransportGUN extends Transport {
             await t.p_setup2(verbose); // Not passing cb yet - this one does nothing on GUN
             // noinspection JSIgnoredPromiseFromCall
             t.p_test_kvt("gun:/gun/NACL", {verbose});
-            //t.p_test_list("gun:/gun/NACL", {verbose}); //TODO test_list needs fixing to not req Signature
+            //t.p_test_list("gun:/gun/NACL", {verbose}); //TODO test_list needs fixing to not create a dependency on Signature
         } catch(err) {
             console.log("Exception thrown in TransportGUN.test:", err.message);
             throw err;
