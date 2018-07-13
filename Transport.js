@@ -15,7 +15,7 @@ class Transport {
         Fields:
         statuselement:  If set is an HTML Element that should be adjusted to indicate status (this is managed by Transports, just stored on Transport)
         statuscb: Callback when status changes
-        name:   Short name of element e.g. HTTP IPFS WEBTORRENT
+        name:   Short name of element e.g. HTTP IPFS WEBTORRENT GUN
         */
     }
 
@@ -200,7 +200,7 @@ class Transport {
         throw new errors.ToBeImplementedError("Undefined function Transport.p_rawreverse");
     }
 
-    listmonitor(url, callback, verbose) {
+    listmonitor(url, callback, {verbose=false, current=false}={}) {
         /*
         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 
@@ -307,6 +307,31 @@ class Transport {
         return c;
     }
 
+    async p_test_list({urlexpectedsubstring=undefined, verbose=false}={}) {
+        //TODO - this test doesn't work since we dont have Signature nor want to create dependency on it - when works, add to GUN & YJS
+        if (verbose) {console.log(this.name,"p_test_kvt")}
+        try {
+            let table = await this.p_newlisturls("NACL VERIFY:1234567LIST", {verbose});
+            let mapurl = table.publicurl;
+            if (verbose) console.log("newlisturls=",mapurl);
+            console.assert((!urlexpectedsubstring) || mapurl.includes(urlexpectedsubstring));
+            await this.p_rawadd(mapurl, "testvalue", {verbose});
+            let res = await this.p_rawlist(mapurl, {verbose});
+            console.assert(res.length===1 && res[0] === "testvalue");
+            await this.p_rawadd(mapurl, {foo: "bar"}, {verbose});   // Try adding an object
+            res = await this.p_rawlist(mapurl, {verbose});
+            console.assert(res.length === 2 && res[1].foo === "bar");
+            await this.p_rawadd(mapurl, [1,2,3], {verbose});    // Try setting to an array
+            res = await this.p_rawlist(mapurl, {verbose});
+            console.assert(res.length === 2 && res[2].length === 3 && res[2][1] === 2);
+            await delay(200);
+            if (verbose) console.log(this.name, "p_test_list complete")
+        } catch(err) {
+            console.log("Exception thrown in ", this.name, "p_test_list:", err.message);
+            throw err;
+        }
+
+    }
     async p_test_kvt(urlexpectedsubstring, verbose=false) {
         /*
             Test the KeyValue functionality of any transport that supports it.
@@ -314,7 +339,7 @@ class Transport {
          */
         if (verbose) {console.log(this.name,"p_test_kvt")}
         try {
-            let table = await this.p_newtable("NACL VERIFY:1234567","mytable", {verbose});
+            let table = await this.p_newtable("NACL VERIFY:1234567KVT","mytable", {verbose});
             let mapurl = table.publicurl;
             if (verbose) console.log("newtable=",mapurl);
             console.assert(mapurl.includes(urlexpectedsubstring));
@@ -328,11 +353,11 @@ class Transport {
             res = await this.p_get(mapurl, "testkey3", {verbose});
             console.assert(res[1] === 2);
             res = await this.p_keys(mapurl, {verbose});
-            console.assert(res.includes("testkey") && res.includes("testkey3"));
-            res = await this.p_delete(mapurl, ["testkey"], {verbose});
+            console.assert(res.includes("testkey") && res.includes("testkey3") && res.length === 3);
+            await this.p_delete(mapurl, ["testkey"], {verbose});
             res = await this.p_getall(mapurl, {verbose});
             if (verbose) console.log("getall=>",res);
-            console.assert(res.testkey2.foo === "bar" && res.testkey3["1"] === 2 && !res.testkey1);
+            console.assert(res.testkey2.foo === "bar" && res.testkey3["1"] === 2 && !res.testkey);
             await delay(200);
             if (verbose) console.log(this.name, "p_test_kvt complete")
         } catch(err) {

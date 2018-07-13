@@ -12,11 +12,12 @@
   },
   "dependencies": {
     "cids": "latest",
-    "gun": "^0.9.9994",
+    "gun": "latest",
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "latest",
     "readable-stream": "latest",
+    "webpack": "^4.16.0",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
     "y-indexeddb": "latest",
@@ -29,8 +30,10 @@
   "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {
     "browserify": "^14.5.0",
+    "chai": "latest",
+    "uglifyjs-webpack-plugin": "latest",
     "watchify": "^3.11.0",
-    "chai": "latest"
+    "webpack-cli": "^3.0.8"
   },
   "homepage": "https://github.com/internetarchive/dweb-transports#readme",
   "keywords": [],

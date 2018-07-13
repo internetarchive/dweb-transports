@@ -29,21 +29,19 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 const defaultoptions = {
-    ipfs: {
-        repo: '/tmp/dweb_ipfsv2700', //TODO-IPFS think through where, esp for browser
-        //init: false,
-        //start: false,
-        //TODO-IPFS-Q how is this decentralized - can it run offline? Does it depend on star-signal.cloud.ipfs.team
-        config: {
-            //      Addresses: { Swarm: [ '/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star']},  // For Y - same as defaults
-            //      Addresses: { Swarm: [ ] },   // Disable WebRTC to test browser crash, note disables Y so doesnt work.
-            //Addresses: {Swarm: ['/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']}, // from https://github.com/ipfs/js-ipfs#faq 2017-12-05 as alternative to webrtc works sort-of
-            Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'], // Supposedly connects to Dweb  IPFS instance, but doesnt work (nor does ".../wss/...")
-        },
-        //init: true, // Comment out for Y
-        EXPERIMENTAL: {
-            pubsub: true
-        }
+    repo: '/tmp/dweb_ipfsv2700', //TODO-IPFS think through where, esp for browser
+    //init: false,
+    //start: false,
+    //TODO-IPFS-Q how is this decentralized - can it run offline? Does it depend on star-signal.cloud.ipfs.team
+    config: {
+        //      Addresses: { Swarm: [ '/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star']},  // For Y - same as defaults
+        //      Addresses: { Swarm: [ ] },   // Disable WebRTC to test browser crash, note disables Y so doesnt work.
+        //Addresses: {Swarm: ['/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']}, // from https://github.com/ipfs/js-ipfs#faq 2017-12-05 as alternative to webrtc works sort-of
+        Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'], // Supposedly connects to Dweb  IPFS instance, but doesnt work (nor does ".../wss/...")
+    },
+    //init: true, // Comment out for Y
+    EXPERIMENTAL: {
+        pubsub: true
     }
 };
 
@@ -53,13 +51,13 @@ class TransportIPFS extends Transport {
 
     Fields:
     ipfs: object returned when starting IPFS
-    yarray: object returned when starting yarray
+    TODO - this is not complete
      */
 
     constructor(options, verbose) {
         super(options, verbose);
         this.ipfs = undefined;          // Undefined till start IPFS
-        this.options = options;         // Dictionary of options { ipfs: {...}, "yarrays", yarray: {...} }
+        this.options = options;         // Dictionary of options
         this.name = "IPFS";             // For console log etc
         this.supportURLs = ['ipfs'];
         this.supportFunctions = ['fetch', 'store'];   // Does not support reverse, createReadStream fails on files uploaded with urlstore TODO reenable when Kyle fixes urlstore
@@ -85,7 +83,7 @@ class TransportIPFS extends Transport {
          */
         const self = this;
         return new Promise((resolve, reject) => {
-            this.ipfs = new IPFS(this.options.ipfs);
+            this.ipfs = new IPFS(this.options);
             this.ipfs.on('ready', () => {
                 //this._makepromises();
                 resolve();
@@ -104,7 +102,7 @@ class TransportIPFS extends Transport {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        const combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        const combinedoptions = Transport.mergeoptions(defaultoptions, options.ipfs);
         if (verbose) console.log("IPFS loading options %o", combinedoptions);
         const t = new TransportIPFS(combinedoptions, verbose);   // Note doesnt start IPFS
         Transports.addtransport(t);
@@ -119,7 +117,7 @@ class TransportIPFS extends Transport {
             await this.p_ipfsstart(verbose);    // Throws Error("websocket error") and possibly others.
             this.status = await this.p_status(verbose);
         } catch(err) {
-            console.error("IPFS failed to connect",err);
+            console.error(this.name, "failed to connect", err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);
@@ -268,7 +266,7 @@ class TransportIPFS extends Transport {
         } catch (err) { // TimeoutError or could be some other error from IPFS etc
             console.log("Caught misc error in TransportIPFS.p_rawfetch trying IPFS", err.message);
             try {
-                let ipfsurl = TransportIPFS.ipfsGatewayFrom(url)
+                let ipfsurl = TransportIPFS.ipfsGatewayFrom(url);
                 return await utils.p_timeout(
                     httptools.p_GET(ipfsurl), // Returns a buffer
                     timeoutMS, "Timed out IPFS fetch of "+ipfsurl)
@@ -339,7 +337,7 @@ class TransportIPFS extends Transport {
         verbose = true;
         if (verbose) console.log("p_f_createReadStream",url);
         const mh = TransportIPFS.multihashFrom(url);
-        const links = await this.ipfs.object.links(mh)
+        const links = await this.ipfs.object.links(mh);
         let throughstream;  //Holds pointer to stream between calls.
         const self = this;
         function crs(opts) {    // This is a synchronous function

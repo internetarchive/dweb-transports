@@ -34,6 +34,14 @@ class TimeoutError extends Error {
 }
 errors.TimeoutError = TimeoutError;
 
+class IntentionallyUnimplementedError extends Error {
+    constructor(message) {
+        super(message || "Intentionally Unimplemented Function");
+        this.name = "IntentionallyUnimplementedError"
+    }
+}
+errors.IntentionallyUnimplementedError = IntentionallyUnimplementedError;
+
 
 /*---- Below here are errors copied from previous Dweb-Transport and not currently used */
 /*
@@ -79,14 +87,6 @@ class AuthenticationError extends Error {
     }
 }
 errors.AuthenticationError = AuthenticationError;
-
-class IntentionallyUnimplementedError extends Error {
-    constructor(message) {
-        super(message || "Intentionally Unimplemented Function");
-        this.name = "IntentionallyUnimplementedError"
-    }
-}
-errors.IntentionallyUnimplementedError = IntentionallyUnimplementedError;
 
 class DecryptionFailError extends Error {
     constructor(message) {

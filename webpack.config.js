@@ -1,3 +1,4 @@
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 module.exports = {
   entry: {
     'dweb-transports': './index.js',
@@ -23,5 +24,14 @@ module.exports = {
         alias: {
             zlib: 'browserify-zlib-next'
         }
-    }
+    },
+    plugins: [
+        new UglifyJsPlugin({
+            uglifyOptions: {
+                compress: {
+                    unused: false
+                }
+            }
+        })
+    ]
 }

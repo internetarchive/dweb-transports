@@ -30,6 +30,7 @@ There are a set of classes:
 * *TransportIPFS*: Connects to IPFS, currently (April 2018) via WebSocketsStar (WSS)
 * *TransportYJS*: Implements shared lists, and dictionaries. Uses IPFS for transport
 * *TransportWEBTORRENT*: Integrates to Feross's WebTorrent library
+* *TransportGUN*: Integrates to the Gun DB
 * *Transports*: manages the list of conencted transports, and directs api calls to them. 
 
 Calls are generally made through the Transports class which knows how to route them to underlying connections.
@@ -172,12 +173,13 @@ verbose     boolean - True for debugging output
 Resolves to Array objects as stored on the list (see p_rawlist for format)
 ```
 
-##### listmonitor (url, cb, {verbose}) 
+##### listmonitor (url, cb, {verbose, current}) 
 Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 ```
 url        Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
 cb(obj)    function(obj)  Callback for each new item added to the list
-verbose    boolean - True for debugging output
+verbose    true for debugging output
+current    true to send existing members as well as new
            obj is same format as p_rawlist or p_rawreverse
 ```
 
@@ -323,6 +325,11 @@ returns instance of TransportIPFS if connected
 returns instance of TransportWEBTORRENT if connected
 ```
 
+##### static gun(verbose)
+```
+returns instance of TransportGUN if connected
+```
+
 ##### static async p_resolveNames(urls)
 See Naming below
 ```
@@ -345,7 +352,7 @@ t:        Add a Transport instance to _transports
 ##### static setup0(transports, options, verbose, cb)
 Calls setup0 for each transport based on its short name. Specially handles ‘LOCAL’ as a transport pointing at a local http server (for testing).
 ```
-transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’ORBITDB’]
+transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’GUN’]
 options         Passed to setup0 on each transport
 cb              Callback to be called each time status changes
 Returns:        Array of transport instances
@@ -400,7 +407,7 @@ static async p_rawstore(data, {verbose})|[urls]|Tries all and combines results
 static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})|data|See note
 static async p_rawlist(urls, {verbose})|[sigs]|Tries all and combines results
 static async p_rawadd(urls, sig, {verbose})||Tries on all urls, error if none succeed
-static listmonitor(urls, cb, {verbose})||Tries on all urls (so note cb may be called multiple times)
+static listmonitor(urls, cb, {verbose, current})||Tries on all urls (so note cb may be called multiple times)
 static p_newlisturls(cl, {verbose})|[urls]|Tries all and combines results
 static async p_f_createReadStream(urls, options)|f(opts)=>stream|Returns first success
 static async p_get(urls, keys, {verbose})|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
@@ -411,7 +418,7 @@ static async p_getall(urls, {verbose})|dict|currently (April 2018) returns on fi
 static async p_newdatabase(pubkey, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_newtable(pubkey, table, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
 static async p_connection(urls, verbose)||Tries all parallel
-static monitor(urls, cb, verbose)||Tries all sequentially
+static monitor(urls, cb, {verbose, current})||Tries all sequentially
 
 ##### static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})
 Tries to fetch on all valid transports until successful. See Transport.p_rawfetch
@@ -518,6 +525,14 @@ supportFunctions:
 supportFeatures: 
     fetch.range Not supported (currently April 2018)
 
+## TransportGUN
+A subclass of Transport for handling GUN connections (decentralized database)
+
+supportURLS = `gun:*` (TODO: may in the future support `dweb:/gun/*`)
+supportFunctions 
+    `add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
+supportFeatures: 
+
 ## Naming
 Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 
 See p_resolveNames(urls) and resolveNamesWith(cb)
@@ -533,3 +548,13 @@ The format of names currently (April 2018) is under development but its likely t
 `dweb:/arc/archive.org/details/foo` 
 to allow smooth integration with existing HTTP urls that are moving to decentralization. 
 
+## Adding a Transport
+The following steps are needed to add a transport. 
+
+* Add a line to package.json/dependencies for any packages needed
+* Add lines to index.js; 
+* Add function to return the instance to Transports.js 
+* Add to list in Transports.p_connect()
+* Add to API.md
+* Look for any "SEE-OTHER-ADDTRANSPORT" in case not on this list
+* Edit a copy of the closest Transport to what you are building

@@ -25,7 +25,6 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 let defaultoptions = {
-    yarray: {    // Based on how IIIF uses them in bootstrap.js in ipfs-iiif-db repo
         db: {
             name: 'indexeddb',   // leveldb in node
         },
@@ -33,21 +32,18 @@ let defaultoptions = {
             name: 'ipfs',
             //ipfs: ipfs,   // Need to link IPFS here once created
         },
-    }
 };
 
 class TransportYJS extends Transport {
     /*
     YJS specific transport - over IPFS, but could probably use other YJS transports
 
-    Fields:
-    ipfs: object returned when starting IPFS
-    yarray: object returned when starting yarray
+    Fields: TODO document this
      */
 
     constructor(options, verbose) {
         super(options, verbose);
-        this.options = options;         // Dictionary of options { ipfs: {...}, "yarrays", yarray: {...} }
+        this.options = options;         // Dictionary of options
         this.name = "YJS";             // For console log etc
         this.supportURLs = ['yjs'];
         this.supportFunctions = ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',
@@ -70,7 +66,7 @@ class TransportYJS extends Transport {
                 if (verbose) console.log("Found Y for", url);
                 return this.yarrays[url];
             } else {
-                let options = Transport.mergeoptions(this.options.yarray, {connector: {room: url}}, opts); // Copies options, ipfs will be set already
+                let options = Transport.mergeoptions(this.options, {connector: {room: url}}, opts); // Copies options, ipfs will be set already
                 if (verbose) console.log("Creating Y for", url); //"options=",options);
                 return this.yarrays[url] = await Y(options);
             }
@@ -103,7 +99,7 @@ class TransportYJS extends Transport {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.yjs);
         if (verbose) console.log("YJS options %o", combinedoptions); // Log even if !verbose
         let t = new TransportYJS(combinedoptions, verbose);   // Note doesnt start IPFS or Y
         Transports.addtransport(t);
@@ -119,11 +115,11 @@ class TransportYJS extends Transport {
         try {
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
-            this.options.yarray.connector.ipfs = Transports.ipfs(verbose).ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
+            this.options.connector.ipfs = Transports.ipfs(verbose).ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
             this.yarrays = {};
             await this.p_status(verbose);
         } catch(err) {
-            console.error("YJS failed to start",err);
+            console.error(this.name,"failed to start",err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);
@@ -135,9 +131,11 @@ class TransportYJS extends Transport {
         Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
         For YJS, its online if IPFS is.
          */
-        this.status =  (await this.options.yarray.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
+        this.status =  (await this.options.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
         return super.p_status(verbose);
     }
+
+    // ======= LISTS ========
 
     async p_rawlist(url, {verbose=false}={}) {
     /*
@@ -163,7 +161,7 @@ class TransportYJS extends Transport {
         }
     }
 
-    listmonitor(url, callback, {verbose}) {
+    listmonitor(url, callback, {verbose=false, current=false}={}) {
         /*
          Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 
@@ -174,6 +172,9 @@ class TransportYJS extends Transport {
           */
         let y = this.yarrays[typeof url === "string" ? url : url.href];
         console.assert(y,"Should always exist before calling listmonitor - async call p__yarray(url) to create");
+        if (current) {
+            y.share.array.toArray.map(callback);
+        }
         y.share.array.observe((event) => {
             if (event.type === 'insert') { // Currently ignoring deletions.
                 if (verbose) console.log('resources inserted', event.values);
@@ -230,13 +231,12 @@ class TransportYJS extends Transport {
         return [u,u];
     }
 
+    // ======= KEY VALUE TABLES ========
 
-    // Support for Key-Value pairs as per
-    // https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#
     async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
-            pubkey = pubkey.keypair.signingexport()
+            pubkey = pubkey.keypair.signingexport();
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
         let u =  `yjs:/yjs/${encodeURIComponent(pubkey)}`;
@@ -252,7 +252,12 @@ class TransportYJS extends Transport {
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
     }
 
-    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table/key
+    async p_set(url, keyvalues, value, {verbose=false}={}) {  // url = yjs:/yjs/database/table
+        /*
+        Set key values
+        keyvalues:  string (key) in which case value should be set there OR
+                object in which case value is ignored
+         */
         let y = await this.p_connection(url, verbose);
         if (typeof keyvalues === "string") {
             y.share.map.set(keyvalues, JSON.stringify(value));
@@ -300,9 +305,9 @@ class TransportYJS extends Transport {
             _map: await this.p_getall(url, {verbose})
         };   // Data struc is ok as SmartDict.p_fetch will pass to KVT constructor
     }
-    async monitor(url, callback, verbose) {
+    async monitor(url, callback, {verbose=false, current=false}={}) {
         /*
-         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
+         Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_getall to get any more items not returned by p_getall.
          Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
 
          :param url:         string Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
@@ -314,6 +319,14 @@ class TransportYJS extends Transport {
         let y = this.yarrays[url];
         if (!y) {
             throw new errors.CodingError("Should always exist before calling monitor - async call p__yarray(url) to create");
+        }
+        if (current) {
+            // Iterate over existing items with callback
+            y.share.map.keys()
+                .forEach(k => {
+                    let val = y.share.map.get[k];
+                    callback({type: "set", key: k, value: (typeof val === "string" ? JSON.parse(val) : val)});
+                })
         }
         y.share.map.observe((event) => {
             if (['add','update'].includes(event.type)) { // Currently ignoring deletions.
@@ -331,6 +344,24 @@ class TransportYJS extends Transport {
             }
         })
     }
+
+    static async p_test(opts={}, verbose=false) {
+        if (verbose) {console.log("TransportHTTP.test")}
+        try {
+            let transport = await this.p_setup(opts, verbose);
+            if (verbose) console.log("HTTP connected");
+            let res = await transport.p_info(verbose);
+            if (verbose) console.log("TransportHTTP info=",res);
+            res = await transport.p_status(verbose);
+            console.assert(res === Transport.STATUS_CONNECTED);
+            await transport.p_test_kvt("NACL%20VERIFY", verbose);
+        } catch(err) {
+            console.log("Exception thrown in TransportHTTP.test:", err.message);
+            throw err;
+        }
+    }
+
+
 
 }
 TransportYJS.Y = Y; // Allow node tests to find it
