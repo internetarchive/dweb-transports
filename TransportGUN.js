@@ -3,7 +3,7 @@ This Transport layers uses GUN.
 */
 const Url = require('url');
 process.env.GUN_ENV = "false";
-const Gun = require('gun');
+const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
 require('gun/lib/path.js');
 
 // Other Dweb modules
@@ -16,10 +16,11 @@ const utils = require('./utils'); // Utility functions
 //unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
-    //peers: [ "http://xxxx:yyyy/gun" ]   // TODO-GUN get server setup and then replace this URL
+    peers: [ "http://dweb.me:4246/gun" ]   // TODO-GUN get server setup and then replace this URL
     //localstore: true                     #True is default
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
+//setenv GUN_ENV false; node examples/http.js 4246
 //Make sure to open of the port (typically in /etc/ferm)
 //TODO-GUN - figure out how to make server persistent - started by systemctl etc and incorporate in dweb-gateway/scripts/install.sh
 
@@ -42,7 +43,7 @@ class TransportGUN extends Transport {
 
     constructor(options, verbose) {
         super(options, verbose);
-        this.options = options;         // Dictionary of options { ipfs: {...}, "yarrays", yarray: {...} }
+        this.options = options;         // Dictionary of options
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
@@ -71,10 +72,10 @@ class TransportGUN extends Transport {
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
             options: { gun: { }, }   Set of options - "gun" is used for those to pass direct to Gun
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.gun);
         console.log("GUN options %o", combinedoptions); // Log even if !verbose
         let t = new TransportGUN(combinedoptions, verbose);     // Note doesnt start IPFS or OrbitDB
-        t.gun = new Gun(t.options.gun);                         // This doesnt connect, just creates db structure
+        t.gun = new Gun(t.options);                         // This doesnt connect, just creates db structure
         Transports.addtransport(t);
         return t;
     }
@@ -122,7 +123,8 @@ class TransportGUN extends Transport {
      */
         try {
             let g = this.connection(url, verbose);
-            //let res = g.once(data => Object.keys(data).filter(k => k !== '_').sort().map(k => data[k])); //See TODO-GUN-UNDERSCORE
+            let data = await this._p_once(g);
+            let res = data ? Object.keys(data).filter(k => k !== '_').sort().map(k => data[k]) : []; //See TODO-GUN-UNDERSCORE
             // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
             if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
             return res;
@@ -144,15 +146,17 @@ class TransportGUN extends Transport {
           */
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
-            g.once(data => this.monitored = data); // Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
-            g.map.on((v, k) => {
-                if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
-                    this.monitored[k] = v;
-                    callback(JSON.parse(v));
-                }
+            g.once(data => {
+                this.monitored = Object.keys(data) || []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
+                g.map().on((v, k) => {
+                    if (!(this.monitored.includes(k)) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                        this.monitored.push(k)
+                        callback(JSON.parse(v));
+                    }
+                });
             });
         } else {
-            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+            g.map().on((v, k) => callback("set", k, JSON.parse(v)));
         }
     }
 
@@ -298,15 +302,17 @@ class TransportGUN extends Transport {
           */
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
-            g.once(data => this.monitored = data); // Keep a copy
-            g.map.on((v, k) => {
-                if (v !== this.monitored[k]) {
-                    this.monitored[k] = v;
-                    callback("set", k, JSON.parse(v));
-                }
+            g.once(data => {
+                this.monitored = Object.assign({},data); //  Make a copy of data (this.monitored = data won't work as just points at same structure)
+                g.map().on((v, k) => {
+                    if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                        this.monitored[k] = v;
+                        callback("set", k, JSON.parse(v));
+                    }
+                });
             });
         } else {
-            g.map.on((v, k) => callback("set", k, JSON.parse(v)));
+            g.map().on((v, k) => callback("set", k, JSON.parse(v)));
         }
     }
 
@@ -318,7 +324,7 @@ class TransportGUN extends Transport {
             await t.p_setup2(verbose); // Not passing cb yet - this one does nothing on GUN
             // noinspection JSIgnoredPromiseFromCall
             t.p_test_kvt("gun:/gun/NACL", {verbose});
-            //t.p_test_list("gun:/gun/NACL", {verbose}); //TODO test_list needs fixing to not req Signature
+            //t.p_test_list("gun:/gun/NACL", {verbose}); //TODO test_list needs fixing to not create a dependency on Signature
         } catch(err) {
             console.log("Exception thrown in TransportGUN.test:", err.message);
             throw err;

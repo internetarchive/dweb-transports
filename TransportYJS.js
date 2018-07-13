@@ -25,7 +25,6 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 let defaultoptions = {
-    yarray: {    // Based on how IIIF uses them in bootstrap.js in ipfs-iiif-db repo
         db: {
             name: 'indexeddb',   // leveldb in node
         },
@@ -33,21 +32,18 @@ let defaultoptions = {
             name: 'ipfs',
             //ipfs: ipfs,   // Need to link IPFS here once created
         },
-    }
 };
 
 class TransportYJS extends Transport {
     /*
     YJS specific transport - over IPFS, but could probably use other YJS transports
 
-    Fields:
-    ipfs: object returned when starting IPFS
-    yarray: object returned when starting yarray
+    Fields: TODO document this
      */
 
     constructor(options, verbose) {
         super(options, verbose);
-        this.options = options;         // Dictionary of options { ipfs: {...}, "yarrays", yarray: {...} }
+        this.options = options;         // Dictionary of options
         this.name = "YJS";             // For console log etc
         this.supportURLs = ['yjs'];
         this.supportFunctions = ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',
@@ -70,7 +66,7 @@ class TransportYJS extends Transport {
                 if (verbose) console.log("Found Y for", url);
                 return this.yarrays[url];
             } else {
-                let options = Transport.mergeoptions(this.options.yarray, {connector: {room: url}}, opts); // Copies options, ipfs will be set already
+                let options = Transport.mergeoptions(this.options, {connector: {room: url}}, opts); // Copies options, ipfs will be set already
                 if (verbose) console.log("Creating Y for", url); //"options=",options);
                 return this.yarrays[url] = await Y(options);
             }
@@ -103,7 +99,7 @@ class TransportYJS extends Transport {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.yjs);
         if (verbose) console.log("YJS options %o", combinedoptions); // Log even if !verbose
         let t = new TransportYJS(combinedoptions, verbose);   // Note doesnt start IPFS or Y
         Transports.addtransport(t);
@@ -119,7 +115,7 @@ class TransportYJS extends Transport {
         try {
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
-            this.options.yarray.connector.ipfs = Transports.ipfs(verbose).ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
+            this.options.connector.ipfs = Transports.ipfs(verbose).ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
             this.yarrays = {};
             await this.p_status(verbose);
         } catch(err) {
@@ -135,7 +131,7 @@ class TransportYJS extends Transport {
         Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
         For YJS, its online if IPFS is.
          */
-        this.status =  (await this.options.yarray.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
+        this.status =  (await this.options.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
         return super.p_status(verbose);
     }
 
@@ -240,7 +236,7 @@ class TransportYJS extends Transport {
     async p_newdatabase(pubkey, {verbose=false}={}) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
-            pubkey = pubkey.keypair.signingexport()
+            pubkey = pubkey.keypair.signingexport();
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
         let u =  `yjs:/yjs/${encodeURIComponent(pubkey)}`;

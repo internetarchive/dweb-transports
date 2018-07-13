@@ -15,7 +15,6 @@ const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 
 let defaultoptions = {
-    webtorrent: {}
 };
 
 class TransportWEBTORRENT extends Transport {
@@ -42,7 +41,7 @@ class TransportWEBTORRENT extends Transport {
          */
         let self = this;
         return new Promise((resolve, reject) => {
-            this.webtorrent = new WebTorrent(this.options.webtorrent);
+            this.webtorrent = new WebTorrent(this.options);
             this.webtorrent.once("ready", () => {
                 console.log("WEBTORRENT READY");
                 resolve();
@@ -58,7 +57,7 @@ class TransportWEBTORRENT extends Transport {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
         console.log("WebTorrent options %o", combinedoptions);
         let t = new TransportWEBTORRENT(combinedoptions, verbose);
         Transports.addtransport(t);
@@ -103,7 +102,7 @@ class TransportWEBTORRENT extends Transport {
             throw new errors.CodingError("TransportWEBTORRENT.p_rawfetch: requires url");
         }
 
-        const urlstring = (typeof url === "string" ? url : url.href)
+        const urlstring = (typeof url === "string" ? url : url.href);
         const index = urlstring.indexOf('/');
 
         if (index === -1) {
@@ -216,7 +215,7 @@ class TransportWEBTORRENT extends Transport {
         } catch(err) {
             console.log(`p_fileFrom failed on ${url} ${err.message}`);
             throw(err);
-        };
+        }
 
     }
 
@@ -248,7 +247,7 @@ class TransportWEBTORRENT extends Transport {
         } catch(err) {
             console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
             throw(err);
-        };
+        }
     }
 
     createReadStream(file, opts, verbose) {
@@ -268,9 +267,9 @@ class TransportWEBTORRENT extends Transport {
             fileStream.pipe(through);
             return through;
         } catch(err) {
-            console.log("TransportWEBTORRENT caught error", err)
+            console.log("TransportWEBTORRENT caught error", err);
             if (typeof through.destroy === 'function')
-                through.destroy(err)
+                through.destroy(err);
             else through.emit('error', err)
         }
     }
