@@ -16,11 +16,11 @@ const utils = require('./utils'); // Utility functions
 //unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
-    //peers: [ "http://xxxx:yyyy/gun" ]   // TODO-GUN get server setup and then replace this URL
+    peers: [ "http://dweb.me:4246/gun" ]   // TODO-GUN get server setup and then replace this URL
     //localstore: true                     #True is default
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
-//node examples/http.js 4246
+//setenv GUN_ENV false; node examples/http.js 4246
 //Make sure to open of the port (typically in /etc/ferm)
 //TODO-GUN - figure out how to make server persistent - started by systemctl etc and incorporate in dweb-gateway/scripts/install.sh
 
@@ -43,7 +43,7 @@ class TransportGUN extends Transport {
 
     constructor(options, verbose) {
         super(options, verbose);
-        this.options = options;         // Dictionary of options { ipfs: {...}, "yarrays", yarray: {...} }
+        this.options = options;         // Dictionary of options
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
@@ -72,7 +72,7 @@ class TransportGUN extends Transport {
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
             options: { gun: { }, }   Set of options - "gun" is used for those to pass direct to Gun
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.gun);
         console.log("GUN options %o", combinedoptions); // Log even if !verbose
         let t = new TransportGUN(combinedoptions, verbose);     // Note doesnt start IPFS or OrbitDB
         t.gun = new Gun(t.options.gun);                         // This doesnt connect, just creates db structure
