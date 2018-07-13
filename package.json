@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "cids": "latest",
+    "gun": "^0.9.9994",
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "latest",
