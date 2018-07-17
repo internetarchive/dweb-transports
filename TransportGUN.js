@@ -147,7 +147,7 @@ class TransportGUN extends Transport {
         let g = this.connection(url, verbose);
         if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => {
-                this.monitored = Object.keys(data) || []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
+                this.monitored = data ? Object.keys(data) : []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
                 g.map().on((v, k) => {
                     if (!(this.monitored.includes(k)) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
                         this.monitored.push(k)
