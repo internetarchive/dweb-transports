@@ -16,21 +16,24 @@ const utils = require('./utils'); // Utility functions
 //unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
-    peers: [ "https://dweb.me:4246/gun" ]   // TODO-GUN get server setup and then replace this URL
-    //localstore: true                     #True is default
+    peers: [ "https://dweb.me:4246/gun" ]
+    //localstore: true                     #True is default TODO-GUN check if false turns it off, or defaults to a different store.
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
 //setenv GUN_ENV false; node examples/http.js 4246
 //Make sure to open of the port (typically in /etc/ferm)
-//TODO-GUN - figure out how to make server persistent - started by systemctl etc and incorporate in dweb-gateway/scripts/install.sh
+// TODO-GUN - copy example from systemctl here
 
 /*
     WORKING AROUND GUN WEIRNESS/SUBOPTIMAL
 
-    .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed, for now see other TODO-GUN-UNDERSCORE for the workaround
-    .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones. for now, see other TODO-GUN-CURRENT for the workaround
-    There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on, see other TODO-GUN-DELETE for the workaround
-    GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times). See TODO-GUN-PROMISES for workaround
+    .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed, for now see other WORKAROUND-GUN-UNDERSCORE for the workaround
+    .once behaves differently on node or the browser - this is a bug https://github.com/amark/gun/issues/586 and for now this code doesnt work on Node
+    .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones. for now, see other WORKAROUND-GUN-CURRENT for the workaround
+    There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on, see other WORKAROUND-GUN-DELETE for the workaround
+    GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times). See WORKAROUND-GUN-PROMISES for workaround
+    Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
+        instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
  */
 
 class TransportGUN extends Transport {
@@ -47,20 +50,22 @@ class TransportGUN extends Transport {
         this.gun = undefined;
         this.name = "GUN";          // For console log etc
         this.supportURLs = ['gun'];
-        this.supportFunctions = ['connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
+        this.supportFunctions = [ 'fetch', //'store'
+                                 'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
                                  'add', 'list', 'listmonitor', 'newlisturls']
         this.status = Transport.STATUS_LOADED;
     }
 
     connection(url, verbose) {
         /*
+        TODO-GUN need to determine what a "rooted" Url is in gun, is it specific to a superpeer for example
         Utility function to get Gun object for this URL (note this isn't async)
-        url:        URL string to find list of
+        url:        URL string to find list of of form [gun|dweb]:/gun/<database>/<table>[/<key]  but could be arbitrary gun path
         resolves:   Gun a connection to use for get's etc, undefined if fails
         */
         if (typeof url === "string")
             url = Url.parse(url);
-        let patharray = url.pathname.split('/');   //[ 'gun', database, table ]
+        let patharray = url.pathname.split('/');   //[ 'gun', database, table ] but could be arbitrary length path
         patharray.shift();  // Loose leading ""
         patharray.shift();    // Loose "gun"
         if (verbose) console.log("Path=", patharray);
@@ -106,6 +111,13 @@ class TransportGUN extends Transport {
         this.status = Transport.STATUS_CONNECTED;  //TODO-GUN how do I know if/when I'm connected (see comment on p_setup1 as well)
         return this.status;
     }
+    // ===== DATA ======
+    async p_rawfetch(url, {verbose=false}={}) {
+        let g = this.connection(url, verbose); // Goes all the way to the key
+        let val = await this._p_once(g);
+        return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
+    }
+
     // ===== LISTS ========
 
     // noinspection JSCheckFunctionSignatures
@@ -124,7 +136,7 @@ class TransportGUN extends Transport {
         try {
             let g = this.connection(url, verbose);
             let data = await this._p_once(g);
-            let res = data ? Object.keys(data).filter(k => k !== '_').sort().map(k => data[k]) : []; //See TODO-GUN-UNDERSCORE
+            let res = data ? Object.keys(data).filter(k => k !== '_').sort().map(k => data[k]) : []; //See WORKAROUND-GUN-UNDERSCORE
             // .filter((obj) => (obj.signedby.includes(url))); // upper layers verify, which filters
             if (verbose) console.log("GUN.p_rawlist found", ...utils.consolearr(res));
             return res;
@@ -145,11 +157,11 @@ class TransportGUN extends Transport {
          verbose:   true for debugging output
           */
         let g = this.connection(url, verbose);
-        if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
+        if (!current) { // See WORKAROUND-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => {
                 this.monitored = data ? Object.keys(data) : []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
                 g.map().on((v, k) => {
-                    if (!(this.monitored.includes(k)) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                    if (!(this.monitored.includes(k)) && (k !== '_')) { //See WORKAROUND-GUN-UNDERSCORE
                         this.monitored.push(k)
                         callback(JSON.parse(v));
                     }
@@ -245,6 +257,11 @@ class TransportGUN extends Transport {
         }
     }
 
+    async p_rawfetch(url, {verbose=false}={}) {
+        let g = this.connection(url, verbose); // Goes all the way to the key
+        let val = await this._p_once(g);
+        return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
+    }
     async p_get(url, keys, {verbose=false}={}) {
         let table = this.connection(url, verbose);
         if (Array.isArray(keys)) {
@@ -258,7 +275,7 @@ class TransportGUN extends Transport {
             */
         } else {
             let val = await this._p_once(table.get(keys));    // Resolves to value
-            return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync
+            return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
         }
     }
 
@@ -271,7 +288,8 @@ class TransportGUN extends Transport {
         }
     }
 
-    //TODO-GUN-PROMISE suggest p_once as a good single addition
+    //WORKAROUND-GUN-PROMISE suggest p_once as a good single addition
+    //TODO-GUN expand this to workaround Gun weirdness with errors.
     _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
         return new Promise((resolve, reject) => gun.once(resolve));
     }
@@ -279,13 +297,13 @@ class TransportGUN extends Transport {
     async p_keys(url, {verbose=false}={}) {
         let res = await this._p_once(this.connection(url, verbose));
         return Object.keys(res)
-            .filter(k=> (k !== '_') && (res[k] !== null)); //See TODO-GUN-UNDERSCORE and TODO-GUN-DELETE
+            .filter(k=> (k !== '_') && (res[k] !== null)); //See WORKAROUND-GUN-UNDERSCORE and WORKAROUND-GUN-DELETE
     }
 
     async p_getall(url, {verbose=false}={}) {
         let res = await this._p_once(this.connection(url, verbose));
         return Object.keys(res)
-            .filter(k=> (k !== '_') && res[k] !== null) //See TODO-GUN-UNDERSCORE and TODO-GUN-DELETE
+            .filter(k=> (k !== '_') && res[k] !== null) //See WORKAROUND-GUN-UNDERSCORE and WORKAROUND-GUN-DELETE
             .reduce( function(previous, key) { previous[key] = JSON.parse(res[key]); return previous; }, {});
     }
 
@@ -301,11 +319,11 @@ class TransportGUN extends Transport {
          current            Send existing items to the callback as well
           */
         let g = this.connection(url, verbose);
-        if (!current) { // See TODO-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
+        if (!current) { // See WORKAROUND-GUN-CURRENT have to keep an extra copy to compare for which calls are new.
             g.once(data => {
                 this.monitored = Object.assign({},data); //  Make a copy of data (this.monitored = data won't work as just points at same structure)
                 g.map().on((v, k) => {
-                    if ((v !== this.monitored[k]) && (k !== '_')) { //See TODO-GUN-UNDERSCORE
+                    if ((v !== this.monitored[k]) && (k !== '_')) { //See WORKAROUND-GUN-UNDERSCORE
                         this.monitored[k] = v;
                         callback("set", k, JSON.parse(v));
                     }
