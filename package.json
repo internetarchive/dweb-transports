@@ -45,7 +45,7 @@
     "url": "git://github.com/internetarchive/dweb-transports.git"
   },
   "scripts": {
-    "build": "webpack --mode development",
+    "build": "webpack --mode production",
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
