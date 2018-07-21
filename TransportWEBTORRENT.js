@@ -8,6 +8,7 @@ Y Lists have listeners and generate events - see docs at ...
 
 const WebTorrent = require('webtorrent');
 const stream = require('readable-stream');
+const Url = require('url');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -235,7 +236,7 @@ class TransportWEBTORRENT extends Transport {
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", url);
+        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", Url.parse(url).href);
         try {
             let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
