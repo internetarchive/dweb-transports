@@ -25,15 +25,16 @@ let defaultoptions = {
 // TODO-GUN - copy example from systemctl here
 
 /*
-    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL
+    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL (of course, whats weird/sub-optimal to me, might be ideal to someone else)
 
-    .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed, for now see other WORKAROUND-GUN-UNDERSCORE for the workaround
+    WORKAROUND-GUN-UNDERSCORE .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed
     .once behaves differently on node or the browser - this is a bug https://github.com/amark/gun/issues/586 and for now this code doesnt work on Node
-    .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones. for now, see other WORKAROUND-GUN-CURRENT for the workaround
-    There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on, see other WORKAROUND-GUN-DELETE for the workaround
-    GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times). See WORKAROUND-GUN-PROMISES for workaround
+    WORKAROUND-GUN-CURRENT: .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones.
+    WORKAROUND-GUN-DELETE:  There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on,
+    WORKAROUND-GUN-PROMISES: GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times).
     Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
+    WORKAROUND-GUN-ONCE: bad bug in hijacked gun which sends back an unusable "once"
  */
 
 class TransportGUN extends Transport {
@@ -291,7 +292,8 @@ class TransportGUN extends Transport {
     //WORKAROUND-GUN-PROMISE suggest p_once as a good single addition
     //TODO-GUN expand this to workaround Gun weirdness with errors.
     _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
-        return new Promise((resolve, reject) => gun.once(resolve));
+        //return new Promise((resolve, reject) => gun.once(resolve));
+        return new Promise((resolve, reject) => gun.on(resolve)); //WORKAROUND-GUN-ONCE bad bug in hijacked gun
     }
 
     async p_keys(url, {verbose=false}={}) {
