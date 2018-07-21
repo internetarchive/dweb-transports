@@ -293,7 +293,9 @@ class TransportGUN extends Transport {
     //TODO-GUN expand this to workaround Gun weirdness with errors.
     _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
         //return new Promise((resolve, reject) => gun.once(resolve));
-        return new Promise((resolve, reject) => gun.on(resolve)); //WORKAROUND-GUN-ONCE bad bug in hijacked gun
+        //WORKAROUND-GUN-ONCE notice using on instead of once as once is broken, also event.off will stop subsequent firings.
+        //This will only work where all data comes back in one go.
+        return new Promise((resolve, reject) => gun.on(function(data, key, msg, event) {event.off(); resolve(data)})); //WORKAROUND-GUN-ONCE bad bug in hijacked gun
     }
 
     async p_keys(url, {verbose=false}={}) {
