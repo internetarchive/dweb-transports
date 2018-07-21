@@ -432,7 +432,7 @@ relay        If first transport fails, try and retrieve on 2nd, then store on 1s
 A utility class to support HTTP with or without TransportHTTP
 e.g. `httptools.http().p_httpfetch("http://foo.com/bar", {method: 'GET'} )`
 
-##### p_httpfetch(url, init, verbose)
+##### p_httpfetch(url, init, {verbose)}
 Fetch a url.
 If the result
 

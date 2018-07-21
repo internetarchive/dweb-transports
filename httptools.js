@@ -22,6 +22,15 @@ if (typeof(fetch) === "undefined") {
 httptools = {};
 
 async function loopfetch(req, ms, count, what) {
+    /*
+    A workaround for a nasty Chrome issue which fails if there is a (cross-origin?) fetch of more than 6 files.  See other WORKAROUND-CHROME-CROSSORIGINFETCH
+    Loops at longer and longer intervals trying
+    req:        Request
+    ms:         Initial wait between polls
+    count:      Max number of times to try (0 means just once)
+    what:       Name of what retrieving for log (usually file name or URL)
+    returns Response:
+     */
     let lasterr;
     let loopguard = (typeof window != "undefined") && window.loopguard; // Optional global parameter, will cancel any loops if changes
     while (count-- && (loopguard === ((typeof window != "undefined") && window.loopguard)) ) {
@@ -43,11 +52,12 @@ async function loopfetch(req, ms, count, what) {
     }
 }
 
-httptools.p_httpfetch = async function(httpurl, init, verbose) { // Embrace and extend "fetch" to check result etc.
+httptools.p_httpfetch = async function(httpurl, init, {verbose=false, wantstream=false}={}) { // Embrace and extend "fetch" to check result etc.
     /*
     Fetch a url
 
-    url: optional (depends on command)
+    httpurl: optional (depends on command)
+    init:   {headers}
     resolves to: data as text or json depending on Content-Type header
     throws: TransportError if fails to fetch
      */
@@ -62,7 +72,9 @@ httptools.p_httpfetch = async function(httpurl, init, verbose) { // Embrace and 
         // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
         if (response.ok) {
             let contenttype = response.headers.get('Content-Type');
-            if (contenttype === "application/json") {
+            if (wantstream) {
+                return response.body; // Note property while json() or text() are functions
+            } else if (contenttype === "application/json") {
                 return response.json(); // promise resolving to JSON
             } else if (contenttype.startsWith("text")) { // Note in particular this is used for responses to store
                 return response.text();
@@ -89,6 +101,7 @@ httptools.p_GET = async function(httpurl, opts={}) {
         Throws TransportError if fails
         opts {
             start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
+            wantstream,     // Return a stream rather than data
             verbose }
         resolves to: URL that can be used to fetch the resource, of form contenthash:/contenthash/Q123
     */
@@ -102,7 +115,7 @@ httptools.p_GET = async function(httpurl, opts={}) {
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
-    return await httptools.p_httpfetch(httpurl, init, opts.verbose); // This s a real http url
+    return await httptools.p_httpfetch(httpurl, init, {verbose: opts.verbose, wantstream: opts.wantstream}); // This s a real http url
 }
 httptools.p_POST = async function(httpurl, type, data, verbose) {
     // Locate and return a block, based on its url
@@ -121,7 +134,7 @@ httptools.p_POST = async function(httpurl, type, data, verbose) {
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
-    return await httptools.p_httpfetch(httpurl, init, verbose);
+    return await httptools.p_httpfetch(httpurl, init, {verbose});
 }
 
 exports = module.exports = httptools;
