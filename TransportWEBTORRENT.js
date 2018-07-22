@@ -236,7 +236,7 @@ class TransportWEBTORRENT extends Transport {
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", Url.parse(url).href);
+        if (verbose) console.log(this.name, "p_f_createreadstream", Url.parse(url).href);
         try {
             let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
@@ -260,7 +260,7 @@ class TransportWEBTORRENT extends Transport {
         :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
          */
-        if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
+        if (verbose) console.log(this.name, "createreadstream", file.name, opts);
         let through;
         try {
             through = new stream.PassThrough();

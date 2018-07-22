@@ -166,7 +166,7 @@ class TransportHTTP extends Transport {
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log(this.name, "p_f_createreadstream %o", Url.parse(url).href);
+        if (verbose) console.log(this.name, "p_f_createreadstream", Url.parse(url).href);
         try {
             let self = this;
             if (wanturl) {
@@ -191,7 +191,7 @@ class TransportHTTP extends Transport {
         :param boolean verbose: true for debugging output
         :resolves to stream: The readable stream.
          */
-        if (verbose) console.log(this.name, "createreadstream %o %o", Url.parse(url).href, opts);
+        if (verbose) console.log(this.name, "createreadstream", Url.parse(url).href, opts);
         try {
             return await httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
         } catch(err) {

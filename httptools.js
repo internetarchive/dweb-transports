@@ -62,7 +62,7 @@ httptools.p_httpfetch = async function(httpurl, init, {verbose=false, wantstream
     throws: TransportError if fails to fetch
      */
     try {
-        if (verbose) console.log("httpurl=%s init=%o", httpurl, init);
+        if (verbose) console.log("p_httpfetch:", httpurl, JSON.stringify(init));
         //console.log('CTX=',init["headers"].get('Content-Type'))
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);

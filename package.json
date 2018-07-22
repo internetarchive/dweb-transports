@@ -15,7 +15,7 @@
     "gun": "latest",
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
-    "node-fetch": "latest",
+    "node-fetch": "^2.2.0",
     "readable-stream": "latest",
     "webpack": "^4.16.1",
     "webtorrent": "^0.99.3",

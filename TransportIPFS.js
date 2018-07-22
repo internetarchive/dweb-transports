@@ -228,7 +228,7 @@ class TransportIPFS extends Transport {
         :resolve buffer: Return the object being fetched. (may in the future return a stream and buffer externally)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log("IPFS p_rawfetch", utils.stringfrom(url));
+        if (verbose) console.log("IPFS p_rawfetch", Url.parse(url).href);
         if (!url) throw new errors.CodingError("TransportIPFS.p_rawfetch: requires url");
         const cid = TransportIPFS.cidFrom(url);  // Throws TransportError if url bad
         const ipfspath = TransportIPFS.ipfsFrom(url) // Need because dag.get has different requirement than file.cat
@@ -243,7 +243,7 @@ class TransportIPFS extends Transport {
             let buff;
             //if (res.value instanceof DAGNode) { // Its file or something added with the HTTP API for example, TODO not yet handling multiple files
             if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.
-                if (verbose) console.log("IPFS p_rawfetch looks like its a file", url);
+                if (verbose) console.log("IPFS p_rawfetch looks like its a file",  Url.parse(url).href);
                 //console.log("Case a or b" - we can tell the difference by looking at (res.value._links.length > 0) but dont need to
                 // as since we dont know if we are on node or browser best way is to try the files.cat and if it fails try the block to get an approximate file);
                 // Works on Node, but fails on Chrome, cant figure out how to get data from the DAGNode otherwise (its the wrong size)
