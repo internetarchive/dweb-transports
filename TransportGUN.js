@@ -34,7 +34,6 @@ let defaultoptions = {
     WORKAROUND-GUN-PROMISES: GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times).
     Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
-    WORKAROUND-GUN-ONCE: bad bug in hijacked gun which sends back an unusable "once"
  */
 
 class TransportGUN extends Transport {
@@ -53,7 +52,7 @@ class TransportGUN extends Transport {
         this.supportURLs = ['gun'];
         this.supportFunctions = [ 'fetch', //'store'
                                  'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
-                                 'add', 'list', 'listmonitor', 'newlisturls']
+                                 'add', 'list', 'listmonitor', 'newlisturls'];
         this.status = Transport.STATUS_LOADED;
     }
 
@@ -163,7 +162,7 @@ class TransportGUN extends Transport {
                 this.monitored = data ? Object.keys(data) : []; //  Keep a copy - could actually just keep high water mark unless getting partial knowledge of state of array.
                 g.map().on((v, k) => {
                     if (!(this.monitored.includes(k)) && (k !== '_')) { //See WORKAROUND-GUN-UNDERSCORE
-                        this.monitored.push(k)
+                        this.monitored.push(k);
                         callback(JSON.parse(v));
                     }
                 });
@@ -291,11 +290,8 @@ class TransportGUN extends Transport {
 
     //WORKAROUND-GUN-PROMISE suggest p_once as a good single addition
     //TODO-GUN expand this to workaround Gun weirdness with errors.
-    _p_once(gun) {  // Npte in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
-        //return new Promise((resolve, reject) => gun.once(resolve));
-        //WORKAROUND-GUN-ONCE notice using on instead of once as once is broken, also event.off will stop subsequent firings.
-        //This will only work where all data comes back in one go.
-        return new Promise((resolve, reject) => gun.on(function(data, key, msg, event) {event.off(); resolve(data)})); //WORKAROUND-GUN-ONCE bad bug in hijacked gun
+    _p_once(gun) {  // Note in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
+        return new Promise((resolve, reject) => gun.once(resolve));
     }
 
     async p_keys(url, {verbose=false}={}) {

@@ -140,6 +140,7 @@ class Transport {
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
         console.assert(false, "Intentionally undefined  function Transport.p_rawfetch should have been subclassed");
+        return "UNIMPLEMENTED";
     }
 
     p_fetch() {
