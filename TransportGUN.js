@@ -25,13 +25,15 @@ let defaultoptions = {
 // TODO-GUN - copy example from systemctl here
 
 /*
-    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL (of course, whats weird/sub-optimal to me, might be ideal to someone else)
+    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL (of course, whats weird/sub-optimal to me, might be ideal to someone else) - search the code to see where worked around
 
     WORKAROUND-GUN-UNDERSCORE .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed
     .once behaves differently on node or the browser - this is a bug https://github.com/amark/gun/issues/586 and for now this code doesnt work on Node
     WORKAROUND-GUN-CURRENT: .once() and .on() deliver existing values as well as changes, reported & hopefully will get way to find just new ones.
     WORKAROUND-GUN-DELETE:  There is no way to delete an item, setting it to null is recorded and is by convention a deletion. BUT the field will still show up in .once and .on,
     WORKAROUND-GUN-PROMISES: GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times).
+    WORKAROUND-GUN-ERRORS: GUN does an unhelpful job with errors, for example returning undefined when it cant find something (e.g. if connection to superpeer is down),
+        for now just throw an error on undefined
     Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
  */
@@ -60,11 +62,10 @@ class TransportGUN extends Transport {
         /*
         TODO-GUN need to determine what a "rooted" Url is in gun, is it specific to a superpeer for example
         Utility function to get Gun object for this URL (note this isn't async)
-        url:        URL string to find list of of form [gun|dweb]:/gun/<database>/<table>[/<key]  but could be arbitrary gun path
+        url:        URL string or structure, to find list of of form [gun|dweb]:/gun/<database>/<table>[/<key]  but could be arbitrary gun path
         resolves:   Gun a connection to use for get's etc, undefined if fails
         */
-        if (typeof url === "string")
-            url = Url.parse(url);
+        url = Url.parse(url); // Accept string or Url structure
         let patharray = url.pathname.split('/');   //[ 'gun', database, table ] but could be arbitrary length path
         patharray.shift();  // Loose leading ""
         patharray.shift();    // Loose "gun"
@@ -112,11 +113,15 @@ class TransportGUN extends Transport {
         return this.status;
     }
     // ===== DATA ======
+
     async p_rawfetch(url, {verbose=false}={}) {
+        url = Url.parse(url);   // Accept url as string or object
         let g = this.connection(url, verbose); // Goes all the way to the key
         let val = await this._p_once(g);
+        if (!val) throw new errors.TransportError("GUN unable to retrieve: "+url.href);  // WORKAROUND-GUN-ERRORS - gun doesnt throw errors when it cant find something
         return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
     }
+
 
     // ===== LISTS ========
 
@@ -257,11 +262,6 @@ class TransportGUN extends Transport {
         }
     }
 
-    async p_rawfetch(url, {verbose=false}={}) {
-        let g = this.connection(url, verbose); // Goes all the way to the key
-        let val = await this._p_once(g);
-        return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
-    }
     async p_get(url, keys, {verbose=false}={}) {
         let table = this.connection(url, verbose);
         if (Array.isArray(keys)) {
