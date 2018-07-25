@@ -59,7 +59,7 @@ class TransportWEBTORRENT extends Transport {
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
-        console.log("WebTorrent options %o", combinedoptions);
+        if (verbose) console.log("WebTorrent options %o", combinedoptions); // Dont normally log options as its long
         let t = new TransportWEBTORRENT(combinedoptions, verbose);
         Transports.addtransport(t);
 
