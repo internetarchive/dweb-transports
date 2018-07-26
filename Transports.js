@@ -560,6 +560,7 @@ class Transports {
                 this.statuscb = options.statuscb;
             }
             if (!!options.statuselement) {
+                let statuselement = options.statuselement;
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
