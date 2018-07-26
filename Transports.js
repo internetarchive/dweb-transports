@@ -266,6 +266,7 @@ class Transports {
     }
 
     // Stream handling ===========================================
+    //myArray[Math.floor(Math.random() * myArray.length)];
     
     static async p_f_createReadStream(urls, {verbose=false, wanturl=false}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
@@ -278,7 +279,11 @@ class Transports {
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
-        for (const [url, t] of tt) {
+        // Until we have transport ordering, try randomly
+        let z;
+        while ((z = tt.splice(Math.floor(Math.random() * tt.length),1)).length) {
+            let url = z[0][0];
+            let t = z[0][1];
             try {
                 return await t.p_f_createReadStream(url, {verbose, wanturl} );
             } catch (err) {

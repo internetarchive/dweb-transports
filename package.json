@@ -13,7 +13,7 @@
   "dependencies": {
     "cids": "latest",
     "gun": "latest",
-    "ipfs": "latest",
+    "ipfs": "git://github.com/ipfs/js-ipfs#master",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
     "readable-stream": "latest",
