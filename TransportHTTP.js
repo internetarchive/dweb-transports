@@ -144,6 +144,63 @@ class TransportHTTP extends Transport {
         return [u,u];
     }
 
+    // ============================== Stream support
+
+    /*
+      Code disabled until have a chance to test it with <VIDEO> tag etc, problem is that it returns p_createReadStream whch is async
+      if need sync, look at WebTorrent and how it buffers through a stream which can be returned immediately
+     */
+    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {
+        /*
+        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
+        No assumption is made about the data in terms of size or structure.
+
+        This is the initialisation step, which returns a function suitable for <VIDEO>
+
+        Returns a new Promise that resolves to function for a node.js readable stream.
+
+        Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
+
+        :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean verbose: true for debugging output
+        :resolves to: f({start, end}) => stream (The readable stream.)
+        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
+         */
+        if (verbose) console.log(this.name, "p_f_createreadstream", Url.parse(url).href);
+        try {
+            let self = this;
+            if (wanturl) {
+                return url;
+            } else {
+                return function (opts) { return self.p_createReadStream(url, opts, verbose); };
+            }
+        } catch(err) {
+            console.warn(`p_f_createReadStream failed on ${Url.parse(url).href} ${err.message}`);
+            throw(err);
+        }
+    }
+
+
+    async p_createReadStream(url, opts, verbose) {
+        /*
+        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
+        NOTE THIS PROBABLY WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway
+
+        :param file:    Webtorrent "file" as returned by webtorrentfindfile
+        :param opts: { start: byte to start from; end: optional end byte }
+        :param boolean verbose: true for debugging output
+        :resolves to stream: The readable stream.
+         */
+        if (verbose) console.log(this.name, "createreadstream", Url.parse(url).href, opts);
+        try {
+            return await httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
+        } catch(err) {
+            console.warn(this.name, "caught error", err);
+            throw err;
+        }
+    }
+
+
     // ============================== Key Value support
 
 

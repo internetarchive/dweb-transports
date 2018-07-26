@@ -52,7 +52,10 @@ class Transports {
         returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
         throws:     CodingError if urls empty or [undefined...]
          */
-        console.assert((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func), "Coding Error: Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+        if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func)))   {
+            console.warn("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+            return [];
+        }
         if (!(urls && urls.length > 0)) {
             return this._connected().filter((t) => (t.supports(undefined, func)))
                 .map((t) => [undefined, t]);
@@ -68,6 +71,9 @@ class Transports {
         // Need a async version of this for serviceworker and TransportsProxy
         return this.validFor(urls, func, options).map((ut) => ut[0]);
     }
+
+    // SEE-OTHER-ADDTRANSPORT
+
     static http(verbose) {
         // Find an http transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "HTTP")
@@ -81,6 +87,12 @@ class Transports {
         // Find an ipfs transport if it exists, so for example ServiceWorker.p_respondWebTorrent can use it.
         return Transports._connected().find((t) => t.name === "WEBTORRENT")
     }
+
+    static gun(verbose) {
+        // Find a GUN transport if it exists
+        return Transports._connected().find((t) => t.name === "GUN")
+    }
+
 
     static async p_resolveNames(urls) {
         /* If and only if TransportNAME was loaded (it might not be as it depends on higher level classes like Domain and SmartDict)
@@ -133,7 +145,7 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
         if (!tt.length) {
-            throw new errors.TransportError('Transports.p_rawlist: Cant find transport for urls:'+urls.join(','));
+            throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
         }
         let errs = [];
         let ttlines = await Promise.all(tt.map(async function([url, t]) {
@@ -169,10 +181,12 @@ class Transports {
         throws:     CodingError if urls empty or [undefined ... ]
          */
         let verbose = opts.verbose;
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
-        let tt = this.validFor(urls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
+        if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
+        let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
+        let tt = this.validFor(resolvedurls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
-            throw new errors.TransportError("Transports.p_fetch cant find any transport for urls: " + urls);
+            throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + resolvedurls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -206,6 +220,8 @@ class Transports {
         returns:    undefined
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
          */
+        //TODO-REFACTOR remove dependecy on the object having a .preflight, this should be handled one layer up.
+        //TODO-REFACTOR requires changes in: dweb-transports: TransportXyz, Transport, API.md; dweb-objects: CommonList.js, test.js; dweb-serviceworker/TransportsProxy.js;
         //TODO-MULTI-GATEWAY might be smarter about not waiting but Promise.race is inappropriate as returns after a failure as well.
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
@@ -442,14 +458,16 @@ class Transports {
             .map(([u, t]) => t.p_connection(u, verbose)));
     }
 
-    static monitor(urls, cb, verbose) {
+    static monitor(urls, cb, {verbose=false, current=false}={}) {
         /*
         Add a listmonitor for each transport - note this means if multiple transports support it, then will get duplicate events back if everyone else is notifying all of them.
         Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
+        cb:         function({type, key, value})
+        current:    If true then then send all current entries as well
          */
         //Cant' its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         this.validFor(urls, "monitor")
-            .map(([u, t]) => t.monitor(u, cb, verbose));
+            .map(([u, t]) => t.monitor(u, cb, {verbose, current}));
     }
 
     // Setup and connection
@@ -530,7 +548,7 @@ class Transports {
             let tabbrevs = options.transports;    // Array of transport abbreviations
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
-            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; }
+            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options, verbose);
             if (options.statuscb) {

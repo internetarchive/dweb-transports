@@ -8,6 +8,7 @@ Y Lists have listeners and generate events - see docs at ...
 
 const WebTorrent = require('webtorrent');
 const stream = require('readable-stream');
+const Url = require('url');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -15,7 +16,6 @@ const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 
 let defaultoptions = {
-    webtorrent: {}
 };
 
 class TransportWEBTORRENT extends Transport {
@@ -42,7 +42,7 @@ class TransportWEBTORRENT extends Transport {
          */
         let self = this;
         return new Promise((resolve, reject) => {
-            this.webtorrent = new WebTorrent(this.options.webtorrent);
+            this.webtorrent = new WebTorrent(this.options);
             this.webtorrent.once("ready", () => {
                 console.log("WEBTORRENT READY");
                 resolve();
@@ -58,8 +58,8 @@ class TransportWEBTORRENT extends Transport {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        let combinedoptions = Transport.mergeoptions(defaultoptions, options);
-        console.log("WebTorrent options %o", combinedoptions);
+        let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
+        if (verbose) console.log("WebTorrent options %o", combinedoptions); // Dont normally log options as its long
         let t = new TransportWEBTORRENT(combinedoptions, verbose);
         Transports.addtransport(t);
 
@@ -73,7 +73,7 @@ class TransportWEBTORRENT extends Transport {
             await this.p_webtorrentstart(verbose);
             await this.p_status(verbose);
         } catch(err) {
-            console.error("WebTorrent failed to connect",err);
+            console.error(this.name, "failed to connect", err);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);
@@ -103,7 +103,7 @@ class TransportWEBTORRENT extends Transport {
             throw new errors.CodingError("TransportWEBTORRENT.p_rawfetch: requires url");
         }
 
-        const urlstring = (typeof url === "string" ? url : url.href)
+        const urlstring = (typeof url === "string" ? url : url.href);
         const index = urlstring.indexOf('/');
 
         if (index === -1) {
@@ -216,7 +216,7 @@ class TransportWEBTORRENT extends Transport {
         } catch(err) {
             console.log(`p_fileFrom failed on ${url} ${err.message}`);
             throw(err);
-        };
+        }
 
     }
 
@@ -236,7 +236,7 @@ class TransportWEBTORRENT extends Transport {
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log("TransportWEBTORRENT p_f_createreadstream %o", url);
+        if (verbose) console.log(this.name, "p_f_createreadstream", Url.parse(url).href);
         try {
             let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
@@ -248,7 +248,7 @@ class TransportWEBTORRENT extends Transport {
         } catch(err) {
             console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
             throw(err);
-        };
+        }
     }
 
     createReadStream(file, opts, verbose) {
@@ -260,7 +260,7 @@ class TransportWEBTORRENT extends Transport {
         :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
          */
-        if (verbose) console.log("TransportWEBTORRENT createreadstream %o %o", file.name, opts);
+        if (verbose) console.log(this.name, "createreadstream", file.name, opts);
         let through;
         try {
             through = new stream.PassThrough();
@@ -268,9 +268,9 @@ class TransportWEBTORRENT extends Transport {
             fileStream.pipe(through);
             return through;
         } catch(err) {
-            console.log("TransportWEBTORRENT caught error", err)
+            console.log("TransportWEBTORRENT caught error", err);
             if (typeof through.destroy === 'function')
-                through.destroy(err)
+                through.destroy(err);
             else through.emit('error', err)
         }
     }
