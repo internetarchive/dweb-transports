@@ -2,6 +2,7 @@ const Transport = require('./Transport'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
 const Url = require('url');
+const stream = require('readable-stream');
 
 
 defaulthttpoptions = {
@@ -180,6 +181,34 @@ class TransportHTTP extends Transport {
         }
     }
 
+    async createReadStream(url, opts, verbose) {
+        /*
+        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
+        NOTE THIS DOESNT WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway - reports stream.on an filestream.pipe aren't functions
+
+        :param file:    Webtorrent "file" as returned by webtorrentfindfile
+        :param opts: { start: byte to start from; end: optional end byte }
+        :param boolean verbose: true for debugging output
+        :resolves to stream: The readable stream.
+         */
+
+        if (verbose) console.log(this.name, "createreadstream", Url.parse(url).href, opts);
+        let through;
+        try {
+            through = new stream.PassThrough();
+            const p_filestream = httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
+            p_filestream.then(s => s.pipe(through));
+            return through; // Returns through synchronously, before the pipe is setup
+        } catch(err) {
+            console.log(this.name,"createReadStream caught error", err);
+            if (typeof through.destroy === 'function')
+                through.destroy(err);
+            else through.emit('error', err)
+        }
+
+
+
+    }
 
     async p_createReadStream(url, opts, verbose) {
         /*
