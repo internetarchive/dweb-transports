@@ -39,7 +39,7 @@
   "keywords": [],
   "license": "AGPL-3.0",
   "main": "index.js",
-  "name": "dweb-transports",
+  "name": "@internetarchive/dweb-transports",
   "repository": {
     "type": "git",
     "url": "git://github.com/internetarchive/dweb-transports.git"
