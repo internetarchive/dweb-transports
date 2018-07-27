@@ -539,8 +539,8 @@ See p_resolveNames(urls) and resolveNamesWith(cb)
 
 In practice this means that an application should do.
 ```
-require('dweb-transports)
-require('dweb-objects/Domain)   # Sets the callbacks.
+require('@internetarchive/dweb-transports)
+require('@internetarchive/dweb-objects/Domain)   # Sets the callbacks.
 ```
 When setup this way, then calls to most functions that take an array of urls will first try and expand names.
 

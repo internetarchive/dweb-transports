@@ -14,11 +14,11 @@ decentralized transports.
 ### Node Installation
 * Clone this repo. 
 * Until this is in npm, add the line
-`"dweb-transports": "git+https://git@github.com/internetarchive/dweb-transports.git",`
+`"@internetarchive/dweb-transports.git": "latest",`
 to your package.json file in the dependencies section. 
-* `npm install dweb-transports`  will install the dependencies including IPFS & WebTorrent
+* `npm install @internetarchive/dweb-transports`  will install the dependencies including IPFS & WebTorrent
 
-`const DwebTransports = require("dweb-transports")` will add all Transports to a Javascript file.
+`const DwebTransports = require("@internetarchive/dweb-transports")` will add all Transports to a Javascript file.
 * TODO-API writeup how to require only some of the transports.
 * Then see usage API below
 
