@@ -119,7 +119,12 @@ class TransportGUN extends Transport {
         let g = this.connection(url, verbose); // Goes all the way to the key
         let val = await this._p_once(g);
         if (!val) throw new errors.TransportError("GUN unable to retrieve: "+url.href);  // WORKAROUND-GUN-ERRORS - gun doesnt throw errors when it cant find something
-        return typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
+        let o = typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
+        //TODO-GUN this is a hack because the metadata such as metadata/audio is getting cached in GUN and in this case is wrong.
+        if (o.metadata && o.metadata.thumbnaillinks && o.metadata.thumbnaillinks.find(t => t.includes('ipfs/zb2'))) {
+            throw new errors.TransportError("GUN retrieving legacy data at: "+url.href)
+        }
+        return o;
     }
 
 
