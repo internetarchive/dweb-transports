@@ -38,7 +38,7 @@ async function main(url) {
             statuselement: document.getElementById("statuselement"),    // Where to build status indicator
             defaulttransports: ["HTTP","IPFS"],                         // Default transports if not specified
             transports: searchparams.getAll("transport")    // Allow override default from URL parameters
-        }, verbose);                                        // Pass verbose global parameter from command line
+        });
         // Any code you want to run after connected to transports goes here.
     } catch(err) {
         console.log("App Error:", err);
@@ -46,8 +46,6 @@ async function main(url) {
     }
 }
 var searchparams = new URL(window.location.href).searchParams;
-// Allow specifying ?verbose=true in URL to get debugging, and transport=HTTP etc
-var verbose = searchparams.get("verbose") || false;
 ```
 
 See [example_block.html](./example_block.html) for an example of connecting, storing and retrieving.

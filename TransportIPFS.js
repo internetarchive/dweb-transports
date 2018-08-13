@@ -4,6 +4,7 @@ See https://github.com/ipfs/js-ipfs but note its often out of date relative to t
 */
 
 const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
+const debugipfs = require('debug')('dweb-transports:ipfs');
 
 // IPFS components
 const IPFS = require('ipfs');
@@ -54,8 +55,8 @@ class TransportIPFS extends Transport {
     TODO - this is not complete
      */
 
-    constructor(options, verbose) {
-        super(options, verbose);
+    constructor(options) {
+        super(options);
         this.ipfs = undefined;          // Undefined till start IPFS
         this.options = options;         // Dictionary of options
         this.name = "IPFS";             // For console log etc
@@ -76,7 +77,7 @@ class TransportIPFS extends Transport {
         }}}
     }
 */
-    p_ipfsstart(verbose) {
+    p_ipfsstart() {
         /*
         Just start IPFS - not Y (note used with "yarrays" and will be used for non-IPFS list management)
         Note - can't figure out how to use async with this, as we resolve the promise based on the event callback
@@ -91,45 +92,47 @@ class TransportIPFS extends Transport {
             this.ipfs.on('error', (err) => reject(err));
         })
             .then(() => self.ipfs.version())
-            .then((version) => console.log('IPFS READY',version))
+            .then((version) => debugipfs('ready %o',version))
             .catch((err) => {
-                console.log("Error caught in p_ipfsstart");
+                console.warn("IPFS p_ipfsstart failed", err.message);
                 throw(err);
             });
     }
 
-    static setup0(options, verbose) {
+    static setup0(options) {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         const combinedoptions = Transport.mergeoptions(defaultoptions, options.ipfs);
-        if (verbose) console.log("IPFS loading options %o", combinedoptions);
-        const t = new TransportIPFS(combinedoptions, verbose);   // Note doesnt start IPFS
+        debugipfs("setup options=%o", combinedoptions);
+        const t = new TransportIPFS(combinedoptions);   // Note doesnt start IPFS
         Transports.addtransport(t);
         return t;
     }
 
-    async p_setup1(verbose, cb) {
+    async p_setup1(cb) {
         try {
-            if (verbose) console.log("IPFS starting and connecting");
+            // Logged by Transports
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
-            await this.p_ipfsstart(verbose);    // Throws Error("websocket error") and possibly others.
-            this.status = await this.p_status(verbose);
+            await this.p_ipfsstart();    // Throws Error("websocket error") and possibly others.
+            this.status = await this.p_status();
         } catch(err) {
+            // Logged by Transports
             console.error(this.name, "failed to connect", err);
             this.status = Transport.STATUS_FAILED;
+            // Dont throw an error, allow other transports to complete setup
         }
         if (cb) cb(this);
         return this;
     }
 
-    async p_status(verbose) {
+    async p_status() {
         /*
             Return a numeric code for the status of a transport.
          */
         this.status =  (await this.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
-        return super.p_status(verbose);
+        return super.p_status();
     }
 
     // Everything else - unless documented here - should be opaque to the actual structure of a CID
@@ -164,7 +167,7 @@ class TransportIPFS extends Transport {
                 throw new errors.TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be dweb: or ipfs:/ipfs/...: " + url.href);
             return new CID(patharr[2]);
         } else {
-            throw new errors.CodingError("TransportIPFS.cidFrom: Cant convert url",url);
+            throw new errors.CodingError("TransportIPFS.cidFrom: Cant convert url", url);
         }
     }
 
@@ -214,7 +217,7 @@ class TransportIPFS extends Transport {
         throw new errors.CodingError(`Cant turn ${url} into a multihash`);
     }
 
-    async p_rawfetch(url, {verbose=false, timeoutMS=60000, relay=false}={}) {
+    async p_rawfetch(url, {timeoutMS=60000, relay=false}={}) {
         /*
         Fetch some bytes based on a url of the form ipfs:/ipfs/Qm..... or ipfs:/ipfs/z....  .
         No assumption is made about the data in terms of size or structure, nor can we know whether it was created with dag.put or ipfs add or http /api/v0/add/
@@ -224,11 +227,10 @@ class TransportIPFS extends Transport {
         There may also be need for a streaming version of this call, at this point undefined since we havent (currently) got a use case..
 
         :param string url: URL of object being retrieved {ipfs|dweb}:/ipfs/<cid> or /
-        :param boolean verbose: true for debugging output
         :resolve buffer: Return the object being fetched. (may in the future return a stream and buffer externally)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log("IPFS p_rawfetch", Url.parse(url).href);
+        // Attempt logged by Transports
         if (!url) throw new errors.CodingError("TransportIPFS.p_rawfetch: requires url");
         const cid = TransportIPFS.cidFrom(url);  // Throws TransportError if url bad
         const ipfspath = TransportIPFS.ipfsFrom(url) // Need because dag.get has different requirement than file.cat
@@ -241,61 +243,45 @@ class TransportIPFS extends Transport {
                     throw new errors.TransportError("Not yet supporting paths in p_rawfetch");
                 } //TODO-PATH
             let buff;
-            //if (res.value instanceof DAGNode) { // Its file or something added with the HTTP API for example, TODO not yet handling multiple files
             if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.
-                if (verbose) console.log("IPFS p_rawfetch looks like its a file",  Url.parse(url).href);
-                //console.log("Case a or b" - we can tell the difference by looking at (res.value._links.length > 0) but dont need to
-                // as since we dont know if we are on node or browser best way is to try the files.cat and if it fails try the block to get an approximate file);
-                // Works on Node, but fails on Chrome, cant figure out how to get data from the DAGNode otherwise (its the wrong size)
+                // We retrieved a DAGNode, call files.cat (the node will come from the cache quickly)
                 buff = await this.ipfs.files.cat(ipfspath); //See js-ipfs v0.27 version and  https://github.com/ipfs/js-ipfs/issues/1229 and https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/FILES.md#cat
-
-                /* Was needed on v0.26, not on v0.27
-                if (buff.length === 0) {    // Hit the Chrome bug
-                    // This will get a file padded with ~14 bytes - 4 at front, 4 at end and cant find the other 6 !
-                    // but it seems to work for PDFs which is what I'm testing on.
-                    if (verbose) console.log("Kludge alert - files.cat fails in Chrome, trying block.get");
-                    let blk = await this.promisified.ipfs.block.get(cid);
-                    buff = blk.data;
-                }
-                END of v0.26 version */
             } else { //c: not a file
+                debugipfs("Found a raw IPFS block (unusual) - not a DAGNode - handling as such");
                 buff = res.value;
             }
-            if (verbose) console.log(`IPFS fetched ${buff.length} from ${ipfspath}`);
+            // Success logged by Transports
             return buff;
         } catch (err) { // TimeoutError or could be some other error from IPFS etc
-            console.log("Caught misc error in TransportIPFS.p_rawfetch trying IPFS", err.message);
+            debugipfs("Caught error '%s' fetching via IPFS, trying IPFS HTTP gateway", err.message);
             try {
                 let ipfsurl = TransportIPFS.ipfsGatewayFrom(url);
                 return await utils.p_timeout(
                     httptools.p_GET(ipfsurl), // Returns a buffer
                     timeoutMS, "Timed out IPFS fetch of "+ipfsurl)
             } catch (err) {
-                console.log("Caught misc error in TransportIPFS.p_rawfetch trying gateway", err.message);
+                // Failure logged by Transports:
+                //debugipfs("Failed to retrieve from gateway: %s", err.message);
                 throw err;
             }
         }
     }
 
-    async p_rawstore(data, {verbose}) {
+    async p_rawstore(data) {
         /*
         Store a blob of data onto the decentralised transport.
         Returns a promise that resolves to the url of the data
 
         :param string|Buffer data: Data to store - no assumptions made to size or content
-        :param boolean verbose: true for debugging output
         :resolve string: url of data stored
          */
         console.assert(data, "TransportIPFS.p_rawstore: requires data");
         const buf = (data instanceof Buffer) ? data : new Buffer(data);
-        //return this.promisified.ipfs.block.put(buf).then((block) => block.cid)
-        //https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/DAG.md#dagput
-        //let res = await this.ipfs.dag.put(buf,{ format: 'dag-cbor', hashAlg: 'sha2-256' });
         const res = (await this.ipfs.files.add(buf,{ "cid-version": 1, hashAlg: 'sha2-256'}))[0];
         return TransportIPFS.urlFrom(res);
     }
 
-    /* OLD WAY Based on https://github.com/ipfs/js-ipfs/pull/1231/files
+    /* OLD WAY Based on https://github.com/ipfs/js-ipfs/pull/1231/files TODO-IPFS repurpose this to add byte range to fetch
 
     async p_offsetStream(stream, links, startByte, endByte) {
         let streamPosition = 0
@@ -333,9 +319,8 @@ class TransportIPFS extends Transport {
             console.log(err.message);
         }
     }
-    async p_f_createReadStream(url, {verbose=false}={}) {  // Asynchronously return a function that can be used in createReadStream
-        verbose = true;
-        if (verbose) console.log("p_f_createReadStream",url);
+    async p_f_createReadStream(url) {  // Asynchronously return a function that can be used in createReadStream
+        if () console.log("p_f_createReadStream", url);
         const mh = TransportIPFS.multihashFrom(url);
         const links = await this.ipfs.object.links(mh);
         let throughstream;  //Holds pointer to stream between calls.
@@ -360,7 +345,7 @@ class TransportIPFS extends Transport {
     }
     */
 
-    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {
+    async p_f_createReadStream(url, {wanturl=false}={}) {
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
         No assumption is made about the data in terms of size or structure.
@@ -374,11 +359,11 @@ class TransportIPFS extends Transport {
         :param string url: URL of object being retrieved of form:
             magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
             ipfs:/ipfs/Q123
-        :param boolean verbose: true for debugging output
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log(this.name, "p_f_createreadstream %o", url);
+        // Logged by Transports;
+        //debugipfs("p_f_createreadstream %o", url);
         let stream;
         try {
             let multihash = url.pathname.split('/ipfs/')[1]
@@ -392,11 +377,10 @@ class TransportIPFS extends Transport {
                      /*
                         The function, encapsulated and inside another function by p_f_createReadStream (see docs)
                         :param opts: { start: byte to start from; end: optional end byte }
-                        :param boolean verbose: true for debugging output
                         :returns stream: The readable stream.
                         FOR IPFS this is copied and adapted from git repo js-ipfs/examples/browser-readablestream/index.js
                      */
-                    if (verbose) console.log("TransportIPFS createreadstream %o %o", multihash, opts);
+                    debugipfs("createReadStream %o %o", multihash, opts || "" );
 
                     const start = opts ? opts.start : 0
                     // The videostream library does not always pass an end byte but when
@@ -410,6 +394,8 @@ class TransportIPFS extends Transport {
                     }
 
                     // This stream will contain the requested bytes
+
+                    // For debugging used a known good IPFS video
                     //let fakehash="QmedXJYwvNSJFRMVFuJt7BfCMcJwPoqJgqN3U2MYxHET5a"
                     //console.log("XXX@IPFS.p_f_createReadStream faking call to",multihash, "with", fakehash)
                     //multihash=fakehash;
@@ -433,32 +419,33 @@ class TransportIPFS extends Transport {
             if (stream && stream.destroy) {
                 stream.destroy()
             }
-            console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
+            // Error logged by Transports
+            //console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
             throw(err);
         };
     }
 
-    static async p_test(opts, verbose) {
-        if (verbose) {console.log("TransportIPFS.test")}
+    static async p_test(opts) {
+        {console.log("TransportIPFS.test")}
         try {
-            const transport = await this.p_setup(opts, verbose); // Assumes IPFS already setup
-            if (verbose) console.log(transport.name,"setup");
-            const res = await transport.p_status(verbose);
+            const transport = await this.p_setup(opts); // Assumes IPFS already setup
+            console.log(transport.name,"setup");
+            const res = await transport.p_status();
             console.assert(res === Transport.STATUS_CONNECTED)
 
             let urlqbf;
             const qbf = "The quick brown fox";
             const qbf_url = "ipfs:/ipfs/zdpuAscRnisRkYnEyJAp1LydQ3po25rCEDPPEDMymYRfN1yPK"; // Expected url
             const testurl = "1114";  // Just a predictable number can work with
-            const url = await transport.p_rawstore(qbf, {verbose});
-            if (verbose) console.log("rawstore returned", url);
+            const url = await transport.p_rawstore(qbf);
+            console.log("rawstore returned", url);
             const newcid = TransportIPFS.cidFrom(url);  // Its a CID which has a buffer in it
             console.assert(url === qbf_url, "url should match url from rawstore");
             const cidmultihash = url.split('/')[2];  // Store cid from first block in form of multihash
             const newurl = TransportIPFS.urlFrom(newcid);
             console.assert(url === newurl, "Should round trip");
             urlqbf = url;
-            const data = await transport.p_rawfetch(urlqbf, {verbose});
+            const data = await transport.p_rawfetch(urlqbf);
             console.assert(data.toString() === qbf, "Should fetch block stored above");
             //console.log("TransportIPFS test complete");
             return transport

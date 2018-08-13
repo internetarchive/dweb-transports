@@ -1,13 +1,13 @@
 const DwebTransports = require('./index.js');
 
-async function p_test({verbose=true, transport=["GUN"]}={}) {
+async function p_test({transport=["GUN"]}={}) {
     if (Array.isArray(transport)) {
         for (tname of transport) {
-            await p_test({verbose, transport: tname});   // Note this is going to run in parallel
+            await p_test({ transport: tname});   // Note this is going to run in parallel
         }
     } else {
         let tclass = DwebTransports._transportclasses[transport];
-        await tclass.p_test({verbose});
+        await tclass.p_test();
     }
 }
 p_test();

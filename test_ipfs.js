@@ -54,7 +54,7 @@ function multihashFrom(url) {
     throw new errors.CodingError(`Cant turn ${url} into a multihash`);
 }
 
-function p_ipfsstart(verbose) {
+function p_ipfsstart() {
     return new Promise((resolve, reject) => {
         if (!usehttpapi) {
             ipfs = new IPFS(defaultipfsoptions);

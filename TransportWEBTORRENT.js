@@ -9,6 +9,7 @@ Y Lists have listeners and generate events - see docs at ...
 const WebTorrent = require('webtorrent');
 const stream = require('readable-stream');
 const Url = require('url');
+const debugwt = require('debug')('dweb-transports:webtorrent');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -26,8 +27,8 @@ class TransportWEBTORRENT extends Transport {
     webtorrent: object returned when starting webtorrent
      */
 
-    constructor(options, verbose) {
-        super(options, verbose);
+    constructor(options) {
+        super(options);
         this.webtorrent = undefined;    // Undefined till start WebTorrent
         this.options = options;         // Dictionary of options
         this.name = "WEBTORRENT";       // For console log etc
@@ -36,7 +37,7 @@ class TransportWEBTORRENT extends Transport {
         this.status = Transport.STATUS_LOADED;
     }
 
-    p_webtorrentstart(verbose) {
+    p_webtorrentstart() {
         /*
         Start WebTorrent and wait until for ready.
          */
@@ -44,7 +45,7 @@ class TransportWEBTORRENT extends Transport {
         return new Promise((resolve, reject) => {
             this.webtorrent = new WebTorrent(this.options);
             this.webtorrent.once("ready", () => {
-                console.log("WEBTORRENT READY");
+                debugwt("ready");
                 resolve();
             });
             this.webtorrent.once("error", (err) => reject(err));
@@ -54,33 +55,33 @@ class TransportWEBTORRENT extends Transport {
         })
     }
 
-    static setup0(options, verbose) {
+    static setup0(options) {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
-        if (verbose) console.log("WebTorrent options %o", combinedoptions); // Dont normally log options as its long
-        let t = new TransportWEBTORRENT(combinedoptions, verbose);
+        debugwt("setup0: options=%o", combinedoptions);
+        let t = new TransportWEBTORRENT(combinedoptions);
         Transports.addtransport(t);
 
         return t;
     }
 
-    async p_setup1(verbose, cb) {
+    async p_setup1(cb) {
         try {
             this.status = Transport.STATUS_STARTING;
             if (cb) cb(this);
-            await this.p_webtorrentstart(verbose);
-            await this.p_status(verbose);
+            await this.p_webtorrentstart();
+            await this.p_status();
         } catch(err) {
-            console.error(this.name, "failed to connect", err);
+            console.error(this.name, "failed to connect", err.message);
             this.status = Transport.STATUS_FAILED;
         }
         if (cb) cb(this);
         return this;
     }
 
-    async p_status(verbose) {
+    async p_status() {
         /*
         Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
          */
@@ -91,7 +92,7 @@ class TransportWEBTORRENT extends Transport {
         } else {
             this.status = Transport.STATUS_FAILED;
         }
-        return super.p_status(verbose);
+        return super.p_status();
     }
 
     webtorrentparseurl(url) {
@@ -163,7 +164,7 @@ class TransportWEBTORRENT extends Transport {
         return file;
     }
 
-    p_rawfetch(url, {verbose=false}={}) {
+    p_rawfetch(url) {
         /*
         Fetch some bytes based on a url of the form:
 
@@ -174,13 +175,11 @@ class TransportWEBTORRENT extends Transport {
         No assumption is made about the data in terms of size or structure.         Returns a new Promise that resolves to a buffer.
 
         :param string url: URL of object being retrieved
-        :param boolean verbose: true for debugging output
         :resolve buffer: Return the object being fetched.
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
         return new Promise((resolve, reject) => {
-            if (verbose) console.log("WebTorrent p_rawfetch", url);
-
+            // Logged by Transports
             const { torrentId, path } = this.webtorrentparseurl(url);
             this.p_webtorrentadd(torrentId)
                 .then((torrent) => {
@@ -218,13 +217,13 @@ class TransportWEBTORRENT extends Transport {
             }
             return file
         } catch(err) {
-            console.log(`p_fileFrom failed on ${url} ${err.message}`);
+            // Logged by Transports
             throw(err);
         }
 
     }
 
-    async p_f_createReadStream(url, {verbose=false, wanturl=false}={}) {
+    async p_f_createReadStream(url, {wanturl=false}={}) {
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
         No assumption is made about the data in terms of size or structure.
@@ -236,35 +235,33 @@ class TransportWEBTORRENT extends Transport {
         Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
 
         :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
-        :param boolean verbose: true for debugging output
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
-        if (verbose) console.log(this.name, "p_f_createreadstream", Url.parse(url).href);
+        // Logged by Transports
         try {
             let filet = await this._p_fileTorrentFromUrl(url);
             let self = this;
             if (wanturl) {
                 return url;
             } else {
-                return function (opts) { return self.createReadStream(filet, opts, verbose); };
+                return function (opts) { return self.createReadStream(filet, opts); };
             }
         } catch(err) {
-            console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
+            // Logged by Transports
             throw(err);
         }
     }
 
-    createReadStream(file, opts, verbose) {
+    createReadStream(file, opts) {
         /*
         The function, encapsulated and inside another function by p_f_createReadStream (see docs)
 
         :param file:    Webtorrent "file" as returned by webtorrentfindfile
         :param opts: { start: byte to start from; end: optional end byte }
-        :param boolean verbose: true for debugging output
         :returns stream: The readable stream.
          */
-        if (verbose) console.log(this.name, "createreadstream", file.name, opts);
+        debugwt("createReadStream %s %o", file.name, opts);
         let through;
         try {
             through = new stream.PassThrough();
@@ -272,20 +269,20 @@ class TransportWEBTORRENT extends Transport {
             fileStream.pipe(through);
             return through;
         } catch(err) {
-            console.log("TransportWEBTORRENT caught error", err);
+            debugwt("createReadStream error %s", err);
             if (typeof through.destroy === 'function')
                 through.destroy(err);
             else through.emit('error', err)
         }
     }
 
-    async p_createReadableStream(url, opts, verbose) {
+    async p_createReadableStream(url, opts) {
         //Return a readable stream (suitable for a HTTP response) from a node type stream from webtorrent.
         // This is used by dweb-serviceworker for WebTorrent only
         let filet = await this._p_fileTorrentFromUrl(url);
         return new ReadableStream({
             start (controller) {
-                console.log('start', url, opts);
+                debugwt("start %s %o", url, opts);
                 // Create a webtorrent file stream
                 const filestream = filet.createReadStream(opts);
                 // When data comes out of webtorrent node.js style stream, put it into the WHATWG stream
@@ -304,21 +301,21 @@ class TransportWEBTORRENT extends Transport {
 
 
 
-    static async p_test(opts, verbose) {
+    static async p_test(opts) {
         try {
-            let transport = await this.p_setup(opts, verbose); // Assumes IPFS already setup
-            if (verbose) console.log(transport.name, "setup");
-            let res = await transport.p_status(verbose);
+            let transport = await this.p_setup(opts); // Assumes IPFS already setup
+            console.log(transport.name, "p_test setup", opts, "complete");
+            let res = await transport.p_status();
             console.assert(res === Transport.STATUS_CONNECTED);
 
             // Creative commons torrent, copied from https://webtorrent.io/free-torrents
             let bigBuckBunny = 'magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big+Buck+Bunny&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&ws=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2F&xs=https%3A%2F%2Fwebtorrent.io%2Ftorrents%2Fbig-buck-bunny.torrent/Big Buck Bunny.en.srt';
 
-            let data1 = await transport.p_rawfetch(bigBuckBunny, {verbose});
+            let data1 = await transport.p_rawfetch(bigBuckBunny);
             data1 = data1.toString();
             assertData(data1);
 
-            const stream = await transport.createReadStream(bigBuckBunny, verbose);
+            const stream = await transport.createReadStream(bigBuckBunny);
 
             const chunks = [];
             stream.on("data", (chunk) => {
@@ -339,7 +336,7 @@ class TransportWEBTORRENT extends Transport {
                 console.assert(data.length, 129, "'Big Buck Bunny.en.srt' was " + data.length);
             }
         } catch (err) {
-            console.log("Exception thrown in TransportWEBTORRENT.p_test:", err.message);
+            console.log("Exception thrown in", transport.name, "p_test():", err.message);
             throw err;
         }
     }

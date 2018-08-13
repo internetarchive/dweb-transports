@@ -5,6 +5,7 @@
     <!--Note there are copies of this in dweb-transports repo and dweb-transport repo-->
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>DWEB Transports example page</title>
+    <script type="text/javascript">localStorage.debug = "dweb-transports dweb-transports:*";</script>
     <script type="text/javascript" src="./dist/dweb-transports-bundle.js"></script>
     <script type="text/javascript" src='https://cloud.tinymce.com/stable/tinymce.min.js'></script><!-- TinyMCE -->
     <script type="text/javascript">
@@ -18,11 +19,10 @@
             'insertdatetime media table contextmenu paste code' ],
         toolbar: 'save | undo redo | insert | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image',
         save_onsavecallback: function() {
-            let verbose = true; // See commentary in console.log
             let content = tinyMCE.get('mytextarea').getContent();
             // alert(content);
             let el = document.getElementById("retrievalarea");
-            let urls = DwebTransports.p_rawstore(content, {verbose})
+            let urls = DwebTransports.p_rawstore(content)
                 .then((urls) => el.value = urls)
                 .catch((err) => {console.error("saveoncallback", err); alert(err)});
         }
@@ -40,7 +40,7 @@
             let destn = document.getElementById("retrievaldestn");
             destn.innerHTML = ""; // Clear it first
 
-            let data = await DwebTransports.p_rawfetch(urls, {verbose});
+            let data = await DwebTransports.p_rawfetch(urls);
             console.log("Retrieved data length", data.length);
             destn.innerHTML = data;
         } catch(err) {
@@ -56,7 +56,7 @@
                 statuselement: document.getElementById("statuselement"),    // Where to build status indicator
                 defaulttransports: ["HTTP","IPFS"],                         // Default transports if not specified
                 transports: searchparams.getAll("transport")    // Allow override default from URL parameters
-            }, verbose);
+            });
             // Any code you want to run after connected to transports goes here.
             if (url) fetchanddisplay(url);
         } catch(err) {
@@ -114,7 +114,6 @@
 
 <script type="text/javascript">
     var searchparams = new URL(window.location.href).searchParams;
-    var verbose = searchparams.get("verbose") || false;  // Anything specified for verbose is true (could truthify buy no need)
     main(searchparams.get("url")); //starts a transport, checks its status, and if appropriate to app opens a URL passed
 </script>
 

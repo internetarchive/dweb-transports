@@ -1,8 +1,8 @@
 const Url = require('url');
 const errors = require('./Errors');
 const utils = require('./utils');
-
-
+//process.env.DEBUG = "dweb-transports";  //TODO-DEBUG set at top level
+const debugtransports = require('debug')('dweb-transports');
 
 class Transports {
     /*
@@ -15,8 +15,8 @@ class Transports {
     _optionspaused       Saves paused option for setup
     */
 
-    constructor(options, verbose) {
-        if (verbose) console.log("Transports(%o)",options);
+    constructor(options) {
+        // THIS IS UNUSED - ALL METHODS ARE STATIC, THERE IS NO Transports INSTANCE
     }
 
     static _connected() {
@@ -49,11 +49,11 @@ class Transports {
         urls:       Array of urls
         func:       Function to check support for: fetch, store, add, list, listmonitor, reverse - see supportFunctions on each Transport class
         options:    For future use
-        returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
+        returns:    Array of pairs of Url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
         throws:     CodingError if urls empty or [undefined...]
          */
         if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func)))   {
-            console.warn("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
+            console.error("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
             return [];
         }
         if (!(urls && urls.length > 0)) {
@@ -74,21 +74,21 @@ class Transports {
 
     // SEE-OTHER-ADDTRANSPORT
 
-    static http(verbose) {
+    static http() {
         // Find an http transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "HTTP")
     }
-    static ipfs(verbose) {
+    static ipfs() {
         // Find an ipfs transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "IPFS")
     }
 
-    static webtorrent(verbose) {
+    static webtorrent() {
         // Find an ipfs transport if it exists, so for example ServiceWorker.p_respondWebTorrent can use it.
         return Transports._connected().find((t) => t.name === "WEBTORRENT")
     }
 
-    static gun(verbose) {
+    static gun() {
         // Find a GUN transport if it exists
         return Transports._connected().find((t) => t.name === "GUN")
     }
@@ -109,39 +109,43 @@ class Transports {
         this.namingcb = cb;
     }
 
-    static async _p_rawstore(tt, data, {verbose}) {
+    static async _p_rawstore(tt, data) {
         // Internal method to store at known transports
         let errs = [];
         let rr = await Promise.all(tt.map(async function(t) {
             try {
-                return await t.p_rawstore(data, {verbose}); //url
+                debugtransports("Storing %d bytes to %s", data.length, t.name);
+                let url = await t.p_rawstore(data);
+                debugtransports("Storing %d bytes to %s succeeded: %s", data.length, t.name, url);
+                return url; //url
             } catch(err) {
-                console.log("Could not rawstore to", t.name, err.message);
+                debugtransports("Storing %d bytes to %s failed: %s", data.length, t.name, err.message);
                 errs.push(err);
                 return undefined;
             }
         }));
         rr = rr.filter((r) => !!r); // Trim any that had errors
         if (!rr.length) {
+            debugtransports("Storing %d bytes failed on all transports", data.length);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         return rr;
 
     }
-    static async p_rawstore(data, {verbose}) {
+    static async p_rawstore(data) {
         /*
         data: Raw data to store - typically a string, but its passed on unmodified here
         returns:    Array of urls of where stored
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
          */
         let tt = this.validFor(undefined, "store").map(([u, t]) => t); // Valid connected transports that support "store"
-        if (verbose) console.log("Valid for transports:", tt.map(t => t.name));
         if (!tt.length) {
+            debugtransports("Storing %d bytes failed: no transports available", data.length);
             throw new errors.TransportError('Transports.p_rawstore: Cant find transport for store');
         }
-        return this._p_rawstore(tt, data, {verbose});
+        return this._p_rawstore(tt, data);
     }
-    static async p_rawlist(urls, {verbose=false}={}) {
+    static async p_rawlist(urls) {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
         if (!tt.length) {
@@ -150,15 +154,19 @@ class Transports {
         let errs = [];
         let ttlines = await Promise.all(tt.map(async function([url, t]) {
             try {
-                return await t.p_rawlist(url, {verbose}); // [sig]
+                debugtransports("Listing %s via %s", url, t.name);
+                let res = await t.p_rawlist(url); // [sig]
+                debugtransports("Listing %s via %s retrieved %d items", url, t.name, res.length);
+                return res;
             } catch(err) {
-                console.log("Could not rawlist ", url, "from", t.name, err.message);
+                debugtransports("Listing %s via %s failed: %s", url, t.name, err.message);
                 errs.push(err);
                 return [];
             }
         })); // [[sig,sig],[sig,sig]]
         if (errs.length >= tt.length) {
             // All Transports failed (maybe only 1)
+            debugtransports("Listing %o failed on all transports", urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         let uniques = {}; // Used to filter duplicates
@@ -171,7 +179,6 @@ class Transports {
         Fetch the data for a url, transports act on the data, typically storing it.
         urls:	array of urls to retrieve (any are valid)
         opts {
-            verbose,
             start,  integer - first byte wanted
             end     integer - last byte wanted (note this is inclusive start=0,end=1023 is 1024 bytes
             timeoutMS   integer - max time to wait on transports (IPFS) that support it
@@ -180,7 +187,6 @@ class Transports {
         throws:     TransportError with concatenated error messages if none succeed.
         throws:     CodingError if urls empty or [undefined ... ]
          */
-        let verbose = opts.verbose;
         if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
         let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
@@ -193,27 +199,30 @@ class Transports {
         let failedtransports = [];  // Will accumulate any transports fail on before the success
         for (const [url, t] of tt) {
             try {
+                debugtransports("Fetching %s via %s", url.href, t.name);
                 let data = await t.p_rawfetch(url, opts);   // throws errors if fails or timesout
+                debugtransports("Fetching %s via %s succeeded %d bytes", url.href, t.name, data.length);
                 //TODO-MULTI-GATEWAY working here - it doesnt quite work yet as the "Add" on browser gets different url than on server
                 if (opts.relay && failedtransports.length) {
-                    console.log(`Relaying ${data.length} bytes from ${typeof url === "string" ? url : url.href} to ${failedtransports.map(t=>t.name)}`);
-                    this._p_rawstore(failedtransports, data, {verbose})
-                        .then(uu => console.log(`Relayed to ${uu}`)); // Happening async, not waiting and dont care if fails
+                    debugtransports("Fetching attempting relay of %d bytes from %s to %o", data.length, url.href, failedtransports.map(t=>t.name));
+                    this._p_rawstore(failedtransports, data)
+                        .then(uu => debugtransports(`Fetching relayed %d bytes to %o`, data.length, uu)); // Happening async, not waiting and dont care if fails
                 }
                 //END TODO-MULTI-GATEWAY
                 return data;
             } catch (err) {
                 failedtransports.push(t);
                 errs.push(err);
-                console.log("Could not retrieve ", url && url.href, "from", t && t.name, err.message);
+                debugtransports("Fetching %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
+        debugtransports("Fetching %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
-    static async p_rawadd(urls, sig, {verbose=false}={}) {
+    static async p_rawadd(urls, sig) {
         /*
         urls: of lists to add to
         sig: Sig to add
@@ -226,20 +235,24 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
         if (!tt.length) {
+            debugtransports("Adding to %o via %s failed: no transports available", urls, t.name);
             throw new errors.TransportError('Transports.p_rawstore: Cant find transport for urls:'+urls.join(','));
         }
         let errs = [];
         await Promise.all(tt.map(async function([u, t]) {
             try {
-                await t.p_rawadd(u, sig, {verbose}); //undefined
+                debugtransports("Adding to %s via %s", u, t.name);
+                await t.p_rawadd(u, sig); //undefined
+                debugtransports("Adding to %s via %s succeeded", u, t.name);
                 return undefined;
             } catch(err) {
-                console.log("Could not rawlist ", u, "from", t.name, err.message);
+                debugtransports("Adding to %s via %s failed: %s", u, t.name, err.message);
                 errs.push(err);
                 return undefined;
             }
         }));
         if (errs.length >= tt.length) {
+            debugtransports("Adding to %o failed on all transports", urls);
             // All Transports failed (maybe only 1)
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
@@ -253,53 +266,61 @@ class Transports {
          */
         // Note cant do p_resolveNames since sync but should know real urls of resource by here.
         this.validFor(urls, "listmonitor")
-            .map(([u, t]) => t.listmonitor(u, cb, opts));
+            .map(([u, t]) => {
+                t.listmonitor(u, cb, opts);
+                debugtransports("Monitoring list %s via %s", u, t.name);
+            });
     }
 
-    static async p_newlisturls(cl, {verbose=false}={}) {
+    static async p_newlisturls(cl) {
         // Create a new list in any transport layer that supports lists.
         // cl is a CommonList or subclass and can be used by the Transport to get info for choosing the list URL (normally it won't use it)
         // Note that normally the CL will not have been stored yet, so you can't use its urls.
         let uuu = await Promise.all(this.validFor(undefined, "newlisturls")
-            .map(([u, t]) => t.p_newlisturls(cl, {verbose})) );   // [ [ priv, pub] [ priv, pub] [priv pub] ]
+            .map(([u, t]) => t.p_newlisturls(cl)) );   // [ [ priv, pub] [ priv, pub] [priv pub] ]
         return [uuu.map(uu=>uu[0]), uuu.map(uu=>uu[1])];    // [[ priv priv priv ] [ pub pub pub ] ]
     }
 
     // Stream handling ===========================================
     //myArray[Math.floor(Math.random() * myArray.length)];
     
-    static async p_f_createReadStream(urls, {verbose=false, wanturl=false}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
+    static async p_f_createReadStream(urls, {wanturl=false}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
         urls:   Urls of the stream
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
+            debugtransports("Opening stream to %o via %s failed: no transports available", urls, t.name);
             throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
-        // Until we have transport ordering, try randomly
+        // Until we have transport ordering, try randomly TODO Transport ordering
         let z;
         while ((z = tt.splice(Math.floor(Math.random() * tt.length),1)).length) {
             let url = z[0][0];
             let t = z[0][1];
             try {
-                return await t.p_f_createReadStream(url, {verbose, wanturl} );
+                debugtransports("Opening stream to %s via %s", url.href, t.name);
+                let res = await t.p_f_createReadStream(url, {wanturl} );
+                debugtransports("Opening stream to %s via %s succeeded", url.href, t.name);
+                return res;
             } catch (err) {
                 errs.push(err);
-                console.log("Could not retrieve ", url.href, "from", t.name, err.message);
+                debugtransports("Opening stream to %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
+        debugtransports("Opening stream to %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
 }
 
 
 // KeyValue support ===========================================
 
-    static async p_get(urls, keys, {verbose=false}={}) {
+    static async p_get(urls, keys) {
         /*
         Fetch the values for a url and one or more keys, transports act on the data, typically storing it.
         urls:	array of urls to retrieve (any are valid)
@@ -308,76 +329,92 @@ class Transports {
         throws:     TransportError with concatenated error messages if none succeed.
          */
         let tt = this.validFor(urls, "get"); //[ [Url,t],[Url,t]]
+        let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         if (!tt.length) {
-            throw new errors.TransportError("Transports.p_get cant find any transport for urls: " + urls);
+            debugtransports("Getting %s from %o failed: no transports available", debug1, urls);
+            throw new errors.TransportError("Transports.p_get cant find any transport to get keys from urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                return await t.p_get(url, keys, {verbose}); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting %s from %s via %s", debug1, url.href, t.name);
+                let res = await t.p_get(url, keys); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting %s from %s via %s succeeded length=%d", debug1, url.href, t.name, res.length);
+                return res;
             } catch (err) {
                 errs.push(err);
-                console.log("Could not retrieve ", url.href, "from", t.name, err.message);
+                debugtransports("Getting %s from %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
+        debugtransports("Getting %s from %o failed on all transports", debug1, urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
-    static async p_set(urls, keyvalues, value, {verbose=false}={}) {
+    static async p_set(urls, keyvalues, value) {
         /* Set a series of key/values or a single value
          keyvalues:    Either dict or a string
          value: if kv is a string, this is the value to set
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
         */
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        let debug1 =  typeof keyvalues === "object" ? `${keyvalues.length} keys` : keyvalues; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
+            debugtransports("Setting %s on %o failed: no transports available", debug1, urls);
             throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
         await Promise.all(tt.map(async function([url, t]) {
             try {
-                await t.p_set(url, keyvalues, value, {verbose});
+                debugtransports("Setting %s on %s via %s", debug1, url.href, t.name);
+                await t.p_set(url, keyvalues, value);
+                debugtransports("Setting %s on %s via %s succeeded", debug1, url.href, t.name);
                 success = true; // Any one success will return true
             } catch(err) {
-                console.log("Could not rawstore to", t.name, err.message);
+                debugtransports("Setting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 errs.push(err);
             }
         }));
         if (!success) {
+            debugtransports("Setting %s on %o failed on all transports", debug1, urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
 
-    static async p_delete(urls, keys, {verbose=false}={}) {
+    static async p_delete(urls, keys) {
         /* Delete a key or a list of keys
          kv:    Either dict or a string
          value: if kv is a string, this is the value to set
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
         */
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
+            debugtransports("Deleting %s on %o failed: no transports available", debug1, urls);
             throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
         await Promise.all(tt.map(async function([url, t]) {
             try {
-                await t.p_delete(url, keys, {verbose});
+                debugtransports("Deleting %s on %s via %s", debug1, url.href, t.name);
+                await t.p_delete(url, keys);
+                debugtransports("Deleting %s on %s via %s succeeded", debug1, url.href, t.name);
                 success = true; // Any one success will return true
             } catch(err) {
-                console.log("Could not rawstore to", t.name, err.message);
+                debugtransports("Deleting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 errs.push(err);
             }
         }));
         if (!success) {
+            debugtransports("Deleting %s on %o failed on all transports", debug1, urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
-    static async p_keys(urls, {verbose=false}={}) {
+    static async p_keys(urls) {
         /*
         Fetch the values for a url and one or more keys, transports act on the data, typically storing it.
         urls:	array of urls to retrieve (any are valid)
@@ -388,23 +425,28 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "keys"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
+            debugtransports("Getting all keys on %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_keys cant find any transport for urls: " + urls);
         }
-        //With multiple transports, it should return when the first one returns something.
+        //With multiple transports, it should return when the first one returns something. TODO make it return the aggregate
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                return await t.p_keys(url, {verbose}); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting all keys on %s via %s", url.href, t.name);
+                let res = await t.p_keys(url); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting all keys on %s via %s succeeded with %d keys", url.href, t.name, res.length);
+                return res;
             } catch (err) {
                 errs.push(err);
-                console.log("Could not retrieve keys for", url.href, "from", t.name, err.message);
+                debugtransports("Getting all keys on %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
+        debugtransports("Getting all keys on %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
-    static async p_getall(urls, {verbose=false}={}) {
+    static async p_getall(urls) {
         /*
         Fetch the values for a url and one or more keys, transports act on the data, typically storing it.
         urls:	array of urls to retrieve (any are valid)
@@ -415,64 +457,73 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "getall"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
+            debugtransports("Getting all values on %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_getall cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                return await t.p_getall(url, {verbose}); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting all values on %s via %s", url.href, t.name);
+                let res = await t.p_getall(url); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+                debugtransports("Getting all values on %s via %s succeeded with %d values", url.href, t.name, res.length);
+                return res;
             } catch (err) {
                 errs.push(err);
-                console.log("Could not retrieve all keys for", url.href, "from", t.name, err.message);
+                debugtransports("Getting all values on %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
+        debugtransports("Getting all keys on %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
-    static async p_newdatabase(pubkey, {verbose=false}={}) {
+    static async p_newdatabase(pubkey) {
         /*
             Create a new database in any transport layer that supports databases (key value pairs).
             pubkey: CommonList, KeyPair, or exported public key
             resolves to: [ privateurl, publicurl]
          */
         let uuu = await Promise.all(this.validFor(undefined, "newdatabase")
-            .map(([u, t]) => t.p_newdatabase(pubkey, {verbose})) );   // [ { privateurl, publicurl} { privateurl, publicurl} { privateurl, publicurl} ]
+            .map(([u, t]) => t.p_newdatabase(pubkey)) );   // [ { privateurl, publicurl} { privateurl, publicurl} { privateurl, publicurl} ]
         return { privateurls: uuu.map(uu=>uu.privateurl), publicurls: uuu.map(uu=>uu.publicurl) };    // { privateurls: [], publicurls: [] }
     }
 
-    static async p_newtable(pubkey, table, {verbose=false}={}) {
+    static async p_newtable(pubkey, table) {
         /*
             Create a new table in any transport layer that supports the function (key value pairs).
             pubkey: CommonList, KeyPair, or exported public key
             resolves to: [ privateurl, publicurl]
          */
         let uuu = await Promise.all(this.validFor(undefined, "newtable")
-            .map(([u, t]) => t.p_newtable(pubkey, table, {verbose})) );   // [ [ priv, pub] [ priv, pub] [priv pub] ]
+            .map(([u, t]) => t.p_newtable(pubkey, table)) );   // [ [ priv, pub] [ priv, pub] [priv pub] ]
         return { privateurls: uuu.map(uu=>uu.privateurl), publicurls: uuu.map(uu=>uu.publicurl)};    // {privateurls: [ priv priv priv ], publicurls: [ pub pub pub ] }
     }
 
-    static async p_connection(urls, verbose) {
+    static async p_connection(urls) {
         /*
         Do any asynchronous connection opening work prior to potentially synchronous methods (like monitor)
          */
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         await Promise.all(
             this.validFor(urls, "connection")
-            .map(([u, t]) => t.p_connection(u, verbose)));
+            .map(([u, t]) => t.p_connection(u)));
     }
 
-    static monitor(urls, cb, {verbose=false, current=false}={}) {
+    static monitor(urls, cb, {current=false}={}) {
         /*
         Add a listmonitor for each transport - note this means if multiple transports support it, then will get duplicate events back if everyone else is notifying all of them.
         Stack: KVT()|KVT.p_new => KVT.monitor => (a: Transports.monitor => YJS.monitor)(b: dispatchEvent)
         cb:         function({type, key, value})
         current:    If true then then send all current entries as well
          */
-        //Cant' its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        //Can't its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         this.validFor(urls, "monitor")
-            .map(([u, t]) => t.monitor(u, cb, {verbose, current}));
+            .map(([u, t]) => {
+                    debugtransports("Monitoring table %s via %s", u, t.name);
+                    t.monitor(u, cb, {current})
+                }
+            );
     }
 
     // Setup and connection
@@ -486,10 +537,11 @@ class Transports {
 
     // Setup Transports - setup0 is called once, and should return quickly, p_setup1 and p_setup2 are asynchronous and p_setup2 relies on p_setup1 having resolved.
 
-    static setup0(tabbrevs, options, verbose, cb) {
+    static setup0(tabbrevs, options, cb) {
         /*
         Setup Transports for a range of classes
         tabbrevs is abbreviation HTTP, IPFS, LOCAL or list of them e.g. "HTTP,IPFS"
+        cb is callback for when status changes, but there are no status changes here so its not called.
         Handles "LOCAL" specially, turning into a HTTP to a local server (for debugging)
 
         returns array of transport instances
@@ -497,34 +549,35 @@ class Transports {
         // "IPFS" or "IPFS,LOCAL,HTTP"
         let localoptions = {http: {urlbase: "http://localhost:4244"}};
         return tabbrevs.map((tabbrev) => {
-            let transportclass;
-            if (tabbrev === "LOCAL") {
-                transportclass = this._transportclasses["HTTP"];
-            } else {
-                transportclass = this._transportclasses[tabbrev];
-            }
+            let transportclass = this._transportclasses[ (tabbrev === "LOCAL") ? "HTTP" : tabbrev ];
             if (!transportclass) {
-                let tt = Object.keys(this._transportclasses);
-                console.error(`Requested ${tabbrev} but ${tt.length ? tt : "No"} transports have been loaded`);
+                debugtransports("Connection to %s unavailable", tabbrev);
                 return undefined;
             } else {
-                return transportclass.setup0(tabbrev === "LOCAL" ? localoptions : options, verbose);
+                debugtransports("Setting up connection to %s with options %o", tabbrev, options);
+                return transportclass.setup0(tabbrev === "LOCAL" ? localoptions : options);
             }
         }).filter(f => !!f); // Trim out any undefined
     }
-    static async p_setup1(verbose, cb) {
+    static async p_setup1(cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
         await Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
-            .map((t) => t.p_setup1(verbose, cb)))
+            .map((t) => {
+                debugtransports("Connection stage 1 to %s", t.name);
+                return t.p_setup1(cb);
+            }))
     }
-    static async p_setup2(verbose, cb) {
+    static async p_setup2(cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
         await Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
-            .map((t) => t.p_setup2(verbose, cb)))
+            .map((t) => {
+                debugtransports("Connection stage 2 to %s", t.name);
+                return t.p_setup2(cb);
+            }))
     }
 
     static async refreshstatus(t) {
@@ -540,22 +593,20 @@ class Transports {
         }
     }
 
-    static async p_connect(options, verbose) {
+    static async p_connect(options) {
         /*
             This is a standardish starting process, feel free to subclass or replace !
             It will connect to a set of standard transports and is intended to work inside a browser.
             options = { defaulttransports: ["IPFS"], statuselement: el, http: {}, ipfs: {}; paused: ["IPFS"] }
          */
-        if (verbose) console.group("p_connect ---");
         try {
             options = options || {};
-            let setupoptions = {};
             let tabbrevs = options.transports;    // Array of transport abbreviations
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
-            let transports = this.setup0(tabbrevs, options, verbose);
+            let transports = this.setup0(tabbrevs, options);
             if (options.statuscb) {
                 this.statuscb = options.statuscb;
             }
@@ -572,13 +623,12 @@ class Transports {
                         }
                     )));
             }
-            await this.p_setup1(verbose, this.refreshstatus);
-            await this.p_setup2(verbose, this.refreshstatus);
+            await this.p_setup1(this.refreshstatus);
+            await this.p_setup2(this.refreshstatus);
         } catch(err) {
             console.error("ERROR in p_connect:",err.message);
             throw(err);
         }
-        if (verbose) console.groupEnd("p_connect ---");
     }
 
     static async p_urlsFrom(url) {
@@ -606,43 +656,43 @@ class Transports {
         return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
     }
 
-    static async test(verbose) {
-        if (verbose) {console.log("Transports.test")}
+    static async test() {
+        console.log("Transports.test")
         try {
             /* Could convert this - copied fom YJS to do a test at the "Transports" level
             let testurl = "yjs:/yjs/THISATEST";  // Just a predictable number can work with
-            let res = await transport.p_rawlist(testurl, verbose);
+            let res = await transport.p_rawlist(testurl);
             let listlen = res.length;   // Holds length of list run intermediate
-            if (verbose) console.log("rawlist returned ", ...utils.consolearr(res));
-            transport.listmonitor(testurl, (obj) => console.log("Monitored", obj), verbose);
-            let sig = new Dweb.Signature({urls: ["123"], date: new Date(Date.now()), signature: "Joe Smith", signedby: [testurl]}, verbose);
-            await transport.p_rawadd(testurl, sig, {verbose});
-            if (verbose) console.log("TransportIPFS.p_rawadd returned ");
-            res = await transport.p_rawlist(testurl, verbose);
-            if (verbose) console.log("rawlist returned ", ...utils.consolearr(res)); // Note not showing return
+            console.log("rawlist returned ", ...utils.consolearr(res));
+            transport.listmonitor(testurl, (obj) => console.log("Monitored", obj));
+            let sig = new Dweb.Signature({urls: ["123"], date: new Date(Date.now()), signature: "Joe Smith", signedby: [testurl]});
+            await transport.p_rawadd(testurl, sig);
+            console.log("TransportIPFS.p_rawadd returned ");
+            res = await transport.p_rawlist(testurl);
+            console.log("rawlist returned ", ...utils.consolearr(res)); // Note not showing return
             await delay(500);
-            res = await transport.p_rawlist(testurl, verbose);
+            res = await transport.p_rawlist(testurl);
             console.assert(res.length === listlen + 1, "Should have added one item");
             */
             //console.log("TransportYJS test complete");
             /* TODO-KEYVALUE reenable these tests,s but catch http examples
-            let db = await this.p_newdatabase("TESTNOTREALLYAKEY", {verbose});    // { privateurls, publicurls }
+            let db = await this.p_newdatabase("TESTNOTREALLYAKEY");    // { privateurls, publicurls }
             console.assert(db.privateurls[0] === "yjs:/yjs/TESTNOTREALLYAKEY");
-            let table = await this.p_newtable("TESTNOTREALLYAKEY","TESTTABLE", {verbose});         // { privateurls, publicurls }
+            let table = await this.p_newtable("TESTNOTREALLYAKEY","TESTTABLE");         // { privateurls, publicurls }
             let mapurls = table.publicurls;
             console.assert(mapurls[0] === "yjs:/yjs/TESTNOTREALLYAKEY/TESTTABLE");
-            await this.p_set(mapurls, "testkey", "testvalue", {verbose});
-            let res = await this.p_get(mapurls, "testkey", {verbose});
+            await this.p_set(mapurls, "testkey", "testvalue");
+            let res = await this.p_get(mapurls, "testkey");
             console.assert(res === "testvalue");
-            await this.p_set(mapurls, "testkey2", {foo: "bar"}, {verbose});
-            res = await this.p_get(mapurls, "testkey2", {verbose});
+            await this.p_set(mapurls, "testkey2", {foo: "bar"});
+            res = await this.p_get(mapurls, "testkey2");
             console.assert(res.foo === "bar");
-            await this.p_set(mapurls, "testkey3", [1,2,3], {verbose});
-            res = await this.p_get(mapurls, "testkey3", {verbose});
+            await this.p_set(mapurls, "testkey3", [1,2,3]);
+            res = await this.p_get(mapurls, "testkey3");
             console.assert(res[1] === 2);
             res = await this.p_keys(mapurls);
             console.assert(res.length === 3 && res.includes("testkey3"));
-            res = await this.p_getall(mapurls, {verbose});
+            res = await this.p_getall(mapurls);
             console.assert(res.testkey2.foo === "bar");
             */
 

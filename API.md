@@ -13,12 +13,10 @@ We use a naming convention that anything starting “p_” returns a promise so 
 Ideally functions should take a String, Buffer or where applicable Object as parameters with automatic conversion. 
 And anything that takes a URL should take either a string or parsed URL object. 
 
-The verbose parameter is a boolean that is an indicator of a need to output to the console. Normally it will be passed down to called functions and default to false.
-
 Note that example_block.html collects this from the URL and passes it to the library, 
 which is intended to be a good way to see what is happening.
 
-Note: I am gradually (March2018) changing the API to take an opts {} dict which includes verbose as one field. This process is incomplete, but I’m happy to see it accelerated if there is any code built on this, just let mitra@archive.org know.
+Note: I am gradually (March2018) changing the API to take an opts {} dict. This process is incomplete, but I’m happy to see it accelerated if there is any code built on this, just let mitra@archive.org know.
 
 ## Overview
 
@@ -55,19 +53,18 @@ status|Numeric indication of transport status: Started(0); Failed(1); Starting(2
 Transport setup is split into 3 parts, this allows the Transports class to do the first phase on all the transports synchronously, 
 then asynchronously (or at a later point) try and connect to all of them in parallel. 
 
-##### static setup0 (options, verbose)
+##### static setup0 (options)
 First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.  In almost all cases this will call the constructor of the subclass
 Should be synchronous and leave `status=STATUS_LOADED`
 ```
 options        Object fields including those needed by transport layer
-verbose        boolean - true for debugging output
 Resolves to    Instance of subclass of Transport
 ```
 Default options should be set in each transport, but can be overwritten, 
 for example to overwrite the options for HTTP call it with  
 `options={ http: { urlbase: “https://dweb.me:443/” } }`
 
-##### async p_setup1 (verbose, cb) 
+##### async p_setup1 (, cb) 
 Setup the resource and open any P2P connections etc required to be done just once. 
 Asynchronous and should leave `status=STATUS_STARTING` until it resolves, or `STATUS_FAILED` if fails.
 ```
@@ -75,7 +72,7 @@ cb (t)=>void   If set, will be called back as status changes (so could be multip
 Resolves to    the Transport instance
 ```
 
-##### async p_setup2 (verbose, cb) 
+##### async p_setup2 (, cb) 
 Works like p_setup1 but runs after p_setup1 has completed for all transports. 
 This allows for example YJS to wait for IPFS to be connected in TransportIPFS.setup1() 
 and then connect itself using the IPFS object. 
@@ -84,7 +81,7 @@ cb (t)=>void   If set, will be called back as status changes (so could be multip
 Resolves to    the Transport instance
 ```
 
-##### async p_setup(options, verbose, cb) 
+##### async p_setup(options, cb) 
 A deprecated utility to simply setup0 then p_setup1 then p_setup2 to allow a transport to be started
 in one step, normally `Transports.p_setup` should be called instead.
 
@@ -95,7 +92,7 @@ in the paused state it will not be used for transport but, in some cases, will s
 cb(transport)=>void a callback called after this is run, may be used for example to change the UI
 ```
 
-##### async p_status (verbose)
+##### async p_status ()
 Check the status of the underlying transport. This may update the "status" field from the underlying transport.
 ```
 returns:    a numeric code for the status of a transport.        
@@ -110,15 +107,14 @@ Code|Name|Means
 4|STATUS_PAUSED|It was launched, probably connected, but now paused so will be ignored by validfor()
 
 ### Transport: General storage and retrieval of objects
-##### p_rawstore(data, {verbose})
+##### p_rawstore(data)
 Store a opaque blob of data onto the decentralised transport.
 ```
 data         string|Buffer data to store - no assumptions made to size or content
-verbose      boolean - True for debugging output
 Resolves to  url of data stored
 ```
 
-##### p_rawfetch(url, {timeoutMS, start, end, relay, verbose})
+##### p_rawfetch(url, {timeoutMS, start, end, relay})
 Fetch some bytes based on a url, no assumption is made about the data in terms of size or structure.
 
 Where required by the underlying transport it should retrieve a number if its "blocks" and concatenate them.
@@ -129,13 +125,12 @@ url          string url of object being retrieved in form returned by link or p_
 timeoutMS    Max time to wait on transports that support it (IPFS for fetch)
 start,end    Inclusive byte range wanted (must be supported, uses a "slice" on output if transport ignores it.
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
-verbose      boolean - True for debugging output
 Resolves to  string The object being fetched, (note currently (April 2018) returned as a string, may refactor to return Buffer)
 throws:      TransportError if url invalid - note this happens immediately, not as a catch in the promise
 ```
 
 ### Transport: Handling lists
-##### p_rawadd(url, sig, {verbose})
+##### p_rawadd(url, sig)
 Store a new list item, it should be stored so that it can be retrieved either by "signedby" (using p_rawlist) 
 or by "url"  (with p_rawreverse). 
 
@@ -148,51 +143,46 @@ sig        Signature data structure (see below - contains url, date, signedby, s
     urls        - array of urls for the object being signed
     signature   - verifiable signature of date+urls
     signedby    - url of data structure (typically CommonList) holding public key used for the signature
-verbose        boolean - True for debugging output
 ```
 
-##### p_rawlist(url, {verbose})
+##### p_rawlist(url)
 Fetch all the objects in a list, these are identified by the url of the public key used for signing.
 Note this is the 'signedby' parameter of the p_rawadd call, not the 'url' parameter. 
 List items may have other data (e.g. reference ids of underlying transport)
 ```
 url         String with the url that identifies the list
             (this is the 'signedby' parameter of the p_rawadd call, not the 'url' parameter
-verbose     boolean - True for debugging output
 Resolves to Array: An array of objects as stored on the list. Each of which is …..
 ```
 Each item of the list is a dict: {"url": url, "date": date, "signature": signature, "signedby": signedby}
 
-##### p_rawreverse (url, {verbose})
+##### p_rawreverse (url)
 Similar to p_rawlist, but return the list item of all the places where the object url has been listed.
 (not supported by most transports)
 ```
 url         String with the url that identifies the object put on a list
             This is the “url” parameter of p_rawadd
-verbose     boolean - True for debugging output
 Resolves to Array objects as stored on the list (see p_rawlist for format)
 ```
 
-##### listmonitor (url, cb, {verbose, current}) 
+##### listmonitor (url, cb, { current}) 
 Setup a callback called whenever an item is added to a list, typically it would be called immediately after a p_rawlist to get any more items not returned by p_rawlist.
 ```
 url        Identifier of list (as used by p_rawlist and "signedby" parameter of p_rawadd
 cb(obj)    function(obj)  Callback for each new item added to the list
-verbose    true for debugging output
 current    true to send existing members as well as new
            obj is same format as p_rawlist or p_rawreverse
 ```
 
-##### async p_newlisturls(cl, {verbose}) 
+##### async p_newlisturls(cl) 
 Obtain a pair of URLs for a new list. The transport can use information in the cl to generate this or create something random (the former is encouraged since it means repeat tests might not generate new lists). Possession of the publicurl should be sufficient to read the list, the privateurl should be required to read (for some transports they will be identical, and higher layers should check for example that a signature is signed.  
 ```
 cl          CommonList instance that can be used as a seed for the URL
-verbose     boolean - True for debugging output
 Returns     [privateurl, publicurl]
 ```
 
 ### Transport: Support for KeyValueTable
-##### async p_newdatabase(pubkey, {verbose}) {
+##### async p_newdatabase(pubkey) {
 Create a new database based on some existing object
 ```
 pubkey:     Something that is, or has a pubkey, by default support Dweb.PublicPrivate, KeyPair 
@@ -200,7 +190,7 @@ pubkey:     Something that is, or has a pubkey, by default support Dweb.PublicPr
 returns:    {publicurl, privateurl} which may be the same if there is no write authentication
 ```
 
-##### async p_newtable(pubkey, table, {verbose}) {
+##### async p_newtable(pubkey, table) {
 Create a new table,
 ```
 pubkey:     Is or has a pubkey (see p_newdatabase)
@@ -208,7 +198,7 @@ table:      String representing the table - unique to the database
 returns:    {privateurl, publicurl} which may be the same if there is no write authentication
 ```
 
-##### async p_set(url, keyvalues, value, {verbose}) 
+##### async p_set(url, keyvalues, value) 
 Set one or more keys in a table.
 ```
 url:            URL of the table
@@ -216,7 +206,7 @@ keyvalues:      String representing a single key OR dictionary of keys
 value:          String or other object to be stored (its not defined yet what objects should be supported, e.g. any object ?
 ```
 
-##### async p_get(url, keys, {verbose})
+##### async p_get(url, keys)
 Get one or more keys from a table
 ```
 url:            URL of the table
@@ -224,21 +214,21 @@ keys:           Array of keys
 returns:        Dictionary of values found (undefined if not found)
 ```
 
-##### async p_delete(url, keys, {verbose})
+##### async p_delete(url, keys)
 Delete one or more keys from a table
 ```
 url:            URL of the table
 keys:           Array of keys
 ```
 
-##### async p_keys(url, {verbose})
+##### async p_keys(url)
 Return a list of keys in a table (suitable for iterating through)
 ```
 url:            URL of the table
 returns:            Array of strings
 ```
 
-##### async p_getall(url, {verbose})
+##### async p_getall(url)
 Return a dictionary representing the table
 ```
 url:            URL of the table
@@ -246,7 +236,7 @@ returns:            Dictionary of Key:Value pairs, note take care if this could 
 ```
 
 ### Transports - other functions
-##### static async p_f_createReadStream(url, {wanturl, verbose})
+##### static async p_f_createReadStream(url, {wanturl})
 Provide a function of the form needed by <VIDEO> tag and renderMedia library etc
 ```
 url     Urls of stream
@@ -310,22 +300,22 @@ Returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u
 Async version of validFor for serviceworker and TransportsProxy
 
 
-##### static http(verbose)
+##### static http()
 ```
 returns instance of TransportHTTP if connected
 ```
 
-##### static ipfs(verbose)
+##### static ipfs()
 ```
 returns instance of TransportIPFS if connected
 ```
 
-##### static webtorrent(verbose)
+##### static webtorrent()
 ```
 returns instance of TransportWEBTORRENT if connected
 ```
 
-##### static gun(verbose)
+##### static gun()
 ```
 returns instance of TransportGUN if connected
 ```
@@ -349,7 +339,7 @@ cb(urls) => urls    Provide callback function
 t:        Add a Transport instance to _transports
 ```
 
-##### static setup0(transports, options, verbose, cb)
+##### static setup0(transports, options, cb)
 Calls setup0 for each transport based on its short name. Specially handles ‘LOCAL’ as a transport pointing at a local http server (for testing).
 ```
 transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’GUN’]
@@ -358,10 +348,10 @@ cb              Callback to be called each time status changes
 Returns:        Array of transport instances
 ```
 
-##### static async p_setup1(verbose, cb)
+##### static async p_setup1(, cb)
 Call p_setup1 on all transports that were created in setup0().  Completes when all setups are complete. 
 
-##### static async p_setup2(verbose, cb)
+##### static async p_setup2(, cb)
 Call p_setup2 on all transports that were created in setup0().  Completes when all setups are complete. 
 
 ##### static async refreshstatus(t)
@@ -370,7 +360,7 @@ Set the class of t.statuselement (if set) to transportstatus0..transportstatus4 
 t   Instance of transport
 ```
 
-#### static async p_connect({options}, verbose)
+#### static async p_connect({options})
 Main connection process for a browser based application, 
 ```
 options {
@@ -403,24 +393,24 @@ For parameters refer to underlying Transport call
 
 Call|Returns|Behavior
 ---|---|---
-static async p_rawstore(data, {verbose})|[urls]|Tries all and combines results
-static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})|data|See note
-static async p_rawlist(urls, {verbose})|[sigs]|Tries all and combines results
-static async p_rawadd(urls, sig, {verbose})||Tries on all urls, error if none succeed
-static listmonitor(urls, cb, {verbose, current})||Tries on all urls (so note cb may be called multiple times)
-static p_newlisturls(cl, {verbose})|[urls]|Tries all and combines results
+static async p_rawstore(data)|[urls]|Tries all and combines results
+static async p_rawfetch(urls, {timeoutMS, start, end, relay})|data|See note
+static async p_rawlist(urls)|[sigs]|Tries all and combines results
+static async p_rawadd(urls, sig)||Tries on all urls, error if none succeed
+static listmonitor(urls, cb, { current})||Tries on all urls (so note cb may be called multiple times)
+static p_newlisturls(cl)|[urls]|Tries all and combines results
 static async p_f_createReadStream(urls, options)|f(opts)=>stream|Returns first success
-static async p_get(urls, keys, {verbose})|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
-static async p_set(urls, keyvalues, value, {verbose})|Tries all, error if none succeed
-static async p_delete(urls, keys, {verbose})|Tries all, error if none succeed
-static async p_keys(urls, {verbose}|[keys]|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
-static async p_getall(urls, {verbose})|dict|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
-static async p_newdatabase(pubkey, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
-static async p_newtable(pubkey, table, {verbose})|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
-static async p_connection(urls, verbose)||Tries all parallel
-static monitor(urls, cb, {verbose, current})||Tries all sequentially
+static async p_get(urls, keys)|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
+static async p_set(urls, keyvalues, value)|Tries all, error if none succeed
+static async p_delete(urls, keys)|Tries all, error if none succeed
+static async p_keys(urls|[keys]|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
+static async p_getall(urls)|dict|currently (April 2018) returns on first success, TODO - will combine results and relay across transports
+static async p_newdatabase(pubkey)|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
+static async p_newtable(pubkey, table)|{privateurls: [urls], publicurls: [urls]}|Tries all and combines results
+static async p_connection(urls)||Tries all parallel
+static monitor(urls, cb, { current})||Tries all sequentially
 
-##### static async p_rawfetch(urls, {timeoutMS, start, end, verbose, relay})
+##### static async p_rawfetch(urls, {timeoutMS, start, end, relay})
 Tries to fetch on all valid transports until successful. See Transport.p_rawfetch
 ```
 timeoutMS:   Max time to wait on transports that support it (IPFS for fetch)
@@ -432,19 +422,18 @@ relay        If first transport fails, try and retrieve on 2nd, then store on 1s
 A utility class to support HTTP with or without TransportHTTP
 e.g. `httptools.http().p_httpfetch("http://foo.com/bar", {method: 'GET'} )`
 
-##### p_httpfetch(url, init, {verbose)}
+##### p_httpfetch(url, init)
 Fetch a url.
 If the result
 
 url:    HTTP or HTTPS url
 init:   Init parameter to fetch (see for docs)
-verbose:    boolean for debugging
 returns:    Depends on mime type;
     If application/json returns a Object, 
     If text/* returns text
     Oherwise    Buffer
 
-##### p_GET(url, {start, end, verbose})
+##### p_GET(url, {start, end})
 Shortcut to do a HTTP/POST get, sets `mode: cors, redirect: follow, keepalive: true, cache: default`
 
 start:  First byte to retrieve
@@ -453,7 +442,7 @@ end:    Last byte to retrieve (undefined means end of file)
 Note that it passes start and end as the Range header, most servers support it, 
 but it does not (yet) explicitly check the result. 
 
-##### p_POST(url, type, data, verbose)
+##### p_POST(url, type, data)
 Shortcut to do a HTTP/HTTPS POST. sets same options as p_GET
 
 data:   Data to send to fetch, typically the body, 
