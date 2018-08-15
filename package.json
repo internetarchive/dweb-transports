@@ -13,7 +13,7 @@
   "dependencies": {
     "cids": "latest",
     "gun": "^0.9.9998",
-    "ipfs": "latest",
+    "ipfs": "^0.31.4",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
     "readable-stream": "^3.0.1",
@@ -49,5 +49,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.10"
+  "version": "0.1.11"
 }
