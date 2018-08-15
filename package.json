@@ -16,7 +16,7 @@
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
-    "readable-stream": "^3.0.0",
+    "readable-stream": "^3.0.1",
     "webpack": "^4.16.5",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
