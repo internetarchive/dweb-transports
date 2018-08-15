@@ -380,7 +380,7 @@ class TransportIPFS extends Transport {
                         :returns stream: The readable stream.
                         FOR IPFS this is copied and adapted from git repo js-ipfs/examples/browser-readablestream/index.js
                      */
-                    debugipfs("createReadStream %o %o", multihash, opts || "" );
+                    debugipfs("reading from stream %o %o", multihash, opts || "" );
 
                     const start = opts ? opts.start : 0
                     // The videostream library does not always pass an end byte but when

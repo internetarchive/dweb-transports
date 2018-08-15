@@ -261,7 +261,7 @@ class TransportWEBTORRENT extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :returns stream: The readable stream.
          */
-        debugwt("createReadStream %s %o", file.name, opts);
+        debugwt("reading from stream %s %o", file.name, opts);
         let through;
         try {
             through = new stream.PassThrough();

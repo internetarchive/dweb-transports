@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "cids": "latest",
-    "gun": "latest",
+    "gun": "^0.9.9998",
     "ipfs": "latest",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
-    "readable-stream": "latest",
-    "webpack": "^4.16.3",
+    "readable-stream": "^3.0.1",
+    "webpack": "^4.16.5",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
     "y-indexeddb": "latest",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "browserify": "^14.5.0",
     "chai": "latest",
-    "uglifyjs-webpack-plugin": "latest",
+    "uglifyjs-webpack-plugin": "^1.3.0",
     "watchify": "^3.11.0",
     "webpack-cli": "^3.1.0"
   },
@@ -49,5 +49,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.9"
+  "version": "0.1.10"
 }
