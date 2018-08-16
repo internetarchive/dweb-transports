@@ -1,12 +1,12 @@
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 module.exports = {
-  entry: {
-    'dweb-transports': './index.js',
-  },
-  output: {
-    filename: '[name]-bundle.js',
-    path: __dirname + '/dist'
-  },
+    entry: {
+        'dweb-transports': './index.js',
+    },
+    output: {
+        filename: '[name]-bundle.js',
+        path: __dirname + '/dist'
+    },
     node: {
         fs: 'empty',
         net: 'empty',
@@ -25,13 +25,18 @@ module.exports = {
             zlib: 'browserify-zlib-next'
         }
     },
-    plugins: [
-        new UglifyJsPlugin({
-            uglifyOptions: {
-                compress: {
-                    unused: false
+    optimization: {
+        minimizer: [
+            new UglifyJsPlugin({
+                uglifyOptions: {
+                    compress: {
+                        unused: false,
+                        collapse_vars: false // debug has a problem in production without this.
+                    }
+
+                    //compress: false
                 }
-            }
-        })
-    ]
+            })
+        ]
+    }
 }
