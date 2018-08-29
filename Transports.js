@@ -174,7 +174,7 @@ class Transports {
             .filter((x) => (!uniques[x.signature] && (uniques[x.signature] = true)));
     }
 
-    static async p_rawfetch(urls, opts) {
+    static async p_rawfetch(urls, opts={}) {
         /*
         Fetch the data for a url, transports act on the data, typically storing it.
         urls:	array of urls to retrieve (any are valid)
@@ -235,7 +235,7 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
         if (!tt.length) {
-            debugtransports("Adding to %o via %s failed: no transports available", urls, t.name);
+            debugtransports("Adding to %o failed: no transports available", urls);
             throw new errors.TransportError('Transports.p_rawstore: Cant find transport for urls:'+urls.join(','));
         }
         let errs = [];
@@ -291,7 +291,7 @@ class Transports {
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
-            debugtransports("Opening stream to %o via %s failed: no transports available", urls, t.name);
+            debugtransports("Opening stream to %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
