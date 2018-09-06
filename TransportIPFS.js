@@ -38,7 +38,7 @@ const defaultoptions = {
         //      Addresses: { Swarm: [ '/dns4/star-signal.cloud.ipfs.team/wss/p2p-webrtc-star']},  // For Y - same as defaults
         //      Addresses: { Swarm: [ ] },   // Disable WebRTC to test browser crash, note disables Y so doesnt work.
         //Addresses: {Swarm: ['/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']}, // from https://github.com/ipfs/js-ipfs#faq 2017-12-05 as alternative to webrtc works sort-of
-        Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'], // Supposedly connects to Dweb  IPFS instance, but doesnt work (nor does ".../wss/...")
+        Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW'], // Connect via WSS to IPFS instance at IA
     },
     //init: true, // Comment out for Y
     EXPERIMENTAL: {
@@ -404,6 +404,7 @@ class TransportIPFS extends Transport {
                         length: end && end - start
                     })
                     // Log error messages
+
                     stream.on('error', (err) => console.error(err));
 
                     /* Gimmick from example :-)

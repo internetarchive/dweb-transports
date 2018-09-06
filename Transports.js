@@ -625,6 +625,7 @@ class Transports {
             }
             await this.p_setup1(this.refreshstatus);
             await this.p_setup2(this.refreshstatus);
+            debugtransports("Connection completed to %o", this._connected().map(t=>t.name))
         } catch(err) {
             console.error("ERROR in p_connect:",err.message);
             throw(err);

@@ -67,6 +67,8 @@ class Transport {
             case Transport.STATUS_PAUSED:
                 this.status = Transport.STATUS_CONNECTED;   // Superclass might change to STATUS_STARTING if needs to stop/restart
                 break;
+            case Transport.STATUS_LOADED:
+                this.p_setup1(cb).then((t)=>t.p_setup2(cb)); // Allows for updating status progressively as attempts to connect
         }
         if (cb) cb(this);
     }
