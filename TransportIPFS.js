@@ -65,23 +65,47 @@ class TransportIPFS extends Transport {
         this.status = Transport.STATUS_LOADED;
     }
 
-/*
-    _makepromises() {
-        //Utility function to promisify Block
-        //Replaced promisified utility since only two to promisify
-        //this.promisified = {ipfs:{}};
-        //makepromises(this.ipfs, this.promisified.ipfs, [ { block: ["put", "get"] }]); // Has to be after this.ipfs defined
-        this.promisified = { ipfs: { block: {
-            put: promisify(this.ipfs.block.put),
-            get: promisify(this.ipfs.block.get)
-        }}}
+    IPFSAutoConnect(cb) {
+        if (global.ipfs || (typeof window !== "undefined" && window.ipfs)) {
+            ipfs.version((err, data) => {
+                debug("IPFS already available in global address space version: %o", data);
+                cb();
+            });
+        } else {
+            ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'})// leaving out the arguments will default to these values
+            ipfs.version((err, data) => {
+                if (err) {
+                    debug("ipfs-api version failed %s, trying running own IPFS client", err.message)
+                    ipfs = new IPFS({
+                        repo: '/tmp/ipfsrepo', //TODO-IPFS think through where, esp for browser
+                        config: {Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW']}, // Connect via WSS to IPFS instance at IA
+                        EXPERIMENTAL: {pubsub: true}
+                    });
+                    ipfs.on('ready', () => {
+                        debug("IPFS client ready version");
+                        ipfs.version((err, data) => {
+                            debug("IPFS client ready version %o", data);
+                            cb();
+                        });
+                    });   // This only works in the client version, not on API
+                    ipfs.on('error', (err) => {
+                        debug("IPFS client error %s", err.message); // Calls error, note this could be a problem if it gets errors after "ready"
+                        cb(err);
+                    }) // This only works in the client version, not on API
+                } else {
+                    debug("IPFS API succeeded version %o", data);
+                    cb();
+                }
+            });
+        }
     }
-*/
+
+    /*OBS
     p_ipfsstart() {
-        /*
+        /-*
         Just start IPFS - not Y (note used with "yarrays" and will be used for non-IPFS list management)
         Note - can't figure out how to use async with this, as we resolve the promise based on the event callback
-         */
+         *-/
         const self = this;
         return new Promise((resolve, reject) => {
             this.ipfs = new IPFS(this.options);
@@ -98,6 +122,7 @@ class TransportIPFS extends Transport {
                 throw(err);
             });
     }
+    */
 
     static setup0(options) {
         /*
@@ -111,10 +136,18 @@ class TransportIPFS extends Transport {
     }
 
     async p_setup1(cb) {
+        // cb is function for updating status, it must be ale to be called multiple times.
         try {
             // Logged by Transports
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
             if (cb) cb(this);
+
+            await new Promise((resolve, reject) => {
+                this.IPFSAutoConnect((err) => {
+                    if (err) reject(err) else resolve();
+                })
+            });
+
             await this.p_ipfsstart();    // Throws Error("websocket error") and possibly others.
             this.status = await this.p_status();
         } catch(err) {
