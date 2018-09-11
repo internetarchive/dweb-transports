@@ -88,11 +88,7 @@ class TransportIPFS extends Transport {
             ipfs.version((err, data) => {
                 if (err) {
                     debug("IPFS via API failed %s, trying running own IPFS client", err.message);
-                    ipfs = new IPFS({
-                        repo: '/tmp/ipfsrepo', //TODO-IPFS think through where, esp for browser
-                        config: {Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmPNgKEjC7wkpu3aHUzKKhZmbEfiGzL5TP1L8zZoHJyXZW']}, // Connect via WSS to IPFS instance at IA
-                        EXPERIMENTAL: {pubsub: true}
-                    });
+                    ipfs = new IPFS(this.options);
                     ipfs.on('ready', () => {
                         this._ipfsversion(ipfs, "client", cb);
                     });   // This only works in the client version, not on API
