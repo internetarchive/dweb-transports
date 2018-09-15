@@ -11,6 +11,7 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
+    "canonical-json": "latest",
     "cids": "latest",
     "gun": "^0.9.99993",
     "ipfs": "^0.31.7",

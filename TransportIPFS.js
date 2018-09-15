@@ -318,7 +318,7 @@ class TransportIPFS extends Transport {
         return TransportIPFS.urlFrom(res);
     }
 
-    /* OLD WAY Based on https://github.com/ipfs/js-ipfs/pull/1231/files TODO-IPFS repurpose this to add byte range to fetch
+    /* OLD WAY Based on https://github.com/ipfs/js-ipfs/pull/1231/files TODO-IPFS repurpose this to add byte range to new function fetch calling p_rawfetch
 
     async p_offsetStream(stream, links, startByte, endByte) {
         let streamPosition = 0
@@ -364,7 +364,7 @@ class TransportIPFS extends Transport {
         const self = this;
         function crs(opts) {    // This is a synchronous function
             // Return a readable stream that provides the bytes between offsets "start" and "end" inclusive
-            console.log("opts=",JSON.stringify(opts));
+            debug("opts=%o", opts);
             // Can replace rest of crs with this when https://github.com/ipfs/js-ipfs/pull/1231/files lands (hopefully v0.28.3)
             // return self.ipfs.catReadableStream(mh, opts ? opts.start : 0, opts && opts.end) ? opts.end+1 : undefined)
             if (!opts)  return throughstream; //TODO-STREAM unclear why called without opts - take this out when figured out

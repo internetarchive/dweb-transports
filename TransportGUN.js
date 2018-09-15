@@ -6,6 +6,8 @@ process.env.GUN_ENV = "false";
 const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
 require('gun/lib/path.js');
 const debuggun = require('debug')('dweb-transports:gun');
+const stringify = require('canonical-json');
+
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -200,7 +202,7 @@ class TransportGUN extends Transport {
         // Logged by Transports
         console.assert(url && sig.urls.length && sig.signature && sig.signedby.length, "TransportGUN.p_rawadd args", url, sig);
         this.connection(url)
-        .set( JSON.stringify( sig.preflight( Object.assign({}, sig))));
+        .set( stringify( sig.preflight( Object.assign({}, sig))));
     }
 
     // noinspection JSCheckFunctionSignatures
@@ -253,13 +255,13 @@ class TransportGUN extends Transport {
          */
         let table = this.connection(url);
         if (typeof keyvalues === "string") {
-            table.path(keyvalues).put(JSON.stringify(value));
+            table.path(keyvalues).put(stringify(value));
         } else {
             // Store all key-value pairs without destroying any other key/value pairs previously set
             console.assert(!Array.isArray(keyvalues), "TransportGUN - shouldnt be passsing an array as the keyvalues");
             table.put(
                 Object.keys(keyvalues).reduce(
-                    function(previous, key) { previous[key] = JSON.stringify(keyvalues[key]); return previous; },
+                    function(previous, key) { previous[key] = stringify(keyvalues[key]); return previous; },
                     {}
             ))
         }
