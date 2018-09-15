@@ -7,6 +7,8 @@ It was last revised (to match the code) on 23 April 2018.
 
 If you find any discrepancies please add an issue here.
 
+See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make up the Internet Archive's Dweb project, and an index of other documents. 
+
 ## General API notes and conventions
 We use a naming convention that anything starting “p_” returns a promise so you know to "await" it if you want a result.
 
