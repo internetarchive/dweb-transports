@@ -188,7 +188,7 @@ class Transports {
         throws:     CodingError if urls empty or [undefined ... ]
          */
         if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
-        let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert name to [urls]
         if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
         let tt = this.validFor(resolvedurls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {

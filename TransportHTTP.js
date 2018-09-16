@@ -174,7 +174,7 @@ class TransportHTTP extends Transport {
             if (wanturl) {
                 return url;
             } else {
-                return function (opts) { return self.p_createReadStream(url, opts); };
+                return function (opts) { return self.createReadStream(url, opts); };
             }
         } catch(err) {
             //Logged by Transports
@@ -183,7 +183,7 @@ class TransportHTTP extends Transport {
         }
     }
 
-    async createReadStream(url, opts) {
+    createReadStream(url, opts) {
         /*
         The function, encapsulated and inside another function by p_f_createReadStream (see docs)
         NOTE THIS DOESNT WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway - reports stream.on an filestream.pipe aren't functions
