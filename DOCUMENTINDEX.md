@@ -22,7 +22,7 @@ This doc will gradually replace the myriad, mostly out of date, links sections i
 * [Dweb-Serviceworker](https://github.com/internetarchive/dweb-serviceworker) - [README](https://github.com/internetarchive/dweb-serviceworker/blob/master/README.md) - Experimental (incomplete, unused) service worker proxy for Dweb-Transports
 * [Dweb-Mirror](https://github.com/internetarchive/dweb-mirror) - [README](https://github.com/internetarchive/dweb-mirror/blob/master/README.md) Mirroring and serving subsets of the Archive - builds on dweb-transports and dweb-objects and dweb-archive
 * [Dweb-Universal](https://github.com/mitra42/dweb-universal) - [README](https://github.com//mitra42/dweb-universal/blob/master/README.md)  Overview repo for the 2019 “universal” project - making the IA more accessible where the internet is poor. 
-    * [Dweb Universal architecture.pdf](https://github.com/mitra42/dweb-universal/blob/master/Dweb Universal architecture.pdf) Diagram 
+    * [Dweb Universal architecture.pdf](https://github.com/mitra42/dweb-universal/blob/master/Dweb%20Universal%20architecture.pdf) Diagram 
     * [Naming](https://github.com/mitra42/dweb-universal/blob/master/naming.md)  - proposal for naming in the dweb
     * [URI structure for HTTP Server](https://github.com/mitra42/dweb-universal/blob/master/uri%20structure%20for%20http%20server.md)
     * [Xyz but decentralized](https://github.com/mitra42/dweb-universal/blob/master/xyz%20but%20decentralized.md)
