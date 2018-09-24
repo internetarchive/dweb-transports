@@ -47,6 +47,76 @@ async function main(url) {
 }
 var searchparams = new URL(window.location.href).searchParams;
 ```
+## Notes on implemntation
+
+### Implementation on HTTP (TransportHTTP.js)
+The HTTP interface is pretty simple, a standard extensible gateway (dweb-gateway) we wrote is used. 
+
+fetch is a straightforward HTTP GET to a URL that includes the multihash
+store is a POST to the same URL 
+
+Lists are implemented via append-only files on the HTTP server using URLs that contain the same hashes. 
+“Add” appends to this file, “list” retrieves the file. 
+
+Listmonitor isn’t supported, and can’t really be as there is no open channel to the client. 
+
+### Implementation on IPFS (TransportIPFS.js)
+
+This section will only make sense if you understand something about IPFS.
+
+See TransportIPFS.js in the repository for details for code. 
+
+IPFS has two Javascript versions, both of which currently implement only a subset of IPFS (JS-IPFS is missing IPNS, and JS-IPFS-API is missing pubsub).
+We are mostly using JS-IPFS because JS-IPFS-API creates a centralisation point of failure at a known HTTP host, 
+and because JS-IPFS-API has issues connecting to a local IPFS peer because of some odd security choices by IPFS.
+
+IPFS is initialized via creating a IPFS object with a configuration. We use the Websockets connctor since the alternative, but its got a single point of failure. WebRTC is an alternative but is seriously broken (crashes both chrome and firefox)
+
+Blocks are stored and retrieved via ipfs.files.get and ipfs.files.add. 
+
+For lists and tables - see YJS which uses IPFS.
+
+#### Issues with IPFS
+
+Error feedback is a little fuzzy.
+
+There are issues with IPFS swarms that we haven’t been able to figure out about how to ensure that “put”ting to IPFS creates an object that can be read at all other browsers, and persists. See DT issue#2
+
+Naming hasn’t been implemented in IPFS yet, partly because IPNS is not available in the JS-IPFS, and partly because IPNS has serious problems: 
+(requirement to rebroadcast every 24 house so not persistent; merkle tree so change at leaf changes top level; doesnt work in JS-IPFS;) We implemented naming outside of IPFS (in Domain.js) to get it to work. 
+
+#### Implementation on WebTorrent
+WebTorrent implements the BitTorrent protocol in the browser. It will work for retrieval of objects and currently has the fastest/most-reliable stream interface.
+
+We also have a modified Seeder/Tracker which are currently (Sept2018) in testing on our gateway.
+
+#### Implementation on YJS (TransportYJS.js)
+
+YJS implements a decentralized database over a number of transports including IPFS. It supports several modes of which we only use “Arrays” to implement append-only logs and "Map" to implement key-value tables. 
+
+There is no authentication built into YJS but If using via the higher level CommonList (CL) object, 
+the authentication isnt required since the CL will validate anything sent. 
+
+#### Implementation on GUN
+
+GUN implements a decentralized database and we have mostly migrated to it (from YJS) because there is some support and an active team.
+
+Our tables and Lists are mapped as JSON objects inside GUN nodes due to some limitations in GUN's architecture for multi-level objects. 
+
+Still (as of Sept2018) working on Authentiction, and some reliability/bug issues.
+
+#### Implementation on OrbitDB
+OrbitDB is similar to YJS, but adds an authentication layer, which is particularly useful if using the rawlist/rawadd interface rather than the higher level CommonList. 
+
+This was in the process of being implemented, but was stopped because they weren't responsive to problems we hit. 
+
+#### Implementation on DAT
+
+DAT has some interesting different choices from IPFS (The IPFS team forked out of DAT). In particular it allow for large sparse arrays such as used for scientific data, and is more focused on making mutable data work well, while IPFS focuses on immutable. 
+
+We didn't implement it initially because its not supported in browsers, but are planning (as of Sept 2018) to implement in dweb-transorts for use in dweb-mirror.
+
+### See also
 
 See [example_block.html](./example_block.html) for an example of connecting, storing and retrieving.
 
