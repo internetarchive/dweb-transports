@@ -4,9 +4,10 @@ This Transport layers uses GUN.
 const Url = require('url');
 process.env.GUN_ENV = "false";
 const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
-// Raw Gun is pretty useless on its own, it needs at least the following to work properly.
+// Raw Gun has almost nothing in it, it needs at least the following to work properly.
 require('gun/lib/path.js');         // So that .path works
 /*
+WORKAROUND-GUN-STORAGE
 // The next step is to stop it failing as soon as its cached 5Mb in localstorage
 // see https://github.com/amark/gun/blob/master/test/tmp/indexedDB.html and https://github.com/amark/gun/issues/590
 // but the instructions on how to do this are obviously broken so waiting on @amark to get this working.
@@ -47,7 +48,8 @@ let defaultoptions = {
     WORKAROUND-GUN-PROMISES: GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times).
     WORKAROUND-GUN-ERRORS: GUN does an unhelpful job with errors, for example returning undefined when it cant find something (e.g. if connection to superpeer is down),
         for now just throw an error on undefined
-    TODO-GUN, handle error callbacks
+    WORKAROUND-GUN-STORAGE: GUN defaults to local storage, which then fails on 5Mb or more of data, need to use radix, which has to be included and has bizarre config requirement I can't figure out
+    TODO-GUN, handle error callbacks which are available in put etc
     Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
  */
