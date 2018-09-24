@@ -4,7 +4,17 @@ This Transport layers uses GUN.
 const Url = require('url');
 process.env.GUN_ENV = "false";
 const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
-require('gun/lib/path.js');
+// Raw Gun is pretty useless on its own, it needs at least the following to work properly.
+require('gun/lib/path.js');         // So that .path works
+/*
+// The next step is to stop it failing as soon as its cached 5Mb in localstorage
+// see https://github.com/amark/gun/blob/master/test/tmp/indexedDB.html and https://github.com/amark/gun/issues/590
+// but the instructions on how to do this are obviously broken so waiting on @amark to get this working.
+require('gun/lib/radix.js');
+require('gun/lib/radisk.js');
+require('gun/lib/store.js');
+require('gun/lib/rindexed.js');
+*/
 const debuggun = require('debug')('dweb-transports:gun');
 const stringify = require('canonical-json');
 
@@ -37,6 +47,7 @@ let defaultoptions = {
     WORKAROUND-GUN-PROMISES: GUN is not promisified, there is only one place we care, and that is .once (since .on is called multiple times).
     WORKAROUND-GUN-ERRORS: GUN does an unhelpful job with errors, for example returning undefined when it cant find something (e.g. if connection to superpeer is down),
         for now just throw an error on undefined
+    TODO-GUN, handle error callbacks
     Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
  */
@@ -121,6 +132,7 @@ class TransportGUN extends Transport {
         url = Url.parse(url);   // Accept url as string or object
         let g = this.connection(url); // Goes all the way to the key
         let val = await this._p_once(g);
+        //g.on((data)=>debuggun("Got late result of: %o", data)); // Checking for bug in GUN issue#586 - ignoring result
         if (!val) throw new errors.TransportError("GUN unable to retrieve: "+url.href);  // WORKAROUND-GUN-ERRORS - gun doesnt throw errors when it cant find something
         let o = typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
         //TODO-GUN this is a hack because the metadata such as metadata/audio is getting cached in GUN and in this case is wrong.
