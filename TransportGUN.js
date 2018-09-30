@@ -1,5 +1,7 @@
 /*
 This Transport layers uses GUN.
+
+See https://github.com/internetarchive/dweb-mirror/issues/43 for meta issue
 */
 const Url = require('url');
 process.env.GUN_ENV = "false";
@@ -39,7 +41,7 @@ let defaultoptions = {
 // TODO-GUN - copy example from systemctl here
 
 /*
-    WORKING AROUND GUN WEIRNESS/SUBOPTIMAL (of course, whats weird/sub-optimal to me, might be ideal to someone else) - search the code to see where worked around
+    WORKING AROUND GUN WEIRDNESS/SUBOPTIMAL (of course, whats weird/sub-optimal to me, might be ideal to someone else) - search the code to see where worked around
 
     WORKAROUND-GUN-UNDERSCORE .once() and possibly .on() send an extra GUN internal field "_" which needs filtering. Reported and hopefully will get fixed
     .once behaves differently on node or the browser - this is a bug https://github.com/amark/gun/issues/586 and for now this code doesnt work on Node
