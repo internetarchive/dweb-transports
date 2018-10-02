@@ -283,8 +283,8 @@ class Transports {
 
     // Stream handling ===========================================
     //myArray[Math.floor(Math.random() * myArray.length)];
-    
-    static async p_f_createReadStream(urls, {wanturl=false}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
+
+    static async p_f_createReadStream(urls, {wanturl=false, preferredTransports=[]}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
         urls:   Urls of the stream
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
@@ -297,10 +297,13 @@ class Transports {
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
         // Until we have transport ordering, try randomly TODO Transport ordering
-        let z;
-        while ((z = tt.splice(Math.floor(Math.random() * tt.length),1)).length) {
-            let url = z[0][0];
-            let t = z[0][1];
+
+        //Debugging: preferredTransports = [] // ["WEBTORRENT", "IPFS", "HTTP"];
+        tt.sort((a,b) =>
+            ((preferredTransports.indexOf(a[1].name)+1) || 999+Math.random())  - ((preferredTransports.indexOf(b[1].name)+1) || 999+Math.random())
+        );
+
+        for (const [url, t] of tt) {
             try {
                 debugtransports("Opening stream to %s via %s", url.href, t.name);
                 let res = await t.p_f_createReadStream(url, {wanturl} );
