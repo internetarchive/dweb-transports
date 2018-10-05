@@ -27,18 +27,19 @@ servercommands = {  // What the server wants to see to return each of these
 class TransportHTTP extends Transport {
 
     constructor(options) {
-        super(options);
+        super(options); // These are now options.http
         this.options = options;
-        this.urlbase = options.http.urlbase;
+        this.urlbase = options.urlbase;
         this.supportURLs = ['contenthash', 'http','https'];
         this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
-        this.supportFeatures = ['fetch.range']
+        // noinspection JSUnusedGlobalSymbols
+        this.supportFeatures = ['fetch.range'];
         this.name = "HTTP";             // For console log etc
         this.status = Transport.STATUS_LOADED;
     }
 
     static setup0(options) {
-        let combinedoptions = Transport.mergeoptions({ http: defaulthttpoptions },options);
+        let combinedoptions = Transport.mergeoptions(defaulthttpoptions, options.http);
         try {
             let t = new TransportHTTP(combinedoptions);
             Transports.addtransport(t);
@@ -81,6 +82,7 @@ class TransportHTTP extends Transport {
         url = url + (parmstr ? "?"+parmstr : "");
         return url;
     }
+    // noinspection JSCheckFunctionSignatures
     async p_rawfetch(url, opts={}) {
         /*
         Fetch from underlying transport,
@@ -95,9 +97,6 @@ class TransportHTTP extends Transport {
         //    console.error("XXX@91", url)
         if (((typeof url === "string") ? url : url.href).includes('/getall/table')) {
             throw new Error("Probably dont want to be calling p_rawfetch on a KeyValueTable, especially since dont know if its keyvaluetable or subclass"); //TODO-NAMING
-            return { // I'm not sure what this return would have done  - looks half finished to me?
-                table: "keyvaluetable",
-                }
         } else {
             return await httptools.p_GET(this._url(url, servercommands.rawfetch), opts);
         }
@@ -141,6 +140,7 @@ class TransportHTTP extends Transport {
                     && (parsedurl.pathname.includes('/content/rawfetch') || parsedurl.pathname.includes('/contenthash/')))
                 || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
         if (!u) {
+            // noinspection JSUnresolvedVariable
             u = `contenthash:/contenthash/${ cl.keypair.verifyexportmultihashsha256_58() }`; // Pretty random, but means same test will generate same list and server is expecting base58 of a hash
         }
         return [u,u];
@@ -238,7 +238,7 @@ class TransportHTTP extends Transport {
     async p_newdatabase(pubkey) {
         //if (pubkey instanceof Dweb.PublicPrivate)
         if (pubkey.hasOwnProperty("keypair"))
-            pubkey = pubkey.keypair.signingexport()
+            pubkey = pubkey.keypair.signingexport();
         // By this point pubkey should be an export of a public key of form xyz:abc where xyz
         // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
         let u =  `${this.urlbase}/getall/table/${encodeURIComponent(pubkey)}`;
@@ -272,7 +272,7 @@ class TransportHTTP extends Transport {
     }
     async p_get(url, keys) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys)
+        let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys);
         let res = await httptools.p_GET(this._url(url, servercommands.get, parmstr));
         return Array.isArray(keys) ? res : res[keys]
     }
