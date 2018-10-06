@@ -31,7 +31,7 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 const defaultoptions = {
-    repo: '/tmp/dweb_ipfsv2700', //TODO-IPFS think through where, esp for browser
+    repo: '/tmp/dweb_ipfsv3107', //TODO-IPFS restarted 2018-10-06 because was caching connection ws-star
     //init: false,
     //start: false,
     //TODO-IPFS-Q how is this decentralized - can it run offline? Does it depend on star-signal.cloud.ipfs.team
