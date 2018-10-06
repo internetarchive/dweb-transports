@@ -52,6 +52,7 @@ class Transports {
         returns:    Array of pairs of Url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
         throws:     CodingError if urls empty or [undefined...]
          */
+        if (typeof urls === "string") urls = [urls];
         if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func)))   {
             console.error("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
             return [];
