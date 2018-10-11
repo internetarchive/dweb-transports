@@ -134,11 +134,11 @@ class TransportHTTP extends Transport {
     }
 
     p_newlisturls(cl) {
-       let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
+        let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
             .find(parsedurl =>
                 ((parsedurl.protocol === "https:" && ["gateway.dweb.me", "dweb.me"].includes(parsedurl.host)
                     && (parsedurl.pathname.includes('/content/rawfetch') || parsedurl.pathname.includes('/contenthash/')))
-                || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
+                    || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
         if (!u) {
             // noinspection JSUnresolvedVariable
             u = `contenthash:/contenthash/${ cl.keypair.verifyexportmultihashsha256_58() }`; // Pretty random, but means same test will generate same list and server is expecting base58 of a hash
@@ -190,25 +190,23 @@ class TransportHTTP extends Transport {
 
         :param file:    Webtorrent "file" as returned by webtorrentfindfile
         :param opts: { start: byte to start from; end: optional end byte }
-        :resolves to stream: The readable stream.
+        :returns stream: The readable stream - it is returned immediately, though won't be sending data until the http completes
          */
 
         debughttp("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
-        try {
-            through = new stream.PassThrough();
-            const p_filestream = httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
-            p_filestream.then(s => s.pipe(through));
-            return through; // Returns through synchronously, before the pipe is setup
-        } catch(err) {
-            console.warn(this.name,"createReadStream caught error", err.message);
-            if (typeof through.destroy === 'function')
-                through.destroy(err);
-            else through.emit('error', err)
-        }
-
-
-
+        through = new stream.PassThrough();
+        httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts))
+            .then(s => s.pipe(through))
+            .catch(err => {
+                console.warn(this.name, "createReadStream caught error", err.message);
+                if (typeof through.destroy === 'function') {
+                    through.destroy(err); // Will emit error & close and free up resources
+                } else {
+                    through.emit('error', err);
+                }
+            });
+        return through; // Returns "through" synchronously, before the pipe is setup
     }
 
     async p_createReadStream(url, opts) {
