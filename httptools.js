@@ -68,7 +68,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
         //console.log('CTX=',init["headers"].get('Content-Type'))
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);
-        //let response = await fetch(new Request(httpurl, init)).catch(err => console.exception(err));
+        //let response = await fetch(req);
         let response = await loopfetch(req, 500, 12, "fetching "+httpurl);
         // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
         // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
