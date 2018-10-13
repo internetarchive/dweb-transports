@@ -64,7 +64,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
     //TODO explicitly parameterise if want it to loop
      */
     try {
-        debught("p_httpfetch: %s %o", httpurl, init);
+        debught("p_httpfetch: %s %o", httpurl, init.headers.get("range"));
         //console.log('CTX=',init["headers"].get('Content-Type'))
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);
@@ -108,7 +108,7 @@ httptools.p_GET = function(httpurl, opts={}) {
         resolves to: URL that can be used to fetch the resource, of form contenthash:/contenthash/Q123
     */
     let headers = new Headers();
-    if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${opts.end || ""}`);
+    if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${(opts.end<Infinity) ? opts.end : ""}`);
     let init = {    //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
         method: 'GET',
         headers: headers,
