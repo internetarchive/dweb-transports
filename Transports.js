@@ -289,7 +289,7 @@ class Transports {
 
     static async p_f_createReadStream(urls, {wanturl=false, preferredTransports=[]}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
-        urls:   Urls of the stream
+        urls:   Url or [urls] of the stream
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
@@ -325,6 +325,8 @@ class Transports {
     static createReadStream(urls, opts, cb) { //TODO-API
         /*
             Different interface, more suitable when just want a stream, now.
+            urls:   Url or [urls] of the stream
+            opts{start, end}:   First and last byte wanted (default to 0...last)
             cb(err, stream): Called with open readable stream from the net.
             Returns promise if no cb
          */
@@ -336,9 +338,9 @@ class Transports {
             })
             .catch(err => {
                 if (err instanceof DTerrors.TransportError) {
-                    console.warn("createReadStream caught", err.message);
+                    console.warn("Transports.createReadStream caught", err.message);
                 } else {
-                    console.error("createReadStream caught", err);
+                    console.error("Transports.createReadStream caught", err);
                 }
                 if (cb) { cb(err); } else { reject(err)}
             });
@@ -534,7 +536,7 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         await Promise.all(
             this.validFor(urls, "connection")
-            .map(([u, t]) => t.p_connection(u)));
+                .map(([u, t]) => t.p_connection(u)));
     }
 
     static monitor(urls, cb, {current=false}={}) {
