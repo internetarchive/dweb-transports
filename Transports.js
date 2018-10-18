@@ -337,7 +337,7 @@ class Transports {
                 if (cb) { cb(null, s); } else { return(s); }; // Callback or resolve stream
             })
             .catch(err => {
-                if (err instanceof DTerrors.TransportError) {
+                if (err instanceof errors.TransportError) {
                     console.warn("Transports.createReadStream caught", err.message);
                 } else {
                     console.error("Transports.createReadStream caught", err);

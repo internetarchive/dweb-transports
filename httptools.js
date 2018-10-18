@@ -45,7 +45,7 @@ async function loopfetch(req, ms, count, what) {
         }
     }
     console.warn("loopfetch of",what,"failed");
-    if (loopguard !== (window && window.loopguard)) {
+    if (loopguard !== ((typeof window != "undefined") && window.loopguard)) {
         debught("Looping exited because of page change %s", what);
         throw new Error("Looping exited because of page change "+ what)
     } else {
