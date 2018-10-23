@@ -740,7 +740,9 @@ class Transports {
     static gatewayUrl(url) {
         // Convert url to gateway url, if not canonicalizable then just pass the url along
         let o = Transports.canonicalName(url);
-        return o ? [this.mirror, o.proto, o.internal].join('/') : url;
+        return !o ? url
+            : ["http","https"].includes(o.proto) ? [o.proto, o.internal].join('://') // Shouldnt be relative
+            : [this.mirror, o.proto, o.internal].join('/');
     }
 }
 Transports._transports = [];    // Array of transport instances connected
