@@ -699,7 +699,7 @@ class Transports {
         const patts = [ // No overlap between patts & arcpatts, so order unimportant
             /^dweb:[/]+(\w+)[/]+(.*)/i,                         // dweb://(proto)/(internal)
             /^\w+:[/]+(\w+)[/](.*)/i,                           // proto1://proto2//(internal) - maybe only match if proto1=proto2 (must be before proto:/internal)
-            /^(\w+):[/]+(.*)/i,                                 // (proto)://(internal) # must be after proto1://proto2
+            /^(\w+):[/]*(.*)/i,                                 // (proto)://(internal) # must be after proto1://proto2
             /^[/]*(\w+)[/](.*)/i,                               // /(proto)//(internal) - maybe only match if proto1=proto2
             /^[/]*dweb[/]*(\w+)[/](.*)/i,                       // /dweb/(proto)//(internal)
         ]
@@ -738,8 +738,9 @@ class Transports {
         return o.protocol + ":/" + o.internal;
     }
     static gatewayUrl(url) {
+        // Convert url to gateway url, if not canonicalizable then just pass the url along
         let o = Transports.canonicalName(url);
-        return [this.mirror, o.proto, o.internal].join('/');
+        return o ? [this.mirror, o.proto, o.internal].join('/') : url;
     }
 }
 Transports._transports = [];    // Array of transport instances connected
