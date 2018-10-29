@@ -78,7 +78,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
                 return response.body; // Note property while json() or text() are functions
             } else if (contenttype === "application/json") {
                 return response.json(); // promise resolving to JSON
-            } else if ((contenttype !== "undefined") && contenttype.startsWith("text")) { // Note in particular this is used for responses to store
+            } else if ((typeof contenttype !== "undefined") && contenttype.startsWith("text")) { // Note in particular this is used for responses to store
                 return response.text();
             } else { // Typically application/octetStream when don't know what fetching
                 return new Buffer(await response.arrayBuffer()); // Convert arrayBuffer to Buffer which is much more usable currently
