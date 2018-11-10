@@ -19,7 +19,7 @@
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
     "readable-stream": "^2.3.6",
-    "webpack": "^4.20.2",
+    "webpack": "^4.25.1",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
     "y-indexeddb": "latest",
@@ -27,7 +27,7 @@
     "y-map": "latest",
     "y-memory": "latest",
     "y-text": "latest",
-    "yjs": "latest"
+    "yjs": "^12.0.0"
   },
   "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {
