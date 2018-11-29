@@ -77,7 +77,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
             let contenttype = response.headers.get('Content-Type');
             if (wantstream) {
                 return response.body; // Note property while json() or text() are functions
-            } else if (contenttype === "application/json") {
+            } else if ((typeof contenttype !== "undefined") && contenttype.startsWith("application/json")) {
                 return response.json(); // promise resolving to JSON
             } else if ((typeof contenttype !== "undefined") && contenttype.startsWith("text")) { // Note in particular this is used for responses to store
                 return response.text();
