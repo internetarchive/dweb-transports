@@ -94,17 +94,19 @@ class Transports {
         return Transports._connected().find((t) => t.name === "GUN")
     }
 
-
     static async p_resolveNames(urls) {
         /* If and only if TransportNAME was loaded (it might not be as it depends on higher level classes like Domain and SmartDict)
             then resolve urls that might be names, returning a modified array.
          */
-        if (this.namingcb) {
+        if (this.mirror) {
+            return Array.isArray(urls) ? urls.map(url=>this.gatewayUrl(url)) : this.gatewayUrl(url);
+        } else if (this.namingcb) {
             return await this.namingcb(urls);  // Array of resolved urls
         } else {
             return urls;
         }
     }
+
     static resolveNamesWith(cb) {
         // Set a callback for p_resolveNames
         this.namingcb = cb;
@@ -287,7 +289,7 @@ class Transports {
 
     static async p_f_createReadStream(urls, {wanturl=false, preferredTransports=[]}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
-        urls:   Urls of the stream
+        urls:   Url or [urls] of the stream
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
@@ -319,7 +321,30 @@ class Transports {
         }
         debugtransports("Opening stream to %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
-}
+    }
+    static createReadStream(urls, opts, cb) { //TODO-API
+        /*
+            Different interface, more suitable when just want a stream, now.
+            urls:   Url or [urls] of the stream
+            opts{start, end}:   First and last byte wanted (default to 0...last)
+            cb(err, stream): Called with open readable stream from the net.
+            Returns promise if no cb
+         */
+        if (typeof opts === "function") { cb = opts; opts = {start: 0}; } // Allow skipping opts
+        DwebTransports.p_f_createReadStream(urls)
+            .then(f => {
+                let s = f(opts);
+                if (cb) { cb(null, s); } else { return(s); }; // Callback or resolve stream
+            })
+            .catch(err => {
+                if (err instanceof errors.TransportError) {
+                    console.warn("Transports.createReadStream caught", err.message);
+                } else {
+                    console.error("Transports.createReadStream caught", err);
+                }
+                if (cb) { cb(err); } else { reject(err)}
+            });
+    };
 
 
 // KeyValue support ===========================================
@@ -511,7 +536,7 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         await Promise.all(
             this.validFor(urls, "connection")
-            .map(([u, t]) => t.p_connection(u)));
+                .map(([u, t]) => t.p_connection(u)));
     }
 
     static monitor(urls, cb, {current=false}={}) {
@@ -551,7 +576,7 @@ class Transports {
         returns array of transport instances
          */
         // "IPFS" or "IPFS,LOCAL,HTTP"
-        let localoptions = {http: {urlbase: "http://localhost:4244"}};
+        let localoptions = {http: {urlbase: "http://localhost:4244"}}; //TODO-MIRROR "localoptions" may not be needed any more
         return tabbrevs.map((tabbrev) => {
             let transportclass = this._transportclasses[ (tabbrev === "LOCAL") ? "HTTP" : tabbrev ];
             if (!transportclass) {
@@ -611,9 +636,7 @@ class Transports {
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options);
-            if (options.statuscb) {
-                this.statuscb = options.statuscb;
-            }
+            ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
             if (!!options.statuselement) {
                 let statuselement = options.statuselement;
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
@@ -661,52 +684,66 @@ class Transports {
         return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
     }
 
-    static async test() {
-        console.log("Transports.test")
-        try {
-            /* Could convert this - copied fom YJS to do a test at the "Transports" level
-            let testurl = "yjs:/yjs/THISATEST";  // Just a predictable number can work with
-            let res = await transport.p_rawlist(testurl);
-            let listlen = res.length;   // Holds length of list run intermediate
-            console.log("rawlist returned ", ...utils.consolearr(res));
-            transport.listmonitor(testurl, (obj) => console.log("Monitored", obj));
-            let sig = new Dweb.Signature({urls: ["123"], date: new Date(Date.now()), signature: "Joe Smith", signedby: [testurl]});
-            await transport.p_rawadd(testurl, sig);
-            console.log("TransportIPFS.p_rawadd returned ");
-            res = await transport.p_rawlist(testurl);
-            console.log("rawlist returned ", ...utils.consolearr(res)); // Note not showing return
-            await delay(500);
-            res = await transport.p_rawlist(testurl);
-            console.assert(res.length === listlen + 1, "Should have added one item");
-            */
-            //console.log("TransportYJS test complete");
-            /* TODO-KEYVALUE reenable these tests,s but catch http examples
-            let db = await this.p_newdatabase("TESTNOTREALLYAKEY");    // { privateurls, publicurls }
-            console.assert(db.privateurls[0] === "yjs:/yjs/TESTNOTREALLYAKEY");
-            let table = await this.p_newtable("TESTNOTREALLYAKEY","TESTTABLE");         // { privateurls, publicurls }
-            let mapurls = table.publicurls;
-            console.assert(mapurls[0] === "yjs:/yjs/TESTNOTREALLYAKEY/TESTTABLE");
-            await this.p_set(mapurls, "testkey", "testvalue");
-            let res = await this.p_get(mapurls, "testkey");
-            console.assert(res === "testvalue");
-            await this.p_set(mapurls, "testkey2", {foo: "bar"});
-            res = await this.p_get(mapurls, "testkey2");
-            console.assert(res.foo === "bar");
-            await this.p_set(mapurls, "testkey3", [1,2,3]);
-            res = await this.p_get(mapurls, "testkey3");
-            console.assert(res[1] === 2);
-            res = await this.p_keys(mapurls);
-            console.assert(res.length === 3 && res.includes("testkey3"));
-            res = await this.p_getall(mapurls);
-            console.assert(res.testkey2.foo === "bar");
-            */
+    static canonicalName(url, options={}) {
+        /*
+        Utility function to convert a variety of missentered, or presumed names into a canonical result that can be resolved or passed to a transport
+         */
+        if (typeof url !== "string") url = Url.parse(url).href;
+        // In patterns below http or https; and  :/ or :// are treated the same
+        const gateways = ["dweb.me", "ipfs.io"]; // Kniwn gateways, may dynamically load this at some point
+        const protocols = ["ipfs","gun","magnet","yjs","arc", "contenthash", "http", "https"];
+        const protocolsWantingDomains = ["arc", "http", "https"];
+        const gatewaypatts = [ // Must be before patts because gateway names often start with a valid proto
+            /^http[s]?:[/]+([^/]+)[/](\w+)[/](.*)/i,   // https://(gateway)/proto/(internal)  + gateway in list (IPFS gateways. dweb.me)
+        ]
+        const patts = [ // No overlap between patts & arcpatts, so order unimportant
+            /^dweb:[/]+(\w+)[/]+(.*)/i,                         // dweb://(proto)/(internal)
+            /^\w+:[/]+(\w+)[/](.*)/i,                           // proto1://proto2//(internal) - maybe only match if proto1=proto2 (must be before proto:/internal)
+            /^(\w+):[/]*(.*)/i,                                 // (proto)://(internal) # must be after proto1://proto2
+            /^[/]*(\w+)[/](.*)/i,                               // /(proto)//(internal) - maybe only match if proto1=proto2
+            /^[/]*dweb[/]*(\w+)[/](.*)/i,                       // /dweb/(proto)//(internal)
+        ]
+        const arcpatts = [ // No overlap between patts & arcpatts, so order unimportant
+            /^http[s]?:[/]+[^/]+[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/(archive.org)/(internal)
+            /^http[s]?:[/]+dweb.(\w+)[.]([^/]+)[/]*(.*)/i,      // https://dweb.(proto).(dom.ain)/(internal) # Before dweb.dom.ain
+            // /^http[s]?:[/]+dweb.([^/]+[.][^/]+[/]*.*)/i,     // https://dweb.(dom.ain)/internal) or https://dweb.(domain) Handled by coe on recognizing above
+            /^(http[s])?:[/]+([^/]+)[/]+(.*)/i,                 // https://dom.ain/pa/th
+        ]
 
-        } catch(err) {
-            console.log("Exception thrown in Transports.test:", err.message);
-            throw err;
+        for (let patt of gatewaypatts)  {
+            let rr = url.match(patt);
+            if (rr && gateways.includes(rr[1]) && protocols.includes(rr[2]))
+                return {proto: rr[2], internal: rr[3]};
         }
+        for (let patt of arcpatts)  {
+            let rr = url.match(patt);
+            if (rr) {
+                if (protocols.includes(rr[1])) {
+                    // arc (and possibly others) want the domain as part of the internal
+                    return {proto: rr[1], internal: (protocolsWantingDomains.includes(rr[1]) ? [rr[2], rr[3]].join('/') : rr[3])};
+                } else {
+                    return {proto: "arc", internal: [[rr[1], rr[2]].join('.'), rr[3]].join('/')};
+                }
+            }
+        };
+        for (let patt of patts)  {
+            let rr = url.match(patt);
+            if (rr && protocols.includes(rr[1]))
+                return {proto: rr[1], internal: rr[2]};
+        };
+        return undefined;
     }
-
+    static canonicalUrl(url, options={}) {
+        let o = this.canonicalName(url, options);
+        return o.protocol + ":/" + o.internal;
+    }
+    static gatewayUrl(url) {
+        // Convert url to gateway url, if not canonicalizable then just pass the url along
+        let o = Transports.canonicalName(url);
+        return !o ? url
+            : ["http","https"].includes(o.proto) ? [o.proto, o.internal].join('://') // Shouldnt be relative
+            : [this.mirror, o.proto, o.internal].join('/');
+    }
 }
 Transports._transports = [];    // Array of transport instances connected
 Transports.namingcb = undefined;    // Will be defined by the naming component (turns URLs for names into URLs for transport)
