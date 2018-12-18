@@ -65,7 +65,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
      */
     try {
         // THis was get("range") but that works when init.headers is a Headers, but not when its an object
-        debught("p_httpfetch: %s %o", httpurl, init.headers.range);
+        debught("p_httpfetch: %s %o", httpurl, init.headers.range || "" );
         //console.log('CTX=',init["headers"].get('Content-Type'))
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);
