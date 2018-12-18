@@ -8,6 +8,7 @@ It was last revised (to match the code) on 23 April 2018.
 If you find any discrepancies please add an issue here.
 
 See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make up the Internet Archive's Dweb project, and an index of other documents. 
+See [Writing Shims](./WRITINGSHIMS.md) for guidelines for adding a new Transport and adding shims to the Archive
 
 ## General API notes and conventions
 We use a naming convention that anything starting “p_” returns a promise so you know to "await" it if you want a result.
@@ -538,14 +539,3 @@ When setup this way, then calls to most functions that take an array of urls wil
 The format of names currently (April 2018) is under development but its likely to be something like 
 `dweb:/arc/archive.org/details/foo` 
 to allow smooth integration with existing HTTP urls that are moving to decentralization. 
-
-## Adding a Transport
-The following steps are needed to add a transport. 
-
-* Add a line to package.json/dependencies for any packages needed
-* Add lines to index.js; 
-* Add function to return the instance to Transports.js 
-* Add to list in Transports.p_connect()
-* Add to API.md
-* Look for any "SEE-OTHER-ADDTRANSPORT" in case not on this list
-* Edit a copy of the closest Transport to what you are building
