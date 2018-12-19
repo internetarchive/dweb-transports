@@ -1,36 +1,34 @@
 # Writing Shims to the Internet Archive and to the dweb-transports library
 
-First draft: Mitra 18 Dec 2018
+Second draft: Mitra 19 Dec 2018
 
-Our intention with the dweb-transports and dweb-archive libraries is to be open about integrating with any decentralized platform (what we call a transport), 
+Our intention with the dweb-transports and dweb-archive libraries is to be available for integrating with any decentralized platform (what we call a transport), 
 and this guide is intended to help the process.
 
 In our experience the process of adding a transport to a platform is pretty easy **when** we collaborate with someone intimately familiar with the platform.
 So feel free to ask questions in the [dweb-transports](https://github.com/internetarchive/dweb-transports/issues) repo,
 and to reach out to [Mitra](mitra@archive.org) for assistance. 
 
-If you are working on integration, please add a comment to [dweb-transports#10](https://github.com/internetarchive/dweb-transports/issues/10)
+If you are working on integration, please add a comment to [dweb-transports issue#10](https://github.com/internetarchive/dweb-transports/issues/10)
 
-TODO make links to some of the files in other repos, for now dweb-objects for example refers to https://github.com/internetarchive/dweb-objects
+All the repos are open-source, `dweb-objects` for example refers to [https://github.com/internetarchive/dweb-objects]
 
 ## Overview
 
 Integrating a Dweb platform (aka Transport) into this library has two main stages.
 
-1. integration into the dweb-transports repo, 
+1. integration into the [dweb-transports](https://github.com/internetarchive/dweb-transports) repo, 
 which mostly involves writing a file with a name like TransportXYZ.js 
 and integrating in a couple of places. This can be done entirely by a third party,
 though it will work smoother with collaboration.
 2. integrating a shim that enables the Internet Archive's content to be available 
-in the decentralized platform either via the dweb.archive.org UI or otherwise.
+in the decentralized platform either via the [dweb.archive.org](https://dweb.archive.org) UI or otherwise.
 This is only necessary if you want to make IA content available, 
 and will require our assistance to integrate with code that runs on IA servers.
 
-Step 2 requires our help as the code has to run on our servers, but 
-Step 1 can be done entirely by the third parties, though in both cases collaboration 
-should make the process go smoother.
+## Integration into the [dweb-transports](https://github.com/internetarchive/dweb-transports) repo
 
-## Integration into the Dweb-transports repo
+### Building TransportXYZ.js
 
 The main code sits in a file named something like TransportXYZ.js. 
 
@@ -41,21 +39,33 @@ In this file are implementations of:
 
 See [API.md](./API.md) and the existing code examples for detailed function by function documentation. 
 
-#### Integration other than TransportXYZ.js
+#### Error handling
+One common problem with decentralized platforms is reliability.  We handle this by falling back from one platform to another,
+e.g. if IPFS fails we can try WEBTORRENT or HTTP. But this only works if the Transports.js layer can detect when a failure has occurred. 
+This means it is really important to return an error (via a throw, promise rejection, or callback)
 
-Searching for `SEE-OTHER-ADDTRANSPORT` should find any places in the code where a tweak is required to add a new transport. 
+#### Promises or callbacks
+We've tried to suport both promises and callbacks, though this isn't complete yet.  
+In general it will work best if each outward facing function supports a `cb(err, res)` parameter, and where this is absent, a Promise is returned that will `resolve` to `res` or `reject` with `err`.
 
-To assist finding them they include:
+The `p_foo()` naming convention was previously used to indicate which functions returned a Promise and is gradually being phased out. 
 
-* index.js: needs to require the new TransportXYZ
-* package.json/dependencies: Should specify which version range of a transport to include
-* API.md: Has overview documentation
-* Transports.js: Add a function like: http(), gun() etc: allow finding loaded transports (for example can be used by one transport to find another).
-* Transports.js: Add to p_connect()
+### Integration other than TransportXYZ.js
+
+Searching dweb-transports for `SEE-OTHER-ADDTRANSPORT` should find any places in the code where a tweak is required to add a new transport. 
+
+The current list of places to integrate includes:
+
+* [index.js](./index.js): needs to require the new TransportXYZ
+* [package.json/dependencies](./package.json#L13): Should specify which version range of a transport to include
+* [API.md](./API.md): Has overview documentation
+* [Transports.js](./Transports.js#L78): Add a function like: http(), gun() etc: allow finding loaded transports (for example can be used by one transport to find another).
+* [Transports.js/p_connect](./Transports.js#L625): Add to list so it connects by default at startup
+* [dweb-archive/Util.config](https://github.com/internetarchive/dweb-archive/blob/master/Util.js#L135)
 
 #### Partial implementation.
 
-Its perfectly legitimate to only implement the parts of the API that the transport implements, 
+Its perfectly legitimate to only implement the parts of the API that the underlying platform implements, 
 though it will work better if the others are implemented as well, 
 for example:
 * a list can be implemented on top of a KeyValue system by adding a new item with a key being a timestamp.
@@ -67,6 +77,10 @@ They aren't currently used by the dweb-archive / dweb.archive.org code.
 Make sure that `TransportXYZ.js` `constructor()` correctly covers what functions are implemented in the `.supportFunctions` field. 
 This field is used by Transports to see which transports to try for which functionality.
 
+For example if "store" is listed in TransportXYZ.supportFunctions,
+then a call to Transports.p_rawstore() will attempt to store using XYZ, 
+and add whatever URL `TransportXYZ.p_rawstore()` returns to the array of URLs where the content is stored. 
+
 ## Integration into the Archive's servers. 
 
 Integration into the Archive content will definately require a more in-depth collaboation, 
@@ -75,7 +89,7 @@ but below is an outline.
 The key challenge is that the Archive has about 50 petabytes of data, 
 and none of the distributed platforms can pratically handle that currently.
 So we use 'lazy-seeding' techniques to push/pull data into a platform as its requested by users. 
-Optionally we can crawl some subset of resources and pre-seed those to the platform if the process of adding a, possibly large, item is slow (e.g. in IPFS, WEBTORRENT)
+Optionally, if the process of adding a, possibly large, item is slow (e.g. in IPFS, WEBTORRENT),  we can also crawl some subset of Archive resources and pre-seed those files to the platform.
 
 In all cases, we presume that we run a (potentially) modified peer at the Archive, 
 so that interaction between the Archive servers and the system is fast and bandwidth essentially free.
@@ -85,7 +99,7 @@ In case its useful .... our servers have:
 * A persistent volume available to each peer at e.g. /pv/gun
 * An implementation of REDIS answering on 0.0.0.0:6379 which saves to the persistent volume
 * A HTTPS or WSS proxy (we prefer this over giving access to dweb.me's certificate to the superpeer)
-* Log files
+* Log files (including rotation)
 * cron (not currently used, but can be)
 
 These are available to superpeers but will require some liason so we know how they are being used.
@@ -105,7 +119,7 @@ The actual choices to be made will depend on some of the differences between tra
 2. Have the server Push data into the platform and share the hash generated by the platform in the metadata (IPFS) and/or pass a URL to the platform which it can pull and return its hash.
 3. Hybrid - precalculate content addresses during item creation, then hijack the request for the data (this is expensive for the Archive so is going to take a lot longer to setup). (WEBTORRENT)
 
-Each of these requires a different technique. 
+Each of these requires a different technique, the documentation below currently only covers metadata access for material addressed by name. 
 
 #### 1. Hijacking
 
@@ -118,21 +132,38 @@ and be able to cache and share it in a decentralized fashion prior to an abiliy 
 
 Obviously this could run quite complex functionality but in may cases simple mapping to URLs on our gateway will work well.
 
-See `dweb-transport/gun/gun_https_hijackable.js` for the code modification 
-and `gun_https_archive.js` for the configuration that maps `/arc/archive/metadata` to `https://dweb.me/arc/archive.org/metadata/` so that for example
-`gun:/arc/archive/metadata/commute` retrieves metadata for the `commute` Internet Archive item at `https://dweb.me/arc/archive.org/metadata/commute`.
+See [dweb-transport/gun/gun_https_hijackable.js](https://github.com/internetarchive/dweb-transport/blob/master/gun/gun_https_hijackable.js) for the code modification 
+and `[gun_https_archive.js](https://github.com/internetarchive/dweb-transport/blob/master/gun/gun_https_archive.js)` for the configuration that maps `/arc/archive/metadata` to `https://dweb.me/arc/archive.org/metadata/` so that for example
+`gun:/arc/archive/metadata/commute` retrieves metadata for the `commute` Internet Archive item at [https://dweb.me/arc/archive.org/metadata/commute].
 
-The dweb-archive code needs to know to try Gun for the metadata, and this is configured in dweb-objects/Domain.js/p_setupOnce() which we have to run. 
+This will also work if the address of the table is a hash for example `xyz:/xyz/Q1234567/commute` 
+where `Q1234567` would be `xyz`'s address for the metadata table. 
+The mapping to that table's address can be hard-coded in code, or included in the Domain.js resolution.
+
+The dweb-archive code needs to know to try Gun for the metadata, and this is configured in [dweb-objects/Domain.js/p_setupOnce()](https://github.com/internetarchive/dweb-objects/blob/master/Domain.js#L404) which we have to run. 
 Note that this configuration mechanism is likely to change in the future though the address (on GUN) checked should remain the same.
 
-TODO write up integration to files
+File retrieval can work similarly if the platform allows addressing by name. 
+For example gun:/arc/archive/download could be mapped to https://dweb.me/arc/archive.org/download so that gun:/arc/archive/download/commute/commute.avi
+would resolve. Similarly the mapping could be to an opaque hash-based address like `xyz:/xyz/Q99999/commute/commute.avi` works.
+In this case the Archive client would be configured to automatically add a transformed URL like this as one of the places to look for a file.
 
-#### 2. Push 
+#### 2. Push of URL mapping (prefered) or content.
 
-This is more complex, and less preferably to Hijacking, and can only integrate files access, not metadata. 
+This is more complex, and can only integrate files access, not metadata. 
+
+The general path is that a client requests metadata (via HTTP or GUN currently), 
+the dweb-gateway server then passes a URL to the platform (IPFS) which retrieves the URL, 
+calculates its hash (which is a hash of the internal data structure (IPLD)) and passes 
+that to the server.  The server incorporates it into the metadata returned.  
+
+It is less preferably to Hijacking, in part because the first metadata query is 
+delayed while the platform is retrieving and processing a potentially large file in order to 
+generate its internal address for it.  
+This is likely to be neccessary if the platform uses content addressing, 
+especially if it uses an internally generated address (for example IPFS uses a multihash of an internal 'IPLD' object).  
+
 This is used for IPFS.
-
-In most cases this will be used 
 
 We will need a HTTP API, and a snippet of code (currently only python is supported) that we can integrate. 
 
@@ -147,7 +178,8 @@ def store(self, data=None, # If passed, this data will be pushed
 ```
 and should return a string that is the URL to be used for access, e.g. `ipfs:/ipfs/Q12345`
 
-We'll need to integrate it into `dweb-gateway` in `Archive.py.item2thumbnail()` and `NameResolve.py/cache_content()`
+We'll need to integrate it into `dweb-gateway` in [Archive.py.item2thumbnail()](https://github.com/internetarchive/dweb-objects/blob/master/Archive.py#L360]
+and [NameResolver.py/cache_content()](https://github.com/internetarchive/dweb-objects/blob/master/NameResolver.py#L222)
 
 #### 3. Hybrid - Precalculate + hijack.
 
@@ -174,7 +206,8 @@ either a separate repo or a pull request on dweb-transport where you can take ov
 
 ### Installation for production integration
 
-We'll then need some info to help us integrate in our Docker production system which will include:
+We'll then need some info to help us integrate in our Docker/Kubernates production system. 
+Sorry, but this isn't currently in an open repo since its tied into our CI system. The content will include:
 
 * Any one-time instructions to run in `superv`. 
 Note these are run each time a dockerfile starts so need to be safe to run multiple times e.g.
@@ -222,7 +255,7 @@ this should be pretty standard for NodeJS, Python3 or Go applications, and you c
     COPY etc /etc/
     RUN mkdir -p /var/log/dweb
 ```
-Typically your code would then look something like the following nodejs example (Go and Python3 examples on request)
+Typically your code for integrating into Docker would then look something like the following nodejs example (Go and Python3 examples on request)
 ```
     RUN apt-get -y install anyOtherPackagesYouNeed
     RUN cd /usr/local && git clone https://github.com/<yourRepo || internetarchive/dweb-transport> \
