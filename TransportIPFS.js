@@ -43,9 +43,8 @@ const defaultoptions = {
         Bootstrap: ['/dns4/dweb.me/tcp/4245/wss/ipfs/QmQ921MRjsbP12fHSEDcdFeuHFg6qKDFurm2rXgA5K3RQD'], // Connect via WSS to IPFS instance in Kube at IA
     },
     //init: true, // Comment out for Y
-    EXPERIMENTAL: {
-        pubsub: true
-    }
+    EXPERIMENTAL: { pubsub: true },
+    preload: { enabled: false },
 };
 
 class TransportIPFS extends Transport {

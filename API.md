@@ -363,7 +363,7 @@ Set the class of t.statuselement (if set) to transportstatus0..transportstatus4 
 t   Instance of transport
 ```
 
-#### static async p_connect({options})
+##### static async p_connect({options})
 Main connection process for a browser based application, 
 ```
 options {
