@@ -25,11 +25,13 @@ class Transports {
          */
         return this._transports.filter((t) => (!t.status));
     }
-    static async p_connectedNames() {
+    static p_connectedNames(cb) { //TODO rename to connectedNames and TODO-API
         /*
         resolves to: an array of the names of connected transports
+        Note this is async only because the TransportsProxy version of this has to be - that isn't currently used, so this could be made sync
          */
-        return this._connected().map(t => t.name);
+        const res = this._connected().map(t => t.name);
+        if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
     }
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
