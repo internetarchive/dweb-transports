@@ -363,8 +363,7 @@ Set the class of t.statuselement (if set) to transportstatus0..transportstatus4 
 t   Instance of transport
 ```
 
-##### static async p_connect({options})
-Main connection process for a browser based application, 
+##### static connect({options}, cb) 
 ```
 options {
     transports  Array of abbreviations of transports e.g. ["HTTP","IPFS"] as provided in URL
@@ -372,8 +371,14 @@ options {
     paused          Array of abbreviations of transports that should be paused (not started)
     statuselement   HTML element to build status display under
     ...             Entire options is passed to each setup0 and will include options for each Transport
+    cb              If found called - no parameters else a promise is returned that resolves to undefined
+```    
 }
 
+##### static async p_connect({options})
+Main connection process for a browser based application, 
+```
+options - see connect() above
 ```
 
 ##### static async p_urlsFrom(url)

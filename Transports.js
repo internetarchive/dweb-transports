@@ -590,25 +590,28 @@ class Transports {
             }
         }).filter(f => !!f); // Trim out any undefined
     }
-    static async p_setup1(cb) {
+    static p_setup1(refreshstatus, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports
+        const prom = Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
                 debugtransports("Connection stage 1 to %s", t.name);
-                return t.p_setup1(cb);
+                return t.p_setup1(refreshstatus);
             }))
+        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
-    static async p_setup2(cb) {
+    static p_setup2(refreshstatus, cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
-        await Promise.all(this._transports
+
+        const prom = Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
                 debugtransports("Connection stage 2 to %s", t.name);
-                return t.p_setup2(cb);
-            }))
+                return t.p_setup2(refreshstatus);
+            }));
+        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
 
     static async refreshstatus(t) {
@@ -624,6 +627,10 @@ class Transports {
         }
     }
 
+    static connect(options, cb) {
+        const prom = p_connect(options);
+        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+    }
     static async p_connect(options) {
         /*
             This is a standardish starting process, feel free to subclass or replace !
