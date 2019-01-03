@@ -19,7 +19,7 @@
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
     "readable-stream": "^2.3.6",
-    "webpack": "^4.28.2",
+    "webpack": "^4.28.3",
     "webtorrent": "^0.99.3",
     "y-array": "latest",
     "y-indexeddb": "latest",
