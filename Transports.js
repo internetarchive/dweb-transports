@@ -599,7 +599,7 @@ class Transports {
                 debugtransports("Connection stage 1 to %s", t.name);
                 return t.p_setup1(refreshstatus);
             }))
-        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+        if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
     static p_setup2(refreshstatus, cb) {
         /* Second stage of setup, connect if possible */
@@ -611,7 +611,17 @@ class Transports {
                 debugtransports("Connection stage 2 to %s", t.name);
                 return t.p_setup2(refreshstatus);
             }));
-        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+        if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+    }
+    static p_stop(refreshstatus, cb) {
+        /* Disconnect from all services, may not be able to reconnect */
+
+        const prom = Promise.all(this._connected()
+            .map((t) => {
+                debugtransports("Stopping %s", t.name);
+                return t.p_stop(refreshstatus);
+            }));
+        if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
 
     static async refreshstatus(t) {
@@ -628,8 +638,8 @@ class Transports {
     }
 
     static connect(options, cb) {
-        const prom = p_connect(options);
-        if (cb) { prom.reject((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+        const prom = this.p_connect(options);
+        if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
     static async p_connect(options) {
         /*

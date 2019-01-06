@@ -53,6 +53,16 @@ class Transport {
 
         return t.p_setup2(cb);     // And connect
     }
+    /* Disconnect from the transport service - there is no guarrantee that a restart will be successfull so this is usually only for when exiting */
+    p_stop(refreshstatus) {
+        return new Promise((resolve, reject) => {
+            this.status = Transport.STATUS_FAILED;
+            if (refreshstatus) refreshstatus(this);
+            //if (err) { reject(err) } else {
+            resolve(res);
+            //}
+        });
+    }
     togglePaused(cb) {
         /*
         Switch the state of the transport between STATUS_CONNECTED and STATUS_PAUSED,
@@ -370,4 +380,5 @@ Transport.STATUS_FAILED = 1;    // Failed to connect
 Transport.STATUS_STARTING = 2;  // In the process of connecting
 Transport.STATUS_LOADED = 3;    // Code loaded, but haven't tried to connect. (this is typically hard coded in subclasses constructor)
 Transport.STATUS_PAUSED = 4;    // It was launched, probably connected, but now paused so will be ignored by validFor // Note this is copied to dweb-archive/Nav.js so check if change
+Transport.STATUSTEXT = ["Connected", "Failed", "Starting", "Loaded", "Paused"];
 exports = module.exports = Transport;

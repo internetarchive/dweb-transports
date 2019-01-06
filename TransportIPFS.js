@@ -162,6 +162,14 @@ class TransportIPFS extends Transport {
         return this;
     }
 
+    p_stop(refreshstatus) {
+        return new Promise((resolve, reject) =>
+            this.ipfs.stop((err, res) => {
+                this.status = Transport.STATUS_FAILED;
+                if (refreshstatus) refreshstatus(this);
+                if (err) { reject(err); } else { resolve(res); }
+            }));
+    }
     async p_status() {
         /*
             Return a numeric code for the status of a transport.
