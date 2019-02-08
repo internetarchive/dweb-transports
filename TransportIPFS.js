@@ -3,6 +3,8 @@ This is a shim to the IPFS library, (Lists are handled in YJS or OrbitDB)
 See https://github.com/ipfs/js-ipfs but note its often out of date relative to the generic API doc.
 */
 
+//TODO-IPFS Note API changes in https://github.com/ipfs/js-ipfs/issues/1721 probably all ipfs.files -> ipfs.
+
 const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
 const debug = require('debug')('dweb-transports:ipfs');
 

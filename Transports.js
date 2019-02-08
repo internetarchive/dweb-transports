@@ -101,7 +101,7 @@ class Transports {
             then resolve urls that might be names, returning a modified array.
          */
         if (this.mirror) {
-            return Array.isArray(urls) ? urls.map(url=>this.gatewayUrl(url)) : this.gatewayUrl(url);
+            return Array.isArray(urls) ? this.gatewayUrls(urls) : this.gatewayUrl(url);
         } else if (this.namingcb) {
             return await this.namingcb(urls);  // Array of resolved urls
         } else {
@@ -756,12 +756,23 @@ class Transports {
         let o = this.canonicalName(url, options);
         return o.protocol + ":/" + o.internal;
     }
+    static _o2url(o) {
+        return ["http","https"].includes(o.proto)   ? [o.proto, o.internal].join('://') // Shouldnt be relative
+               : o.proto                            ? [this.mirror, o.proto, o.internal].join('/')
+                                                    : o.internal; // Uncanonicalizable
+    }
     static gatewayUrl(url) {
         // Convert url to gateway url, if not canonicalizable then just pass the url along
         let o = Transports.canonicalName(url);
-        return !o ? url
-            : ["http","https"].includes(o.proto) ? [o.proto, o.internal].join('://') // Shouldnt be relative
-            : [this.mirror, o.proto, o.internal].join('/');
+        return !o ? url : this._o2url(o)
+    }
+    static gatewayUrls(urls) { //TODO-API
+        // Convert urls to gateway urls,
+        // Easier to work on single form [ { proto, internal } ]
+        const oo = urls.map(url => Transports.canonicalName(url) || { proto: undefined, internal: url });  //if not canonicalizable then just pass the url along
+        const oArc = oo.filter(o => ["arc"].includes(o.proto)); // Prefered
+        return (oArc.length ? oArc : oo)    // Prefered if have them, else others
+            .map(o=>this._o2url(o))
     }
 }
 Transports._transports = [];    // Array of transport instances connected

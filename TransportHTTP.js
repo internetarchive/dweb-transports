@@ -119,7 +119,7 @@ class TransportHTTP extends Transport {
          */
         //PY: res = self._sendGetPost(True, "rawstore", headers={"Content-Type": "application/octet-stream"}, urlargs=[], data=data)
         console.assert(data, "TransportHttp.p_rawstore: requires data");
-        let res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), "application/octet-stream", data); // resolves to URL
+        const res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), "application/octet-stream", data); // resolves to URL
         let parsedurl = Url.parse(res);
         let pathparts = parsedurl.pathname.split('/');
         return `contenthash:/contenthash/${pathparts.slice(-1)}`
@@ -271,7 +271,7 @@ class TransportHTTP extends Transport {
     async p_get(url, keys) {
         if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
         let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys);
-        let res = await httptools.p_GET(this._url(url, servercommands.get, parmstr));
+        const res = await httptools.p_GET(this._url(url, servercommands.get, parmstr));
         return Array.isArray(keys) ? res : res[keys]
     }
 
