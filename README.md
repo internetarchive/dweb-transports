@@ -123,3 +123,7 @@ See [example_block.html](./example_block.html) for an example of connecting, sto
 See [API.md](./API.md) for the detailed API.
 
 See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make up the Internet Archive's Dweb project, and an index of other documents. 
+
+### Release Notes
+
+* 0.1.33: Bug fixes; support for gatewayUrls (for dweb-mirror)
