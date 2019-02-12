@@ -6,7 +6,7 @@ const CID = require('cids');
 const unixFs = require('ipfs-unixfs');
 const multihashes = require('multihashes');
 let tryexpectedfailures = true; // Set to false if want to check the things we expect to fail.
-const ipfsAPI = require('ipfs-api')
+const ipfsAPI = require('ipfs-http-client')
 // connect to ipfs daemon API server
 
 const usehttpapi=false; // True uses local ipfs instance on machine where doing test, otherwise uses Javascript library

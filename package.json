@@ -15,7 +15,7 @@
     "cids": "^0.5.7",
     "gun": "^0.9.999995",
     "ipfs": "^0.31.7",
-    "ipfs-api": "^24.0.2",
+    "ipfs-http-client": "^29.1.0",
     "ipfs-unixfs": "^0.1.15",
     "node-fetch": "^2.2.0",
     "readable-stream": "^2.3.6",

@@ -10,7 +10,7 @@ const debug = require('debug')('dweb-transports:ipfs');
 
 // IPFS components
 const IPFS = require('ipfs');
-const ipfsAPI = require('ipfs-api');
+const ipfsAPI = require('ipfs-http-client');
 const CID = require('cids');
 //Removed next two as not needed if use "Kludge" flagged below.
 //const dagPB = require('ipld-dag-pb');
