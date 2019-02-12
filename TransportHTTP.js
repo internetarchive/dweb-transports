@@ -119,7 +119,7 @@ class TransportHTTP extends Transport {
          */
         //PY: res = self._sendGetPost(True, "rawstore", headers={"Content-Type": "application/octet-stream"}, urlargs=[], data=data)
         console.assert(data, "TransportHttp.p_rawstore: requires data");
-        const res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), "application/octet-stream", data); // resolves to URL
+        const res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), {data, contenttype: "application/octet-stream"}); // resolves to URL
         let parsedurl = Url.parse(res);
         let pathparts = parsedurl.pathname.split('/');
         return `contenthash:/contenthash/${pathparts.slice(-1)}`
@@ -129,8 +129,8 @@ class TransportHTTP extends Transport {
     p_rawadd(url, sig) {
         // Logged by Transports
         if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms", url, sig);
-        let value = stringify(sig.preflight(Object.assign({},sig)))+"\n";
-        return httptools.p_POST(this._url(url, servercommands.rawadd), "application/json", value); // Returns immediately
+        const data = stringify(sig.preflight(Object.assign({},sig)))+"\n";
+        return httptools.p_POST(this._url(url, servercommands.rawadd), {data, contenttype: "application/json"}); // Returns immediately
     }
 
     p_newlisturls(cl) {
@@ -257,11 +257,11 @@ class TransportHTTP extends Transport {
         // Logged by Transports
         //debughttp("p_set %o %o %o", url, keyvalues, value);
         if (typeof keyvalues === "string") {
-            let kv = stringify([{key: keyvalues, value: value}]);
-            await httptools.p_POST(this._url(url, servercommands.set), "application/json", kv); // Returns immediately
+            let data = stringify([{key: keyvalues, value: value}]);
+            await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
         } else {
-            let kv = stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
-            await httptools.p_POST(this._url(url, servercommands.set), "application/json", kv); // Returns immediately
+            let data = stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
+            await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
         }
     }
 

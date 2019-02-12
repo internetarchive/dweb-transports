@@ -98,16 +98,16 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
     }
 }
 
-
-httptools.p_GET = function(httpurl, opts={}) {
+httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
     /*  Locate and return a block, based on its url
         Throws TransportError if fails
         opts {
             start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
             wantstream,     // Return a stream rather than data
             }
-        resolves to: URL that can be used to fetch the resource, of form contenthash:/contenthash/Q123
+        returns result via promise or cb(err, result)
     */
+    if (typeof opts  === "function") { cb = opts; opts = {}; }
     let headers = new Headers();
     if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${(opts.end<Infinity) ? opts.end : ""}`);
     let init = {    //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
@@ -118,13 +118,18 @@ httptools.p_GET = function(httpurl, opts={}) {
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
-    return httptools.p_httpfetch(httpurl, init, {wantstream: opts.wantstream}); // This s a real http url
+    const prom = httptools.p_httpfetch(httpurl, init, {wantstream: opts.wantstream}); // This s a real http url
+    if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
 }
-httptools.p_POST = function(httpurl, type, data) {
-    // Locate and return a block, based on its url
+httptools.p_POST = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
+    /* Locate and return a block, based on its url
+    opts = { data, contenttype }
+    returns result via promise or cb(err, result)
+     */
     // Throws TransportError if fails
     //let headers = new window.Headers();
     //headers.set('content-type',type); Doesn't work, it ignores it
+    if (typeof opts  === "function") { cb = opts; opts = {}; }
     let init = {
         //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
         //https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name for headers tat cant be set
@@ -137,7 +142,10 @@ httptools.p_POST = function(httpurl, type, data) {
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
-    return httptools.p_httpfetch(httpurl, init);
+    const prom = httptools.p_httpfetch(httpurl, init);
+    if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
 }
+
+
 
 exports = module.exports = httptools;
