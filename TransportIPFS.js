@@ -461,7 +461,7 @@ class TransportIPFS extends Transport {
                     //let fakehash="QmedXJYwvNSJFRMVFuJt7BfCMcJwPoqJgqN3U2MYxHET5a"
                     //console.log("XXX@IPFS.p_f_createReadStream faking call to",multihash, "with", fakehash)
                     //multihash=fakehash;
-                    stream = self.ipfs.files.catReadableStream(multihash, {
+                    stream = self.ipfs.catReadableStream(multihash, {
                         offset: start,
                         length: end && end - start
                     });
