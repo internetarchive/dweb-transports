@@ -3,6 +3,7 @@ const errors = require('./Errors');
 const utils = require('./utils');
 //process.env.DEBUG = "dweb-transports";  //TODO-DEBUG set at top level
 const debugtransports = require('debug')('dweb-transports');
+const httptools = require('./httptools');
 
 class Transports {
     /*
@@ -778,5 +779,5 @@ class Transports {
 Transports._transports = [];    // Array of transport instances connected
 Transports.namingcb = undefined;    // Will be defined by the naming component (turns URLs for names into URLs for transport)
 Transports._transportclasses = {};  // Pointers to classes whose code is loaded.
-
+Transports.httptools = httptools;   // Static http tools
 exports = module.exports = Transports;

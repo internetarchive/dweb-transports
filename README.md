@@ -127,3 +127,5 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 ### Release Notes
 
 * 0.1.33: Bug fixes; support for gatewayUrls (for dweb-mirror)
+* 0.1.35: package update (note wont work with latest versions of yjs or uglify)
+* 0.1.36: Made httptools accessable at Transports.httptools so it doesnt have to be separately 'require'd
