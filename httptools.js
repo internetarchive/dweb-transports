@@ -120,7 +120,8 @@ httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and add
     };
     const prom = httptools.p_httpfetch(httpurl, init, {wantstream: opts.wantstream}); // This s a real http url
     //if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
-    if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)).catch((err) => debug("Uncaught error %O",err)); } else { return prom; } // Unpromisify pattern v4
+    //if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)).catch((err) => debug("Uncaught error %O",err)); } else { return prom; } // Unpromisify pattern v4
+    if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
 }
 httptools.p_POST = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
     /* Locate and return a block, based on its url
