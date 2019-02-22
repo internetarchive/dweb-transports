@@ -72,9 +72,11 @@ class TransportIPFS extends Transport {
         ipfs.version((err, data) => {
             if (err) {
                 debug("IPFS via %s present but unresponsive: %o", s, data);
+                this.ipfstype = "FAILED";
                 cb(err);
             } else {
                 debug("IPFS available via %s: %o", s, data);
+                this.ipfstype = s;
                 cb(null, ipfs);
             }
         });
@@ -99,6 +101,7 @@ class TransportIPFS extends Transport {
                         cb(err);
                     }) // This only works in the client version, not on API
                 } else {
+
                     this._ipfsversion(ipfs, "API", cb); // Note wastes an extra ipfs.version call but that's cheap
                 }
             });
@@ -140,37 +143,47 @@ class TransportIPFS extends Transport {
         return t;
     }
 
-    async p_setup1(cb) {
-        // cb is function for updating status, it must be ale to be called multiple times.
-        try {
+    p_setup1(cbstatus, cb) {
+        /* Start IPFS connection
+            cbstatus    function(this), for updating status, it must be ale to be called multiple times.
+            returns     this via cb(err,res) or promise
+            errors      Multiple are possible, including websocket errors
+         */
+
+        if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
+        function f(cb) {
             // Logged by Transports
             this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
-            if (cb) cb(this);
-
-            this.ipfs = await new Promise((resolve, reject) => {
-                this.IPFSAutoConnect((err, data) => {
-                    if (err) { reject(err); } else { resolve(data); }   // Various errors possible inc websocket
-                })
-            });
-
-            this.status = Transport.STATUS_CONNECTED; // p_status doesnt work on HTTP API - errors should be caught below anyway. await this.p_status();
-        } catch(err) {
-            // Logged by Transports
-            console.error(this.name, "failed to connect", err);
-            this.status = Transport.STATUS_FAILED;
-            // Dont throw an error, allow other transports to complete setup
+            if (cbstatus) cbstatus(this);
+            this.IPFSAutoConnect((err, ipfs) => {  // Various errors possible inc websocket
+                if (err) {
+                    debug("Failed to connect");
+                    this.status = Transport.STATUS_FAILED;
+                } else {
+                    this.ipfs = ipfs;
+                    this.status = Transport.STATUS_CONNECTED;
+                }
+                if (cbstatus) cbstatus(this);
+                cb(err, this); // May or may not be err
+            })
         }
-        if (cb) cb(this);
-        return this;
     }
 
     p_stop(refreshstatus) {
-        return new Promise((resolve, reject) =>
-            this.ipfs.stop((err, res) => {
+        return new Promise((resolve, reject) => {
+            if (this.ipfstype === "client") {
+                this.ipfs.stop((err, res) => {
+                    this.status = Transport.STATUS_FAILED;
+                    if (refreshstatus) refreshstatus(this);
+                    if (err) { reject(err); } else { resolve(res); }
+                });
+            } else {
+                // We didn't start it, don't try and stop it
                 this.status = Transport.STATUS_FAILED;
                 if (refreshstatus) refreshstatus(this);
-                if (err) { reject(err); } else { resolve(res); }
-            }));
+                resolve(this);
+            }
+        })
     }
     async p_status() {
         /*
