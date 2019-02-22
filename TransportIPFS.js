@@ -305,7 +305,7 @@ class TransportIPFS extends Transport {
             let buff;
             if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.
                 // We retrieved a DAGNode, call files.cat (the node will come from the cache quickly)
-                buff = await this.ipfs.files.cat(ipfspath); //See js-ipfs v0.27 version and  https://github.com/ipfs/js-ipfs/issues/1229 and https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/FILES.md#cat
+                buff = await this.ipfs.cat(ipfspath); //See js-ipfs v0.27 version and  https://github.com/ipfs/js-ipfs/issues/1229 and https://github.com/ipfs/interface-ipfs-core/blob/master/SPEC/FILES.md#cat
             } else { //c: not a file
                 debug("Found a raw IPFS block (unusual) - not a DAGNode - handling as such");
                 buff = res.value;
@@ -337,73 +337,9 @@ class TransportIPFS extends Transport {
          */
         console.assert(data, "TransportIPFS.p_rawstore: requires data");
         const buf = (data instanceof Buffer) ? data : new Buffer(data);
-        const res = (await this.ipfs.files.add(buf,{ "cid-version": 1, hashAlg: 'sha2-256'}))[0];
+        const res = (await this.ipfs.add(buf,{ "cid-version": 1, hashAlg: 'sha2-256'}))[0];
         return TransportIPFS.urlFrom(res);
     }
-
-    /* OLD WAY Based on https://github.com/ipfs/js-ipfs/pull/1231/files TODO-IPFS repurpose this to add byte range to new function fetch calling p_rawfetch
-
-    async p_offsetStream(stream, links, startByte, endByte) {
-        let streamPosition = 0
-        try {
-            for (let l in links) {
-                const link = links[l];
-                if (!stream.writable) { return } // The stream has been closed
-                // DAGNode Links report unixfs object data sizes 14 bytes larger due to the protobuf wrapper
-                const bytesInLinkedObjectData = link.size - 14
-                if (startByte > (streamPosition + bytesInLinkedObjectData)) {
-                    // Start byte is after this block so skip it
-                    streamPosition += bytesInLinkedObjectData;
-                } else if (endByte && endByte < streamPosition) {  // TODO-STREAM this is copied from https://github.com/ipfs/js-ipfs/pull/1231/files but I think it should be endByte <= since endByte is first byte DONT want
-                    // End byte was before this block so skip it
-                    streamPosition += bytesInLinkedObjectData;
-                } else {
-                    let lmh = link.multihash;
-                    let data;
-                    await this.ipfs.object.data(lmh)
-                        .then ((d) => unixFs.unmarshal(d).data)
-                        .then ((d) => data = d )
-                        .catch((err) => {console.log("XXX@289 err=",err);});
-                    if (!stream.writable) { return; } // The stream was closed while we were getting data
-                    const length = data.length;
-                    if (startByte > streamPosition && startByte < (streamPosition + length)) {
-                        // If the startByte is in the current block, skip to the startByte
-                        data = data.slice(startByte - streamPosition);
-                    }
-                    console.log(`Writing ${data.length} to stream`)
-                    stream.write(data);
-                    streamPosition += length;
-                }
-            }
-        } catch(err) {
-            console.log(err.message);
-        }
-    }
-    async p_f_createReadStream(url) {  // Asynchronously return a function that can be used in createReadStream
-        if () console.log("p_f_createReadStream", url);
-        const mh = TransportIPFS.multihashFrom(url);
-        const links = await this.ipfs.object.links(mh);
-        let throughstream;  //Holds pointer to stream between calls.
-        const self = this;
-        function crs(opts) {    // This is a synchronous function
-            // Return a readable stream that provides the bytes between offsets "start" and "end" inclusive
-            debug("opts=%o", opts);
-            // Can replace rest of crs with this when https://github.com/ipfs/js-ipfs/pull/1231/files lands (hopefully v0.28.3)
-            // return self.ipfs.catReadableStream(mh, opts ? opts.start : 0, opts && opts.end) ? opts.end+1 : undefined)
-            if (!opts)  return throughstream; //TODO-STREAM unclear why called without opts - take this out when figured out
-            if (throughstream && throughstream.destroy) throughstream.destroy();
-            throughstream = new stream.PassThrough();
-
-            self.p_offsetStream(       // Ignore promise returned, this will write to the stream asynchronously
-                throughstream,
-                links,          // Uses the array of links created above in this function
-                opts ? opts.start : 0,
-                (opts && opts.end) ? opts.end : undefined);
-            return throughstream;
-        }
-        return crs;
-    }
-    */
 
     async p_f_createReadStream(url, {wanturl=false}={}) {
         /*
