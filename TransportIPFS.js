@@ -147,7 +147,7 @@ class TransportIPFS extends Transport {
         /* Start IPFS connection
             cbstatus    function(this), for updating status, it must be ale to be called multiple times.
             returns     this via cb(err,res) or promise
-            errors      Multiple are possible, including websocket errors
+            errors      This should never "fail" as it will break the Promise.all, it should return "this" but set this.status = Transport.STATUS_FAILED
          */
 
         if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
@@ -157,16 +157,23 @@ class TransportIPFS extends Transport {
             if (cbstatus) cbstatus(this);
             this.IPFSAutoConnect((err, ipfs) => {  // Various errors possible inc websocket
                 if (err) {
-                    debug("Failed to connect");
+                    debug("Failed to connect %s", err.message);
                     this.status = Transport.STATUS_FAILED;
                 } else {
                     this.ipfs = ipfs;
                     this.status = Transport.STATUS_CONNECTED;
                 }
                 if (cbstatus) cbstatus(this);
-                cb(err, this); // May or may not be err
+                cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
             })
         }
+    }
+
+    p_setup2(refreshstatus) {
+        if (this.status === Transport.STATUS_FAILED) {
+            debug("Stage 1 failed, skipping");
+        }
+        return this;
     }
 
     p_stop(refreshstatus) {
