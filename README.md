@@ -129,6 +129,6 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 * 0.1.33: Bug fixes; support for gatewayUrls (for dweb-mirror)
 * 0.1.35: package update (note wont work with latest versions of yjs or uglify)
 * 0.1.36: Made httptools accessable at Transports.httptools so it doesnt have to be separately 'require'd
-* unreleased: IPFS - dont stop it if we didnt start it (were stopping via API)
-* unreleased: Start move to unpromisify pattern v5
-* unreleased: IPFS - updated to (significant) v0.34.0 API changes
+* 0.1.37: IPFS - dont stop it if we didnt start it (were stopping via API)
+* 0.1.37: Start move to unpromisify pattern v5
+* 0.1.37: IPFS - updated to (significant) v0.34.0 API changes
