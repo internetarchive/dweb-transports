@@ -117,7 +117,7 @@ class TransportWEBTORRENT extends Transport {
         return { torrentId, path }
     }
 
-    async p_webtorrentadd(torrentId) {
+    async p_webtorrentadd(torrentId, opts) {
         return new Promise((resolve, reject) => {
             // Check if this torrentId is already added to the webtorrent client
             let torrent = this.webtorrent.get(torrentId);
@@ -128,7 +128,7 @@ class TransportWEBTORRENT extends Transport {
                 //let testid = "magnet:?xt=urn:btih:ELHVM7F4VEOTZQFDHCX7OZXUXKINUIPJ&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=wss%3A%2F%2Ftracker.fastcast.nz&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Fcommute";
                 //let testidnewtrack = "magnet:?xt=urn:btih:ELHVM7F4VEOTZQFDHCX7OZXUXKINUIPJ&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Fdweb.archive.org:6969&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Fcommute";
                 //if (torrentId === testid) torrentId = testidnewtrack;
-                torrent = this.webtorrent.add(torrentId);
+                torrent = this.webtorrent.add(torrentId, opts);
 
                 torrent.once("error", (err) => {
                     reject(new errors.TransportError("Torrent encountered a fatal error " + err.message));
@@ -216,6 +216,24 @@ class TransportWEBTORRENT extends Transport {
                 })
             }
             return file
+        } catch(err) {
+            // Logged by Transports
+            throw(err);
+        }
+
+    }
+
+    async p_addTorrentFromTorrentFile(torrentFilePath, filesPath) {
+        // TODO: doc
+        try {
+            const opts = { path: filesPath };
+            const oldTorrent = this.webtorrent.get(torrentId);
+            if (oldTorrent) {
+                oldTorrent.rescanFiles();
+            } else {
+                const torrent = await this.p_webtorrentadd(torrentFilePath, opts);
+                torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
+            }
         } catch(err) {
             // Logged by Transports
             throw(err);
