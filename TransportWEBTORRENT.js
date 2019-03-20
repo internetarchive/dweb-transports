@@ -227,7 +227,7 @@ class TransportWEBTORRENT extends Transport {
         // TODO: doc
         try {
             const opts = { path: filesPath };
-            const oldTorrent = this.webtorrent.get(torrentId);
+            const oldTorrent = this.webtorrent.get(torrentFilePath);
             if (oldTorrent) {
                 oldTorrent.rescanFiles();
             } else {
