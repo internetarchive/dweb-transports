@@ -1,4 +1,6 @@
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const webpack = require('webpack'); //to access built-in plugins
+
 module.exports = {
     entry: {
         'dweb-transports': './index.js',
@@ -20,9 +22,16 @@ module.exports = {
         console: false
     },
 
+    plugins: [
+      new webpack.EnvironmentPlugin({
+        WOLK_ENV: 'idb',
+      })
+    ],
+
     resolve: {
         alias: {
-            zlib: 'browserify-zlib-next'
+            zlib: 'browserify-zlib-next',
+            zlib: 'zlib'
         }
     },
     optimization: {
