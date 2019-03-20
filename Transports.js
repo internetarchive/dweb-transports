@@ -82,6 +82,12 @@ class Transports {
         // Find an http transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "HTTP")
     }
+
+    static wolk() {
+        // Find a Wolk transport if it exists, so for example YJS can use it.
+        return Transports._connected().find((t) => t.name === "WOLK")
+    }
+
     static ipfs() {
         // Find an ipfs transport if it exists, so for example YJS can use it.
         return Transports._connected().find((t) => t.name === "IPFS")
@@ -653,7 +659,7 @@ class Transports {
             let tabbrevs = options.transports;    // Array of transport abbreviations
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
-            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN"]; } // SEE-OTHER-ADDTRANSPORT
+            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options);
             ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
@@ -662,13 +668,13 @@ class Transports {
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
-                            let el = utils.createElement("LI",
+                        let el = utils.createElement("LI",
                                 {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t, name: t.name}, //TODO-SW figure out how t osend this back
                                 t.name);
-                            t.statuselement = el;   // Save status element on transport
-                            return el;
-                        }
-                    )));
+                        t.statuselement = el;   // Save status element on transport
+                        return el;
+                    }))
+                );
             }
             await this.p_setup1(this.refreshstatus);
             await this.p_setup2(this.refreshstatus);
@@ -710,8 +716,8 @@ class Transports {
          */
         if (typeof url !== "string") url = Url.parse(url).href;
         // In patterns below http or https; and  :/ or :// are treated the same
-        const gateways = ["dweb.me", "ipfs.io"]; // Kniwn gateways, may dynamically load this at some point
-        const protocols = ["ipfs","gun","magnet","yjs","arc", "contenthash", "http", "https"];
+        const gateways = ["dweb.me", "ipfs.io"]; // Known gateways, may dynamically load this at some point
+        const protocols = ["ipfs","gun","magnet","yjs","wolk","arc", "contenthash", "http", "https"];
         const protocolsWantingDomains = ["arc", "http", "https"];
         const gatewaypatts = [ // Must be before patts because gateway names often start with a valid proto
             /^http[s]?:[/]+([^/]+)[/](\w+)[/](.*)/i,   // https://(gateway)/proto/(internal)  + gateway in list (IPFS gateways. dweb.me)
