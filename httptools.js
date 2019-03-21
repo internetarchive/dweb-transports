@@ -53,7 +53,7 @@ async function loopfetch(req, ms, count, what) {
     }
 }
 
-httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { // Embrace and extend "fetch" to check result etc.
+httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries=undefined}={}) { // Embrace and extend "fetch" to check result etc.
     /*
     Fetch a url
 
@@ -70,7 +70,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false}={}) { /
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);
         //let response = await fetch(req);
-        let response = await loopfetch(req, 500, (init.method === "GET") ? ( init.count || 12) : 1, "fetching "+httpurl);
+        let response = await loopfetch(req, 500, retries, "fetching "+httpurl);
         // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
         // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
         if (response.ok) {
@@ -104,12 +104,14 @@ httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and add
         opts {
             start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
             wantstream,     // Return a stream rather than data
+            retries=12,        // How many times to retry
             }
         returns result via promise or cb(err, result)
     */
     if (typeof opts  === "function") { cb = opts; opts = {}; }
     let headers = new Headers();
     if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${(opts.end<Infinity) ? opts.end : ""}`);
+    const retries = typeof opts.retries === "undefined" ? 12 : opts.retries;
     let init = {    //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
         method: 'GET',
         headers: headers,
@@ -118,20 +120,21 @@ httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and add
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
-    const prom = httptools.p_httpfetch(httpurl, init, {wantstream: opts.wantstream}); // This s a real http url
+    const prom = httptools.p_httpfetch(httpurl, init, {retries, wantstream: opts.wantstream}); // This s a real http url
     //if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
     //if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)).catch((err) => debug("Uncaught error %O",err)); } else { return prom; } // Unpromisify pattern v4
     if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
 }
 httptools.p_POST = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
     /* Locate and return a block, based on its url
-    opts = { data, contenttype }
+    opts = { data, contenttype, retries }
     returns result via promise or cb(err, result)
      */
     // Throws TransportError if fails
     //let headers = new window.Headers();
     //headers.set('content-type',type); Doesn't work, it ignores it
     if (typeof opts  === "function") { cb = opts; opts = {}; }
+    const retries = typeof opts.retries === "undefined" ? 0 : opts.retries;
     let init = {
         //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
         //https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name for headers tat cant be set
@@ -145,7 +148,7 @@ httptools.p_POST = function(httpurl, opts={}, cb) { //TODO-API rearranged and ad
         keepalive: false    // Keep alive - mostly we'll be going back to same places a lot
     };
     if (opts.contenttype) init.headers["Content-Type"] = opts.contenttype;
-    const prom = httptools.p_httpfetch(httpurl, init);
+    const prom = httptools.p_httpfetch(httpurl, init, {retries});
     if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
 }
 
