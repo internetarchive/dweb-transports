@@ -54,10 +54,10 @@ class TransportWOLK extends Transport {
       .then( async () => { //TODO-WOLK check - I'm just not familiar with this construct - an async function inside a .then
         if( this.wolk.ecdsaKey == undefined || this.wolk.ecdsaKey == null ) {
           var wolkName = "user" + Math.floor((Math.random() * 1000) + 1);
-          debug("WOLK: createAccount because ecdsaKey null")
+          debug("createAccount because ecdsaKey null")
           return await this.wolk.createAccount(wolkName)
                   .then( hash => {
-                    debug("[WOLK] Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
+                    debug("Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
                   })
                   .catch( err => {
                       throw new Error("Error Creating Account: " + err);
