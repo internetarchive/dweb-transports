@@ -58,12 +58,11 @@ class TransportWOLK extends Transport {
           console.log("WOLK: createAccount because ecsaKey null")
           return await this.wolk.createAccount(wolkName)
                   .then( hash => {
-                    console.log("[WOLK] Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
+                    debug("[WOLK] Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
                   })
                   .catch( err => {
                       throw new Error("Error Creating Account: " + err);
                   })
-          })
         }
       });
       try {
