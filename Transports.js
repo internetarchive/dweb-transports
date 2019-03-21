@@ -79,17 +79,17 @@ class Transports {
     // SEE-OTHER-ADDTRANSPORT
 
     static http() {
-        // Find an http transport if it exists, so for example YJS can use it.
+        // Find an http transport if it exists.
         return Transports._connected().find((t) => t.name === "HTTP")
     }
 
     static wolk() {
-        // Find a Wolk transport if it exists, so for example YJS can use it.
+        // Find a Wolk transport if it exists.
         return Transports._connected().find((t) => t.name === "WOLK")
     }
 
     static ipfs() {
-        // Find an ipfs transport if it exists, so for example YJS can use it.
+        // Find an ipfs transport if it exists, in particular, so YJS can use it.
         return Transports._connected().find((t) => t.name === "IPFS")
     }
 
@@ -717,6 +717,7 @@ class Transports {
         if (typeof url !== "string") url = Url.parse(url).href;
         // In patterns below http or https; and  :/ or :// are treated the same
         const gateways = ["dweb.me", "ipfs.io"]; // Known gateways, may dynamically load this at some point
+        // SEE-OTHER-ADDTRANSPORT
         const protocols = ["ipfs","gun","magnet","yjs","wolk","arc", "contenthash", "http", "https"];
         const protocolsWantingDomains = ["arc", "http", "https"];
         const gatewaypatts = [ // Must be before patts because gateway names often start with a valid proto
