@@ -25,7 +25,7 @@ to your package.json file in the dependencies section.
 ### Installation and usage in the Browser
 * Install npm & node
 * Clone this repo and cd to it.
-* `npm bundle` will create dist/dweb_transports_bundle.js
+* `npm run build` will create dist/dweb_transports_bundle.js
 * Add `<SCRIPT type="text/javascript" src="dweb_transports_bundle.js"></SCRIPT>` to your `<HEAD>`
 
 Then code like this should work. 
