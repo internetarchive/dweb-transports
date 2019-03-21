@@ -25,13 +25,12 @@ class TransportWOLK extends Transport {
       this.name = "WOLK";          // For console log etc
       //TODO: Change name to WOLK once we understand everything
       this.supportURLs = ['wolk'];
-      this.supportFunctions = [ 'fetch', 'store', 'connection', 'get', 'set', 'createReadStream' ];
-
+      this.supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
       this.status = Transport.STATUS_LOADED;
     }
 
     connection(url) {
-      console.log("WOLK connection call")
+      debug("connection call")
         var wolknode = new WOLK();
         //TODO: cloudstore connection needed
         return wolknode
@@ -52,10 +51,10 @@ class TransportWOLK extends Transport {
     //make the connection
     async p_setup1(cb) {
       await this.wolk.init()
-      .then( async () => {
+      .then( async () => { //TODO-WOLK check - I'm just not familiar with this construct - an async function inside a .then
         if( this.wolk.ecdsaKey == undefined || this.wolk.ecdsaKey == null ) {
           var wolkName = "user" + Math.floor((Math.random() * 1000) + 1);
-          console.log("WOLK: createAccount because ecsaKey null")
+          debug("WOLK: createAccount because ecdsaKey null")
           return await this.wolk.createAccount(wolkName)
                   .then( hash => {
                     debug("[WOLK] Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
@@ -82,15 +81,15 @@ class TransportWOLK extends Transport {
       return this.wolk.getLatestBlockNumber()
         .then( (bn) => {
           if (bn >= 0) {
-            console.log("[WOLK] STATUS: connected? [1] = BN: " + bn)
+            debug("STATUS: connected? [1] = BN: %s", bn)
             this.status = Transport.STATUS_CONNECTED;
           } else {
-            console.log("[WOLK] STATUS: connected? [0] = BN: " + bn)
+            debug("STATUS: connected? [0] = BN: %s", bn)
             this.status = Transport.STATUS_FAILED;
           }
           return this.status;
         })
-        .catch( (err) => { console.log("Error getting bn: " + err); })
+        .catch( (err) => { console.error("Error getting bn: " + err); })
     }
 
     // ===== DATA ======
@@ -143,11 +142,11 @@ class TransportWOLK extends Transport {
 
         var responseData = ""
         if( wolkurl.urltype == "key" ) {
-          console.log("[WOLK] Checking Wolk NoSQL for: " + url)
+          debug("Checking Wolk NoSQL for: %s", url)
           return this.wolk.getKey(wolkurl.owner, wolkurl.bucket, wolkurl.path, "latest")
             .then(function(responseData) {
-              //TODO: error checking
-              console.log("WOLK Response: " + JSON.stringify(responseData));
+              //TODO-WOLK: error checking
+              //debug("Response: %s", JSON.stringify(responseData)); //Commented as could be big
               return responseData;
             })
             .catch( (err) => {
@@ -209,7 +208,7 @@ class TransportWOLK extends Transport {
     async p_get(url, keys) {
       var wolkurl = this.parseWolkUrl(url)
 
-      console.log("WOLK: getting url: " + JSON.stringify(wolkurl));
+      debug("Getting url: %s", JSON.stringify(wolkurl));
 /*
       console.log("WOLK owner: " + wolkurl.owner);
       console.log("WOLK bucket: " + wolkurl.bucket);
