@@ -1,8 +1,13 @@
 /*
 This Transport layers uses Wolk NoSQL + Cloudstore.
 */
+var WOLK
 const Url = require('url');
-const WOLK = require('wolkjs').WOLK;  //TODO: change to just WOLK once we understand everything
+if( typeof window === 'undefined' ) {
+  WOLK = require("wolkjs").FS;
+} else {
+  WOLK = require("wolkjs").WOLK;
+}
 const stringify = require('canonical-json');
 const debug = require('debug')('dweb-transports:wolk');
 
@@ -31,9 +36,8 @@ class TransportWOLK extends Transport {
 
     connection(url) {
       debug("connection call")
-        var wolknode = new WOLK();
-        //TODO: cloudstore connection needed
-        return wolknode
+      var wolknode = new WOLK();
+      return wolknode
     }
 
     //stuff that happens b/f using ntwk bandwidth (config/connect/stuff)
@@ -60,16 +64,19 @@ class TransportWOLK extends Transport {
                     debug("[WOLK] Account Created: [" + wolkName + "] hash: " + hash + " KEY: " + this.wolk.ecdsaKey)
                   })
                   .catch( err => {
-                      throw new Error("Error Creating Account: " + err);
+                    throw new Error("Error Creating Account: " + err);
                   })
         }
+      })
+      .catch( (err) => {
+        throw new Error("Error Initializing Wolk: " + err);
       });
+
       try {
         this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
         if (cb) cb(this);
         await this.p_status();
       } catch(err) {
-        console.error(this.name, "failed to start" ,err);
         this.status = Transport.STATUS_FAILED;
       }
       if (cb) cb(this);
@@ -130,6 +137,7 @@ class TransportWOLK extends Transport {
     }
 
     async p_rawfetch(url) {
+        //TODO: use this.wolk.parseWolkUrl eventually
         var wolkurl = this.parseWolkUrl(url)
 /*
         console.log("WOLK p_rawfetch url: " + JSON.stringify(wolkurl));
