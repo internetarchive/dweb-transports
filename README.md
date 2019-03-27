@@ -132,3 +132,5 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 * 0.1.37: IPFS - dont stop it if we didnt start it (were stopping via API)
 * 0.1.37: Start move to unpromisify pattern v5
 * 0.1.37: IPFS - updated to (significant) v0.34.0 API changes
+* 0.1.38: httptools - adds retries
+* 0.1.38: WOLK - added to the library
