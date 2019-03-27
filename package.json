@@ -11,7 +11,6 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
-    "wolkjs": "git://github.com/wolkdb/wolkjs.git#dev",
     "canonical-json": "latest",
     "cids": "^0.5.7",
     "gun": "^0.9.9999991",
@@ -22,6 +21,7 @@
     "readable-stream": "^3.1.1",
     "webpack": "^4.29.3",
     "webtorrent": "^0.103.0",
+    "wolkjs": "git://github.com/wolkdb/wolkjs.git#dev",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",
     "y-ipfs-connector": "^2.3.0",
