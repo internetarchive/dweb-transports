@@ -134,3 +134,5 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 * 0.1.37: IPFS - updated to (significant) v0.34.0 API changes
 * 0.1.38: httptools - adds retries
 * 0.1.38: WOLK - added to the library
+* 0.1.39: WOLK - updated wolk.js module to fix bugs
+
