@@ -18,7 +18,7 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 let defaultoptions = {
-    wolk_addr: "http://cloud.wolk.com:81", //"http://c1.wolk.com:80",
+    wolk_addr: "https://cloud.wolk.com",
 };
 
 class TransportWOLK extends Transport {

@@ -11,7 +11,7 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
-    "wolkjs": "git://github.com/wolkdb/wolkjs.git#dev",
+    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "canonical-json": "latest",
     "cids": "^0.5.7",
     "gun": "^0.9.9999991",
