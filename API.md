@@ -441,20 +441,23 @@ returns:    Depends on mime type;
     If text/* returns text
     Oherwise    Buffer
 
-##### p_GET(url, {start, end})
+##### p_GET(url, {start, end, retries})
 Shortcut to do a HTTP/POST get, sets `mode: cors, redirect: follow, keepalive: true, cache: default`
 
-start:  First byte to retrieve
-end:    Last byte to retrieve (undefined means end of file)
+start:      First byte to retrieve
+end:        Last byte to retrieve (undefined means end of file)
+wantstream: Return a stream rather than data
+retries:    How may times to retry if fails at the network layer (i.e. 404 is a success)
 
 Note that it passes start and end as the Range header, most servers support it, 
 but it does not (yet) explicitly check the result. 
 
-##### p_POST(url, type, data)
+##### p_POST(url, type, data, {retries})
 Shortcut to do a HTTP/HTTPS POST. sets same options as p_GET
 
 data:   Data to send to fetch, typically the body, 
-type:   Currently not passed as header{Content-type} because fetch appears to ignore it.
+contenttype:   Currently not passed as header{Content-type} because fetch appears to ignore it.
+retries: How may times to retry if fails at the network layer (i.e. 404 is a success)
 
 
 ## TransportHTTP

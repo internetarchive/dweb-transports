@@ -88,7 +88,7 @@ class TransportHTTP extends Transport {
         Fetch from underlying transport,
         Fetch is used both for contenthash requests and table as when passed to SmartDict.p_fetch may not know what we have
         url: Of resource - which is turned into the HTTP url in p_httpfetch
-        opts: {start, end} see p_GET for documentation
+        opts: {start, end, retries} see p_GET for documentation
         throws: TransportError if fails
          */
         //if (!(url && url.includes(':') ))
