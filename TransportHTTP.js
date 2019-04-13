@@ -31,7 +31,7 @@ class TransportHTTP extends Transport {
         this.options = options;
         this.urlbase = options.urlbase;
         this.supportURLs = ['contenthash', 'http','https'];
-        this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase", "createReadStream"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
         // noinspection JSUnusedGlobalSymbols
         this.supportFeatures = ['fetch.range'];
         this.name = "HTTP";             // For console log etc
@@ -164,6 +164,7 @@ class TransportHTTP extends Transport {
         Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
 
         :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean wanturl True if want the URL of the stream (for service workers)
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */

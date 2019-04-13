@@ -299,6 +299,7 @@ class Transports {
     static async p_f_createReadStream(urls, {wanturl=false, preferredTransports=[]}={}) { // Note options is options for selecting a stream, not the start/end in a createReadStream call
         /*
         urls:   Url or [urls] of the stream
+        wanturl True if want the URL of the stream (for service workers)
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
@@ -331,16 +332,19 @@ class Transports {
         debugtransports("Opening stream to %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
-    static createReadStream(urls, opts, cb) { //TODO-API
+    static createReadStream(urls, opts, cb) {
         /*
             Different interface, more suitable when just want a stream, now.
             urls:   Url or [urls] of the stream
-            opts{start, end}:   First and last byte wanted (default to 0...last)
+            opts{
+                start, end:   First and last byte wanted (default to 0...last)
+                preferredTransports: preferred order to select stream transports (usually determined by application)
+            }
             cb(err, stream): Called with open readable stream from the net.
             Returns promise if no cb
          */
         if (typeof opts === "function") { cb = opts; opts = {start: 0}; } // Allow skipping opts
-        DwebTransports.p_f_createReadStream(urls)
+        DwebTransports.p_f_createReadStream(urls, {preferredTransports: (opts.preferredTransports || [])})
             .then(f => {
                 let s = f(opts);
                 if (cb) { cb(null, s); } else { return(s); }; // Callback or resolve stream

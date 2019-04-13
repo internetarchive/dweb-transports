@@ -235,6 +235,7 @@ class TransportWEBTORRENT extends Transport {
         Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
 
         :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean wanturl True if want the URL of the stream (for service workers)
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */

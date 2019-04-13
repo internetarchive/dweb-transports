@@ -239,12 +239,24 @@ returns:            Dictionary of Key:Value pairs, note take care if this could 
 ```
 
 ### Transports - other functions
-##### static async p_f_createReadStream(url, {wanturl})
+##### static async p_f_createReadStream(url, {wanturl, preferredTransports=[] })
 Provide a function of the form needed by <VIDEO> tag and renderMedia library etc
 ```
 url     Urls of stream
 wanturl True if want the URL of the stream (for service workers)
+preferredTransports: preferred order to select stream transports (usually determined by application)
 returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
+```
+
+##### static createReadStream(urls, opts, cb)
+Different interface, more suitable when just want a stream, now.
+```
+urls:   Url or [urls] of the stream
+opts{
+    start, end:   First and last byte wanted (default to 0...last)
+    preferredTransports: preferred order to select stream transports (usually determined by application)
+}
+returns open readable stream from the net via cb or promise
 ```
 
 ##### supports(url, funcl)
@@ -500,7 +512,8 @@ SupportFunctions (note YJS uses IPFS and supports some other functions):
 SupportFeatures: 
     fetch.range Not supported (currently April 2018))
     
-Currently there is code for p_f_createReadStream. It works but because of some other IPFS issues is disabled.
+Currently there is code for p_f_createReadStream. It works but because IPFS cannot return an error even if it 
+cannot open the stream, IPFS is usually set as the last choice transport for streams.
 
 ## TransportYJS
 A subclass of Transport for handling YJS connections.
@@ -520,8 +533,10 @@ When used with a SW, it will attempt to retrieve from the http backup URL that i
 In the SW it will also generate errors about trackers because the only reason to use trackers is to get the WebRTC links.
 
 supportURLS = `magnet:*` (TODO: may in the future support `dweb:/magnet/*`)
+
 supportFunctions:
-    `fetch, createReadStream`
+    `fetch`, `createReadStream`
+
 supportFeatures: 
     fetch.range Not supported (currently April 2018)
 
@@ -529,9 +544,16 @@ supportFeatures:
 A subclass of Transport for handling GUN connections (decentralized database)
 
 supportURLS = `gun:*` (TODO: may in the future support `dweb:/gun/*`)
-supportFunctions 
-    `add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
+
+supportFunctions = `add`, `list`, `listmonitor`, `newlisturls`, `connection`, `get`, `set`, `getall`, `keys`, `newdatabase`, `newtable`, `monitor`
 supportFeatures: 
+
+## TransportWOLK 
+A subclass of Transport for handling the WOLK transport layer (decentralized, block chain based, incentivised storage)
+
+supportURLs = ['wolk'];
+
+supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
 
 ## Naming
 Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 
