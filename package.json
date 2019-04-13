@@ -21,7 +21,7 @@
     "readable-stream": "^3.1.1",
     "webpack": "^4.29.3",
     "webtorrent": "^0.103.0",
-    "wolkjs": "git://github.com/wolkdb/wolkjs.git#dev",
+    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",
     "y-ipfs-connector": "^2.3.0",
