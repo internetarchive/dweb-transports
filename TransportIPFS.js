@@ -60,11 +60,15 @@ class TransportIPFS extends Transport {
 
     constructor(options) {
         super(options);
+        if (options.urlUrlstore) {
+            this.urlUrlstore = options.urlUrlstore;
+            delete options.urlUrlstore;
+        }
         this.ipfs = undefined;          // Undefined till start IPFS
         this.options = options;         // Dictionary of options
         this.name = "IPFS";             // For console log etc
         this.supportURLs = ['ipfs'];
-        this.supportFunctions = ['fetch', 'store', 'createReadStream'];   // Does not support reverse
+        this.supportFunctions = ['fetch', 'store', 'seed', 'createReadStream'];   // Does not support reverse
         this.status = Transport.STATUS_LOADED;
     }
 
@@ -348,6 +352,36 @@ class TransportIPFS extends Transport {
         return TransportIPFS.urlFrom(res);
     }
 
+    seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb) {
+        /* Note always passed a cb by Transports.seed - no need to support Promise here
+            ipfsHash:       IPFS hash if known (usually not known)
+            urlToFile:      Where the IPFS server can get the file - must be live before this called as will fetch and hash
+            TODO support directoryPath/fileRelativePath, but to working around IPFS limitation in https://github.com/ipfs/go-ipfs/issues/4224 will need to check relative to IPFS home, and if not symlink it and add symlink
+            TODO maybe support adding raw data (using add)
+
+            Note neither js-ipfs-http-client nor js-ipfs appear to support urlstore yet, see https://github.com/ipfs/js-ipfs-http-client/issues/969
+        */
+        // This is the URL that the IPFS server uses to get the file from the local mirrorHttp
+        if (!(this.urlUrlstore && urlToFile)) { // Not doing IPFS
+            debug("IPFS.seed support requires urlUrlstore and urlToFile"); // Report, though Transports.seed currently ignores this
+            cb(new Error("IPFS.seed support requires urlUrlstore and urlToFile")); // Report, though Transports.seed currently ignores this
+        } else {
+            // Building by hand becase of lack of support in js-ipfs-http-client
+            const url = `${this.urlUrlstore}?arg=${encodeURIComponent(urlToFile)}`;
+            // Have to be careful to avoid loops, the call to addIPFS should only be after file is retrieved and cached, and then addIPFS shouldnt be called if already cached
+            httptools.p_GET(url, {retries:0}, (err, res) => {
+                if (err) {
+                    debug("IPFS.seed for %s failed in http: %s", urlToFile, err.message);
+                    cb(err);    // Note error currently ignored in Transports
+                } else {
+                    debug("Added %s to IPFS key=", urlToFile, res.Key);
+                    // Check for mismatch - this isn't an error, for example it could be an updated file, old IPFS hash will now fail, but is out of date and shouldnt be shared
+                    if (ipfsHash && ipfsHash !== res.Key) {  debug("ipfs hash doesnt match expected metadata has %s daemon returned %s", ipfsHash, res.Key); }
+                    cb(null, res)
+                }
+            })
+        }
+    }
     async p_f_createReadStream(url, {wanturl=false}={}) {
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:

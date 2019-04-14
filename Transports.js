@@ -4,6 +4,7 @@ const utils = require('./utils');
 //process.env.DEBUG = "dweb-transports";  //TODO-DEBUG set at top level
 const debugtransports = require('debug')('dweb-transports');
 const httptools = require('./httptools');
+const each = require('async/each');
 
 class Transports {
     /*
@@ -56,7 +57,7 @@ class Transports {
         throws:     CodingError if urls empty or [undefined...]
          */
         if (typeof urls === "string") urls = [urls];
-        if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable"].includes(func)))   {
+        if (!((urls && urls[0]) || ["store", "newlisturls", "newdatabase", "newtable", "seed"].includes(func)))   {
             console.error("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
             return [];
         }
@@ -157,35 +158,6 @@ class Transports {
         }
         return this._p_rawstore(tt, data);
     }
-    static async p_rawlist(urls) {
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
-        let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
-        if (!tt.length) {
-            throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
-        }
-        let errs = [];
-        let ttlines = await Promise.all(tt.map(async function([url, t]) {
-            try {
-                debugtransports("Listing %s via %s", url, t.name);
-                let res = await t.p_rawlist(url); // [sig]
-                debugtransports("Listing %s via %s retrieved %d items", url, t.name, res.length);
-                return res;
-            } catch(err) {
-                debugtransports("Listing %s via %s failed: %s", url, t.name, err.message);
-                errs.push(err);
-                return [];
-            }
-        })); // [[sig,sig],[sig,sig]]
-        if (errs.length >= tt.length) {
-            // All Transports failed (maybe only 1)
-            debugtransports("Listing %o failed on all transports", urls);
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
-        }
-        let uniques = {}; // Used to filter duplicates
-        return [].concat(...ttlines)
-            .filter((x) => (!uniques[x.signature] && (uniques[x.signature] = true)));
-    }
-
     static async p_rawfetch(urls, opts={}) {
         /*
         Fetch the data for a url, transports act on the data, typically storing it.
@@ -232,6 +204,56 @@ class Transports {
         }
         debugtransports("Fetching %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+    }
+
+    // Seeding =====
+    // Similar to storing.
+    static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb) {
+        if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
+        function f(cb1) {
+            let tt = this.validFor(undefined, "seed").map(([u, t]) => t); // Valid connected transports that support "seed"
+            if (!tt.length) {
+                debugtransports("Seeding: no transports available");
+                cb1(null); // Its not (currently) an error to be unable to seed
+            } else {
+                const res = {};
+                each(tt, // [ Transport]
+                    (t, cb2) => t.seed({directoryPath, fileRelativePath, ipfsHash, urlToFile},
+                        (err, oneres) => { res[t.name] = err ? { err: err.message } :  oneres; cb2(null)}), // Its not an error for t.seed to fail - errors should have been logged by transports
+                    (unusederr) => cb1(null, res)); // Return result of any seeds that succeeded as e.g. { HTTP: {}, IPFS: {ipfsHash:} }
+            }
+        }
+    }
+
+    // List handling ===========================================
+
+    static async p_rawlist(urls) {
+        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
+        let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
+        if (!tt.length) {
+            throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
+        }
+        let errs = [];
+        let ttlines = await Promise.all(tt.map(async function([url, t]) {
+            try {
+                debugtransports("Listing %s via %s", url, t.name);
+                let res = await t.p_rawlist(url); // [sig]
+                debugtransports("Listing %s via %s retrieved %d items", url, t.name, res.length);
+                return res;
+            } catch(err) {
+                debugtransports("Listing %s via %s failed: %s", url, t.name, err.message);
+                errs.push(err);
+                return [];
+            }
+        })); // [[sig,sig],[sig,sig]]
+        if (errs.length >= tt.length) {
+            // All Transports failed (maybe only 1)
+            debugtransports("Listing %o failed on all transports", urls);
+            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+        }
+        let uniques = {}; // Used to filter duplicates
+        return [].concat(...ttlines)
+            .filter((x) => (!uniques[x.signature] && (uniques[x.signature] = true)));
     }
 
     static async p_rawadd(urls, sig) {
