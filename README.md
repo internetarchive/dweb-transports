@@ -135,4 +135,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 * 0.1.38: httptools - adds retries
 * 0.1.38: WOLK - added to the library
 * 0.1.39: WOLK - updated wolk.js module to fix bugs
+* 0.1.40: Bug fix in httpfetch({count=0}),
+* 0.1.40: Added support for "seed" and tested in IPFS
+* 0.1.40: WOLK - moved to their production sys and master branch
 
