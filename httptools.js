@@ -34,6 +34,7 @@ async function loopfetch(req, ms, count, what) {
      */
     let lasterr;
     let loopguard = (typeof window != "undefined") && window.loopguard; // Optional global parameter, will cancel any loops if changes
+    count = count || 1; // count of 0 actually means 1
     while (count-- && (loopguard === ((typeof window != "undefined") && window.loopguard)) ) {
         try {
             return await fetch(req);
