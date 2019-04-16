@@ -205,6 +205,11 @@ class Transports {
         debug("Fetching %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
+    static fetch(urls, opts={}, cb) { //TODO-API
+        if (typeof opts === "function") { cb = opts; opts={}; }
+        const prom = this.p_rawfetch(urls, opts);
+        if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error in fetch %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
+    }
 
 // Seeding =====
     // Similar to storing.
