@@ -2,7 +2,7 @@ const Url = require('url');
 const errors = require('./Errors');
 const utils = require('./utils');
 //process.env.DEBUG = "dweb-transports";  //TODO-DEBUG set at top level
-const debugtransports = require('debug')('dweb-transports');
+const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
 
@@ -127,19 +127,19 @@ class Transports {
         let errs = [];
         let rr = await Promise.all(tt.map(async function(t) {
             try {
-                debugtransports("Storing %d bytes to %s", data.length, t.name);
+                debug("Storing %d bytes to %s", data.length, t.name);
                 let url = await t.p_rawstore(data);
-                debugtransports("Storing %d bytes to %s succeeded: %s", data.length, t.name, url);
+                debug("Storing %d bytes to %s succeeded: %s", data.length, t.name, url);
                 return url; //url
             } catch(err) {
-                debugtransports("Storing %d bytes to %s failed: %s", data.length, t.name, err.message);
+                debug("Storing %d bytes to %s failed: %s", data.length, t.name, err.message);
                 errs.push(err);
                 return undefined;
             }
         }));
         rr = rr.filter((r) => !!r); // Trim any that had errors
         if (!rr.length) {
-            debugtransports("Storing %d bytes failed on all transports", data.length);
+            debug("Storing %d bytes failed on all transports", data.length);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         return rr;
@@ -153,7 +153,7 @@ class Transports {
          */
         let tt = this.validFor(undefined, "store").map(([u, t]) => t); // Valid connected transports that support "store"
         if (!tt.length) {
-            debugtransports("Storing %d bytes failed: no transports available", data.length);
+            debug("Storing %d bytes failed: no transports available", data.length);
             throw new errors.TransportError('Transports.p_rawstore: Cant find transport for store');
         }
         return this._p_rawstore(tt, data);
@@ -183,37 +183,37 @@ class Transports {
         let failedtransports = [];  // Will accumulate any transports fail on before the success
         for (const [url, t] of tt) {
             try {
-                debugtransports("Fetching %s via %s", url.href, t.name);
+                debug("Fetching %s via %s", url.href, t.name);
                 let data = await t.p_rawfetch(url, opts);   // throws errors if fails or timesout
-                debugtransports("Fetching %s via %s succeeded %d bytes", url.href, t.name, data.length);
+                debug("Fetching %s via %s succeeded %d bytes", url.href, t.name, data.length);
                 //TODO-MULTI-GATEWAY working here - it doesnt quite work yet as the "Add" on browser gets different url than on server
                 if (opts.relay && failedtransports.length) {
-                    debugtransports("Fetching attempting relay of %d bytes from %s to %o", data.length, url.href, failedtransports.map(t=>t.name));
+                    debug("Fetching attempting relay of %d bytes from %s to %o", data.length, url.href, failedtransports.map(t=>t.name));
                     this._p_rawstore(failedtransports, data)
-                        .then(uu => debugtransports(`Fetching relayed %d bytes to %o`, data.length, uu)); // Happening async, not waiting and dont care if fails
+                        .then(uu => debug(`Fetching relayed %d bytes to %o`, data.length, uu)); // Happening async, not waiting and dont care if fails
                 }
                 //END TODO-MULTI-GATEWAY
                 return data;
             } catch (err) {
                 failedtransports.push(t);
                 errs.push(err);
-                debugtransports("Fetching %s via %s failed: %s", url.href, t.name, err.message);
+                debug("Fetching %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
-        debugtransports("Fetching %o failed on all transports", urls);
+        debug("Fetching %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
-    // Seeding =====
+// Seeding =====
     // Similar to storing.
     static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb) {
         if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
         function f(cb1) {
             let tt = this.validFor(undefined, "seed").map(([u, t]) => t); // Valid connected transports that support "seed"
             if (!tt.length) {
-                debugtransports("Seeding: no transports available");
+                debug("Seeding: no transports available");
                 cb1(null); // Its not (currently) an error to be unable to seed
             } else {
                 const res = {};
@@ -236,19 +236,19 @@ class Transports {
         let errs = [];
         let ttlines = await Promise.all(tt.map(async function([url, t]) {
             try {
-                debugtransports("Listing %s via %s", url, t.name);
+                debug("Listing %s via %s", url, t.name);
                 let res = await t.p_rawlist(url); // [sig]
-                debugtransports("Listing %s via %s retrieved %d items", url, t.name, res.length);
+                debug("Listing %s via %s retrieved %d items", url, t.name, res.length);
                 return res;
             } catch(err) {
-                debugtransports("Listing %s via %s failed: %s", url, t.name, err.message);
+                debug("Listing %s via %s failed: %s", url, t.name, err.message);
                 errs.push(err);
                 return [];
             }
         })); // [[sig,sig],[sig,sig]]
         if (errs.length >= tt.length) {
             // All Transports failed (maybe only 1)
-            debugtransports("Listing %o failed on all transports", urls);
+            debug("Listing %o failed on all transports", urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         let uniques = {}; // Used to filter duplicates
@@ -269,24 +269,24 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
         if (!tt.length) {
-            debugtransports("Adding to %o failed: no transports available", urls);
+            debug("Adding to %o failed: no transports available", urls);
             throw new errors.TransportError('Transports.p_rawstore: Cant find transport for urls:'+urls.join(','));
         }
         let errs = [];
         await Promise.all(tt.map(async function([u, t]) {
             try {
-                debugtransports("Adding to %s via %s", u, t.name);
+                debug("Adding to %s via %s", u, t.name);
                 await t.p_rawadd(u, sig); //undefined
-                debugtransports("Adding to %s via %s succeeded", u, t.name);
+                debug("Adding to %s via %s succeeded", u, t.name);
                 return undefined;
             } catch(err) {
-                debugtransports("Adding to %s via %s failed: %s", u, t.name, err.message);
+                debug("Adding to %s via %s failed: %s", u, t.name, err.message);
                 errs.push(err);
                 return undefined;
             }
         }));
         if (errs.length >= tt.length) {
-            debugtransports("Adding to %o failed on all transports", urls);
+            debug("Adding to %o failed on all transports", urls);
             // All Transports failed (maybe only 1)
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
@@ -302,7 +302,7 @@ class Transports {
         this.validFor(urls, "listmonitor")
             .map(([u, t]) => {
                 t.listmonitor(u, cb, opts);
-                debugtransports("Monitoring list %s via %s", u, t.name);
+                debug("Monitoring list %s via %s", u, t.name);
             });
     }
 
@@ -326,7 +326,7 @@ class Transports {
          */
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
-            debugtransports("Opening stream to %o failed: no transports available", urls);
+            debug("Opening stream to %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
@@ -340,18 +340,18 @@ class Transports {
 
         for (const [url, t] of tt) {
             try {
-                debugtransports("Opening stream to %s via %s", url.href, t.name);
+                debug("Opening stream to %s via %s", url.href, t.name);
                 let res = await t.p_f_createReadStream(url, {wanturl} );
-                debugtransports("Opening stream to %s via %s succeeded", url.href, t.name);
+                debug("Opening stream to %s via %s succeeded", url.href, t.name);
                 return res;
             } catch (err) {
                 errs.push(err);
-                debugtransports("Opening stream to %s via %s failed: %s", url.href, t.name, err.message);
+                debug("Opening stream to %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
-        debugtransports("Opening stream to %o failed on all transports", urls);
+        debug("Opening stream to %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static createReadStream(urls, opts, cb) {
@@ -395,24 +395,24 @@ class Transports {
         let tt = this.validFor(urls, "get"); //[ [Url,t],[Url,t]]
         let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         if (!tt.length) {
-            debugtransports("Getting %s from %o failed: no transports available", debug1, urls);
+            debug("Getting %s from %o failed: no transports available", debug1, urls);
             throw new errors.TransportError("Transports.p_get cant find any transport to get keys from urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                debugtransports("Getting %s from %s via %s", debug1, url.href, t.name);
+                debug("Getting %s from %s via %s", debug1, url.href, t.name);
                 let res = await t.p_get(url, keys); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
-                debugtransports("Getting %s from %s via %s succeeded length=%d", debug1, url.href, t.name, res.length);
+                debug("Getting %s from %s via %s succeeded length=%d", debug1, url.href, t.name, res.length);
                 return res;
             } catch (err) {
                 errs.push(err);
-                debugtransports("Getting %s from %s via %s failed: %s", debug1, url.href, t.name, err.message);
+                debug("Getting %s from %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
-        debugtransports("Getting %s from %o failed on all transports", debug1, urls);
+        debug("Getting %s from %o failed on all transports", debug1, urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static async p_set(urls, keyvalues, value) {
@@ -425,24 +425,24 @@ class Transports {
         let debug1 =  typeof keyvalues === "object" ? `${keyvalues.length} keys` : keyvalues; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
-            debugtransports("Setting %s on %o failed: no transports available", debug1, urls);
+            debug("Setting %s on %o failed: no transports available", debug1, urls);
             throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
         await Promise.all(tt.map(async function([url, t]) {
             try {
-                debugtransports("Setting %s on %s via %s", debug1, url.href, t.name);
+                debug("Setting %s on %s via %s", debug1, url.href, t.name);
                 await t.p_set(url, keyvalues, value);
-                debugtransports("Setting %s on %s via %s succeeded", debug1, url.href, t.name);
+                debug("Setting %s on %s via %s succeeded", debug1, url.href, t.name);
                 success = true; // Any one success will return true
             } catch(err) {
-                debugtransports("Setting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
+                debug("Setting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 errs.push(err);
             }
         }));
         if (!success) {
-            debugtransports("Setting %s on %o failed on all transports", debug1, urls);
+            debug("Setting %s on %o failed on all transports", debug1, urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
@@ -457,24 +457,24 @@ class Transports {
         let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
-            debugtransports("Deleting %s on %o failed: no transports available", debug1, urls);
+            debug("Deleting %s on %o failed: no transports available", debug1, urls);
             throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
         await Promise.all(tt.map(async function([url, t]) {
             try {
-                debugtransports("Deleting %s on %s via %s", debug1, url.href, t.name);
+                debug("Deleting %s on %s via %s", debug1, url.href, t.name);
                 await t.p_delete(url, keys);
-                debugtransports("Deleting %s on %s via %s succeeded", debug1, url.href, t.name);
+                debug("Deleting %s on %s via %s succeeded", debug1, url.href, t.name);
                 success = true; // Any one success will return true
             } catch(err) {
-                debugtransports("Deleting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
+                debug("Deleting %s on %s via %s failed: %s", debug1, url.href, t.name, err.message);
                 errs.push(err);
             }
         }));
         if (!success) {
-            debugtransports("Deleting %s on %o failed on all transports", debug1, urls);
+            debug("Deleting %s on %o failed on all transports", debug1, urls);
             throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
@@ -489,24 +489,24 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "keys"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
-            debugtransports("Getting all keys on %o failed: no transports available", urls);
+            debug("Getting all keys on %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_keys cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something. TODO make it return the aggregate
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                debugtransports("Getting all keys on %s via %s", url.href, t.name);
+                debug("Getting all keys on %s via %s", url.href, t.name);
                 let res = await t.p_keys(url); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
-                debugtransports("Getting all keys on %s via %s succeeded with %d keys", url.href, t.name, res.length);
+                debug("Getting all keys on %s via %s succeeded with %d keys", url.href, t.name, res.length);
                 return res;
             } catch (err) {
                 errs.push(err);
-                debugtransports("Getting all keys on %s via %s failed: %s", url.href, t.name, err.message);
+                debug("Getting all keys on %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
-        debugtransports("Getting all keys on %o failed on all transports", urls);
+        debug("Getting all keys on %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
@@ -521,24 +521,24 @@ class Transports {
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "getall"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
-            debugtransports("Getting all values on %o failed: no transports available", urls);
+            debug("Getting all values on %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_getall cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
         for (const [url, t] of tt) {
             try {
-                debugtransports("Getting all values on %s via %s", url.href, t.name);
+                debug("Getting all values on %s via %s", url.href, t.name);
                 let res = await t.p_getall(url); //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
-                debugtransports("Getting all values on %s via %s succeeded with %d values", url.href, t.name, res.length);
+                debug("Getting all values on %s via %s succeeded with %d values", url.href, t.name, res.length);
                 return res;
             } catch (err) {
                 errs.push(err);
-                debugtransports("Getting all values on %s via %s failed: %s", url.href, t.name, err.message);
+                debug("Getting all values on %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
             }
         }
-        debugtransports("Getting all keys on %o failed on all transports", urls);
+        debug("Getting all keys on %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
@@ -584,7 +584,7 @@ class Transports {
         //Can't its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         this.validFor(urls, "monitor")
             .map(([u, t]) => {
-                    debugtransports("Monitoring table %s via %s", u, t.name);
+                    debug("Monitoring table %s via %s", u, t.name);
                     t.monitor(u, cb, {current})
                 }
             );
@@ -615,10 +615,10 @@ class Transports {
         return tabbrevs.map((tabbrev) => {
             let transportclass = this._transportclasses[ (tabbrev === "LOCAL") ? "HTTP" : tabbrev ];
             if (!transportclass) {
-                debugtransports("Connection to %s unavailable", tabbrev);
+                debug("Connection to %s unavailable", tabbrev);
                 return undefined;
             } else {
-                debugtransports("Setting up connection to %s with options %o", tabbrev, options);
+                debug("Setting up connection to %s with options %o", tabbrev, options);
                 return transportclass.setup0(tabbrev === "LOCAL" ? localoptions : options);
             }
         }).filter(f => !!f); // Trim out any undefined
@@ -629,7 +629,7 @@ class Transports {
         const prom = Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
-                debugtransports("Connection stage 1 to %s", t.name);
+                debug("Connection stage 1 to %s", t.name);
                 return t.p_setup1(refreshstatus);
             }))
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
@@ -641,7 +641,7 @@ class Transports {
         const prom = Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
-                debugtransports("Connection stage 2 to %s", t.name);
+                debug("Connection stage 2 to %s", t.name);
                 return t.p_setup2(refreshstatus);
             }));
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
@@ -651,7 +651,7 @@ class Transports {
 
         const prom = Promise.all(this._connected()
             .map((t) => {
-                debugtransports("Stopping %s", t.name);
+                debug("Stopping %s", t.name);
                 return t.p_stop(refreshstatus);
             }));
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
@@ -704,7 +704,7 @@ class Transports {
             }
             await this.p_setup1(this.refreshstatus);
             await this.p_setup2(this.refreshstatus);
-            debugtransports("Connection completed to %o", this._connected().map(t=>t.name))
+            debug("Connection completed to %o", this._connected().map(t=>t.name))
         } catch(err) {
             console.error("ERROR in p_connect:",err.message);
             throw(err);
