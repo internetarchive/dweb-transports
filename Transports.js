@@ -214,6 +214,15 @@ class Transports {
 // Seeding =====
     // Similar to storing.
     static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb) {
+        /*
+        TODO-API get thsi from the issue
+        ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates.
+                        Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
+        urlFile:        The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
+        directoryPath: Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent)
+                        this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
+        fileRelativePath: Path (relative to directoryPath) to the file to be seeded.
+         */
         if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
         function f(cb1) {
             let tt = this.validFor(undefined, "seed").map(([u, t]) => t); // Valid connected transports that support "seed"
@@ -700,8 +709,8 @@ class Transports {
                 statuselement.appendChild(
                     utils.createElement("UL", {}, transports.map(t => {
                         let el = utils.createElement("LI",
-                                {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t, name: t.name}, //TODO-SW figure out how t osend this back
-                                t.name);
+                            {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t, name: t.name}, //TODO-SW figure out how t osend this back
+                            t.name);
                         t.statuselement = el;   // Save status element on transport
                         return el;
                     }))

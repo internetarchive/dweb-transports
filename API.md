@@ -147,6 +147,16 @@ sig        Signature data structure (see below - contains url, date, signedby, s
     signature   - verifiable signature of date+urls
     signedby    - url of data structure (typically CommonList) holding public key used for the signature
 ```
+##### seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb)
+Seed the file to any transports that can handle it. 
+```
+ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates. 
+                Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
+urlFile:        The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
+directoryPath: Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent) 
+                this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
+fileRelativePath: Path (relative to directoryPath) to the file to be seeded. 
+```
 
 ##### p_rawlist(url)
 Fetch all the objects in a list, these are identified by the url of the public key used for signing.
@@ -431,12 +441,17 @@ static async p_connection(urls)||Tries all parallel
 static monitor(urls, cb, { current})||Tries all sequentially
 
 ##### static async p_rawfetch(urls, {timeoutMS, start, end, relay})
+FOR NEW CODE USE `fetch` instead of p_rawfetch
+
 Tries to fetch on all valid transports until successful. See Transport.p_rawfetch
 ```
 timeoutMS:   Max time to wait on transports that support it (IPFS for fetch)
 start,end    Inclusive byte range wanted - passed to 
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
 ```
+
+##### fetch(url,  {timeoutMS, start, end, relay}, cb)
+As for p_rawfetch but returns either via callback or Promise
 
 ## httptools
 A utility class to support HTTP with or without TransportHTTP
