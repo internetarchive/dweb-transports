@@ -138,4 +138,4 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 * 0.1.40: Bug fix in httpfetch({count=0}),
 * 0.1.40: Added support for "seed" and tested in IPFS
 * 0.1.40: WOLK - moved to their production sys and master branch
-
+* 0.1.41: Remove createReadStream for browser (it was added for node in 0.1.40), add fetch(url,opts,cb)
