@@ -86,7 +86,7 @@ p_test({transport: ["GUN"])
 .then(() => test_transports);
 */
 
-
+/*
 // Intentionally testing this with no connection
 const sampleMagnetURL = "magnet:?xt=urn:btih:465HQWPEN374LABVHUBUPBUX4WZU6HDS&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Fdweb.archive.org%3A6969&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=wss%3A%2F%2Ftracker.fastcast.nz&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Ffav-mitra/fav-mitra_members.json";
 const sampleMagnetURLMirrorresolve = "http://localhost:4244/magnet/?xt=urn:btih:465HQWPEN374LABVHUBUPBUX4WZU6HDS&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Fdweb.archive.org%3A6969&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=wss%3A%2F%2Ftracker.fastcast.nz&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Ffav-mitra/fav-mitra_members.json"
@@ -107,3 +107,4 @@ tests.forEach(t => {
     res = DwebTransports.gatewayUrl(url); console.assert( res === t.gw, "GatewayURL:", url,  t.gw,"!==", res);
     res = DwebTransports.p_resolveNames([url]).then(res => console.assert(res[0] === t.resolveM, "Resolve with Mirror", url, t.resolveM, "!==", res ))
 })
+*/

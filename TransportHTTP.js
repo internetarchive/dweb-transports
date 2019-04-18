@@ -31,7 +31,11 @@ class TransportHTTP extends Transport {
         this.options = options;
         this.urlbase = options.urlbase;
         this.supportURLs = ['contenthash', 'http','https'];
-        this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase", "createReadStream"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        if (typeof window === "undefined") {
+            // running in node, can support createReadStream,  (browser can't - see createReadStream below)
+            this.supportFunctions.push("createReadStream");
+        }
         // noinspection JSUnusedGlobalSymbols
         this.supportFeatures = ['fetch.range'];
         this.name = "HTTP";             // For console log etc
@@ -193,7 +197,8 @@ class TransportHTTP extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :returns stream: The readable stream - it is returned immediately, though won't be sending data until the http completes
          */
-
+        // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
+        // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
         debughttp("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();

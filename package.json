@@ -18,7 +18,7 @@
     "ipfs-http-client": "^29.1.1",
     "ipfs-unixfs": "^0.1.16",
     "node-fetch": "^2.3.0",
-    "readable-stream": "^3.1.1",
+    "readable-stream": "^3.3.0",
     "webpack": "^4.29.3",
     "webtorrent": "^0.103.0",
     "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
