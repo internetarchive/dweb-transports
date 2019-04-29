@@ -8,7 +8,7 @@ const stringify = require('canonical-json');
 
 
 defaulthttpoptions = {
-    urlbase: 'https://dweb.me:443'
+    urlbase: 'https://dweb.me'
 };
 
 servercommands = {  // What the server wants to see to return each of these
@@ -29,7 +29,7 @@ class TransportHTTP extends Transport {
     constructor(options) {
         super(options); // These are now options.http
         this.options = options;
-        this.urlbase = options.urlbase;
+        this.urlbase = options.urlbase; // e.g. https://dweb.me
         this.supportURLs = ['contenthash', 'http','https'];
         this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
         if (typeof window === "undefined") {
@@ -85,6 +85,12 @@ class TransportHTTP extends Transport {
         url = url.replace('getall/table', command);
         url = url + (parmstr ? "?"+parmstr : "");
         return url;
+    }
+
+    validFor(url, func) {
+        // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me
+        // in particular this allows urls like https://be-api.us.archive.org
+        return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func);
     }
     // noinspection JSCheckFunctionSignatures
     async p_rawfetch(url, opts={}) {
@@ -304,7 +310,7 @@ class TransportHTTP extends Transport {
     }
     */
 
-    p_info() { return httptools.p_GET(`${this.urlbase}/info`); }
+    p_info() { return httptools.p_GET(`${this.urlbase}/info`, {retries: 5}); } // Try info, but dont wait more than approx 10secs
 
     static async p_test(opts={}) {
         {console.log("TransportHTTP.test")}

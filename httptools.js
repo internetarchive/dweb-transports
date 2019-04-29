@@ -42,7 +42,7 @@ async function loopfetch(req, ms, count, what) {
             lasterr = err;
             debug("Delaying %s by %d ms because %s", what, ms, err.message);
             await new Promise(resolve => {setTimeout(() => { resolve(); },ms)})
-            ms = ms*(1+Math.random()); // Spread out delays incase all requesting same time
+            ms = Math.floor(ms*(1+Math.random())); // Spread out delays incase all requesting same time
         }
     }
     console.warn("loopfetch of",what,"failed");

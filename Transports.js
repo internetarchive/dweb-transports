@@ -61,14 +61,14 @@ class Transports {
             console.error("Transports.validFor called with invalid arguments: urls=", urls, "func=", func); // FOr debugging old calling patterns with [ undefined ]
             return [];
         }
-        if (!(urls && urls.length > 0)) {
-            return this._connected().filter((t) => (t.supports(undefined, func)))
+        if (!(urls && urls.length > 0)) { // No url supplied we are just checking which transports support this function on no url.
+            return this._transports.filter((t) => (t.validFor(undefined, func)))
                 .map((t) => [undefined, t]);
         } else {
             return [].concat(
                 ...urls.map((url) => typeof url === 'string' ? Url.parse(url) : url) // parse URLs once
                     .map((url) =>
-                        this._connected().filter((t) => (t.supports(url, func))) // [ t1, t2 ]
+                        this._transports.filter((t) => (t.validFor(url, func))) // [ t1, t2 ]
                             .map((t) => [url, t]))); // [[ u, t1], [u, t2]]
         }
     }
@@ -338,34 +338,34 @@ class Transports {
         wanturl True if want the URL of the stream (for service workers)
         returns:    f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
          */
+        // Find all the transports that CAN support this request
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
-            debug("Opening stream to %o failed: no transports available", urls);
+            debug("Opening stream from %o failed: no transports available", urls);
             throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
-        // Until we have transport ordering, try randomly TODO Transport ordering
 
-        //Debugging: preferredTransports = [] // ["WEBTORRENT", "IPFS", "HTTP"];
+        // Select first from preferredTransports in the order presented, then the rest at random
         tt.sort((a,b) =>
             ((preferredTransports.indexOf(a[1].name)+1) || 999+Math.random())  - ((preferredTransports.indexOf(b[1].name)+1) || 999+Math.random())
         );
 
         for (const [url, t] of tt) {
             try {
-                debug("Opening stream to %s via %s", url.href, t.name);
+                debug("Opening stream from %s via %s", url.href, t.name);
                 let res = await t.p_f_createReadStream(url, {wanturl} );
-                debug("Opening stream to %s via %s succeeded", url.href, t.name);
+                debug("Opening stream from %s via %s succeeded", url.href, t.name);
                 return res;
             } catch (err) {
                 errs.push(err);
-                debug("Opening stream to %s via %s failed: %s", url.href, t.name, err.message);
+                debug("Opening stream from %s via %s failed: %s", url.href, t.name, err.message);
                 // Don't throw anything here, loop round for next, only throw if drop out bottom
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
-        debug("Opening stream to %o failed on all transports", urls);
+        debug("Opening stream from %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static createReadStream(urls, opts, cb) {
