@@ -196,6 +196,15 @@ class TransportWEBTORRENT extends Transport {
         });
     }
 
+    seed({relFilePath, directoryPath, torrentRelativePath }, cb) {
+        /* Add a file to webTorrent - this will be called each time a file is cached and adds the torrent to WT handling so its seeding this (and other) files in directory */
+        const torrentfile = path.join(directoryPath, torrentRelativePath);
+        this.p_addTorrentFromTorrentFile(torrentfile, directoryPath)
+            .then(res => { debug("Added %s to webtorrent", relFilePath); cb(null)})
+            .catch(err => {
+                debug("addWebTorrent failed %s", relFilePath); cb(err); } );
+    }
+
     async _p_fileTorrentFromUrl(url) {
         /*
         Then open a webtorrent for the file specified in the path part of the url
