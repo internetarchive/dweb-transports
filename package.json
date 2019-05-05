@@ -11,16 +11,18 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
-    "canonical-json": "latest",
+    "canonical-json": "^0.0.4",
     "cids": "^0.5.7",
+    "debug": "^4.1.1",
     "gun": "^0.9.9999991",
     "ipfs": "^0.34.4",
     "ipfs-http-client": "^29.1.1",
     "ipfs-unixfs": "^0.1.16",
     "node-fetch": "^2.3.0",
-    "readable-stream": "^3.1.1",
+    "readable-stream": "^3.3.0",
     "webpack": "^4.29.3",
     "webtorrent": "git://github.com/jhiesey/webtorrent.git#rescan",
+    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",
     "y-ipfs-connector": "^2.3.0",
@@ -51,5 +53,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.37"
+  "version": "0.1.42"
 }

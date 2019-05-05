@@ -147,6 +147,16 @@ sig        Signature data structure (see below - contains url, date, signedby, s
     signature   - verifiable signature of date+urls
     signedby    - url of data structure (typically CommonList) holding public key used for the signature
 ```
+##### seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb)
+Seed the file to any transports that can handle it. 
+```
+ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates. 
+                Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
+urlFile:        The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
+directoryPath: Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent) 
+                this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
+fileRelativePath: Path (relative to directoryPath) to the file to be seeded. 
+```
 
 ##### p_rawlist(url)
 Fetch all the objects in a list, these are identified by the url of the public key used for signing.
@@ -239,12 +249,24 @@ returns:            Dictionary of Key:Value pairs, note take care if this could 
 ```
 
 ### Transports - other functions
-##### static async p_f_createReadStream(url, {wanturl})
+##### static async p_f_createReadStream(url, {wanturl, preferredTransports=[] })
 Provide a function of the form needed by <VIDEO> tag and renderMedia library etc
 ```
 url     Urls of stream
 wanturl True if want the URL of the stream (for service workers)
+preferredTransports: preferred order to select stream transports (usually determined by application)
 returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
+```
+
+##### static createReadStream(urls, opts, cb)
+Different interface, more suitable when just want a stream, now.
+```
+urls:   Url or [urls] of the stream
+opts{
+    start, end:   First and last byte wanted (default to 0...last)
+    preferredTransports: preferred order to select stream transports (usually determined by application)
+}
+returns open readable stream from the net via cb or promise
 ```
 
 ##### supports(url, funcl)
@@ -419,12 +441,17 @@ static async p_connection(urls)||Tries all parallel
 static monitor(urls, cb, { current})||Tries all sequentially
 
 ##### static async p_rawfetch(urls, {timeoutMS, start, end, relay})
+FOR NEW CODE USE `fetch` instead of p_rawfetch
+
 Tries to fetch on all valid transports until successful. See Transport.p_rawfetch
 ```
 timeoutMS:   Max time to wait on transports that support it (IPFS for fetch)
 start,end    Inclusive byte range wanted - passed to 
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
 ```
+
+##### fetch(url,  {timeoutMS, start, end, relay}, cb)
+As for p_rawfetch but returns either via callback or Promise
 
 ## httptools
 A utility class to support HTTP with or without TransportHTTP
@@ -441,20 +468,23 @@ returns:    Depends on mime type;
     If text/* returns text
     Oherwise    Buffer
 
-##### p_GET(url, {start, end})
+##### p_GET(url, {start, end, retries})
 Shortcut to do a HTTP/POST get, sets `mode: cors, redirect: follow, keepalive: true, cache: default`
 
-start:  First byte to retrieve
-end:    Last byte to retrieve (undefined means end of file)
+start:      First byte to retrieve
+end:        Last byte to retrieve (undefined means end of file)
+wantstream: Return a stream rather than data
+retries:    How may times to retry if fails at the network layer (i.e. 404 is a success)
 
 Note that it passes start and end as the Range header, most servers support it, 
 but it does not (yet) explicitly check the result. 
 
-##### p_POST(url, type, data)
+##### p_POST(url, type, data, {retries})
 Shortcut to do a HTTP/HTTPS POST. sets same options as p_GET
 
 data:   Data to send to fetch, typically the body, 
-type:   Currently not passed as header{Content-type} because fetch appears to ignore it.
+contenttype:   Currently not passed as header{Content-type} because fetch appears to ignore it.
+retries: How may times to retry if fails at the network layer (i.e. 404 is a success)
 
 
 ## TransportHTTP
@@ -497,7 +527,8 @@ SupportFunctions (note YJS uses IPFS and supports some other functions):
 SupportFeatures: 
     fetch.range Not supported (currently April 2018))
     
-Currently there is code for p_f_createReadStream. It works but because of some other IPFS issues is disabled.
+Currently there is code for p_f_createReadStream. It works but because IPFS cannot return an error even if it 
+cannot open the stream, IPFS is usually set as the last choice transport for streams.
 
 ## TransportYJS
 A subclass of Transport for handling YJS connections.
@@ -517,8 +548,10 @@ When used with a SW, it will attempt to retrieve from the http backup URL that i
 In the SW it will also generate errors about trackers because the only reason to use trackers is to get the WebRTC links.
 
 supportURLS = `magnet:*` (TODO: may in the future support `dweb:/magnet/*`)
+
 supportFunctions:
-    `fetch, createReadStream`
+    `fetch`, `createReadStream`
+
 supportFeatures: 
     fetch.range Not supported (currently April 2018)
 
@@ -526,9 +559,16 @@ supportFeatures:
 A subclass of Transport for handling GUN connections (decentralized database)
 
 supportURLS = `gun:*` (TODO: may in the future support `dweb:/gun/*`)
-supportFunctions 
-    `add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
+
+supportFunctions = `add`, `list`, `listmonitor`, `newlisturls`, `connection`, `get`, `set`, `getall`, `keys`, `newdatabase`, `newtable`, `monitor`
 supportFeatures: 
+
+## TransportWOLK 
+A subclass of Transport for handling the WOLK transport layer (decentralized, block chain based, incentivised storage)
+
+supportURLs = ['wolk'];
+
+supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
 
 ## Naming
 Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 

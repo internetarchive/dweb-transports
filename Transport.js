@@ -92,7 +92,11 @@ class Transport {
         return this.status;
     }
 
-    supports(url, func) {
+    connected() {
+        // True if connected (status==STATUS_CONNECTED==0) should not need subclassing
+        return ! this.status;
+    }
+    supports(url, func) { //TODO-API
         /*
         Determine if this transport supports a certain set of URLs and a func
 
@@ -110,6 +114,13 @@ class Transport {
         return (    (!url || this.supportURLs.includes(url.protocol.slice(0, -1)))
             && (!func || this.supportFunctions.includes(func)))
     }
+
+    validFor(url, func) { //TODO-API
+        // By default a transport can handle a url and a func if its connected and supports that url/func
+        // This shouldnt need subclassing, an exception is HTTP which only applies "connected" against urls heading for the gateway
+        return this.connected() && this.supports(url, func);
+    }
+
 
     p_rawstore(data, opts) {
         /*

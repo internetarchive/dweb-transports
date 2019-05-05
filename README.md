@@ -25,7 +25,7 @@ to your package.json file in the dependencies section.
 ### Installation and usage in the Browser
 * Install npm & node
 * Clone this repo and cd to it.
-* `npm bundle` will create dist/dweb_transports_bundle.js
+* `npm run build` will create dist/dweb_transports_bundle.js
 * Add `<SCRIPT type="text/javascript" src="dweb_transports_bundle.js"></SCRIPT>` to your `<HEAD>`
 
 Then code like this should work. 
@@ -126,9 +126,17 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
-* 0.1.33: Bug fixes; support for gatewayUrls (for dweb-mirror)
-* 0.1.35: package update (note wont work with latest versions of yjs or uglify)
-* 0.1.36: Made httptools accessable at Transports.httptools so it doesnt have to be separately 'require'd
+* 0.1.42: Better behavior when cant see gateway
+* 0.1.41: Remove createReadStream for browser (it was added for node in 0.1.40), add fetch(url,opts,cb)
+* 0.1.40: Bug fix in httpfetch({count=0}),
+* 0.1.40: Added support for "seed" and tested in IPFS
+* 0.1.40: WOLK - moved to their production sys and master branch
+* 0.1.39: WOLK - updated wolk.js module to fix bugs
+* 0.1.38: httptools - adds retries
+* 0.1.38: WOLK - added to the library
 * 0.1.37: IPFS - dont stop it if we didnt start it (were stopping via API)
 * 0.1.37: Start move to unpromisify pattern v5
 * 0.1.37: IPFS - updated to (significant) v0.34.0 API changes
+* 0.1.36: Made httptools accessable at Transports.httptools so it doesnt have to be separately 'require'd
+* 0.1.35: package update (note wont work with latest versions of yjs or uglify)
+* 0.1.33: Bug fixes; support for gatewayUrls (for dweb-mirror)

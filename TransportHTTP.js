@@ -8,7 +8,7 @@ const stringify = require('canonical-json');
 
 
 defaulthttpoptions = {
-    urlbase: 'https://dweb.me:443'
+    urlbase: 'https://dweb.me'
 };
 
 servercommands = {  // What the server wants to see to return each of these
@@ -29,9 +29,13 @@ class TransportHTTP extends Transport {
     constructor(options) {
         super(options); // These are now options.http
         this.options = options;
-        this.urlbase = options.urlbase;
+        this.urlbase = options.urlbase; // e.g. https://dweb.me
         this.supportURLs = ['contenthash', 'http','https'];
         this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        if (typeof window === "undefined") {
+            // running in node, can support createReadStream,  (browser can't - see createReadStream below)
+            this.supportFunctions.push("createReadStream");
+        }
         // noinspection JSUnusedGlobalSymbols
         this.supportFeatures = ['fetch.range'];
         this.name = "HTTP";             // For console log etc
@@ -82,13 +86,19 @@ class TransportHTTP extends Transport {
         url = url + (parmstr ? "?"+parmstr : "");
         return url;
     }
+
+    validFor(url, func) {
+        // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me
+        // in particular this allows urls like https://be-api.us.archive.org
+        return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func);
+    }
     // noinspection JSCheckFunctionSignatures
     async p_rawfetch(url, opts={}) {
         /*
         Fetch from underlying transport,
         Fetch is used both for contenthash requests and table as when passed to SmartDict.p_fetch may not know what we have
         url: Of resource - which is turned into the HTTP url in p_httpfetch
-        opts: {start, end} see p_GET for documentation
+        opts: {start, end, retries} see p_GET for documentation
         throws: TransportError if fails
          */
         //if (!(url && url.includes(':') ))
@@ -164,6 +174,7 @@ class TransportHTTP extends Transport {
         Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
 
         :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean wanturl True if want the URL of the stream (for service workers)
         :resolves to: f({start, end}) => stream (The readable stream.)
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
@@ -192,7 +203,8 @@ class TransportHTTP extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :returns stream: The readable stream - it is returned immediately, though won't be sending data until the http completes
          */
-
+        // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
+        // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
         debughttp("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();
@@ -298,7 +310,7 @@ class TransportHTTP extends Transport {
     }
     */
 
-    p_info() { return httptools.p_GET(`${this.urlbase}/info`); }
+    p_info() { return httptools.p_GET(`${this.urlbase}/info`, {retries: 5}); } // Try info, but dont wait more than approx 10secs
 
     static async p_test(opts={}) {
         {console.log("TransportHTTP.test")}
