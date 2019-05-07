@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.43: Add WebTorrent seeding
 * 0.1.42: Better behavior when cant see gateway
 * 0.1.41: Remove createReadStream for browser (it was added for node in 0.1.40), add fetch(url,opts,cb)
 * 0.1.40: Bug fix in httpfetch({count=0}),

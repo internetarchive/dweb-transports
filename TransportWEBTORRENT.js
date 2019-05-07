@@ -9,7 +9,8 @@ Y Lists have listeners and generate events - see docs at ...
 const WebTorrent = require('webtorrent');
 const stream = require('readable-stream');
 const Url = require('url');
-const debugwt = require('debug')('dweb-transports:webtorrent');
+const path = require('path');
+const debug = require('debug')('dweb-transports:webtorrent');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -33,7 +34,7 @@ class TransportWEBTORRENT extends Transport {
         this.options = options;         // Dictionary of options
         this.name = "WEBTORRENT";       // For console log etc
         this.supportURLs = ['magnet'];
-        this.supportFunctions = ['fetch', 'createReadStream'];
+        this.supportFunctions = ['fetch', 'createReadStream', "seed"];
         this.status = Transport.STATUS_LOADED;
     }
 
@@ -45,7 +46,7 @@ class TransportWEBTORRENT extends Transport {
         return new Promise((resolve, reject) => {
             this.webtorrent = new WebTorrent(this.options);
             this.webtorrent.once("ready", () => {
-                debugwt("ready");
+                debug("ready");
                 resolve();
             });
             this.webtorrent.once("error", (err) => reject(err));
@@ -60,7 +61,7 @@ class TransportWEBTORRENT extends Transport {
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
-        debugwt("setup0: options=%o", combinedoptions);
+        debug("setup0: options=%o", combinedoptions);
         let t = new TransportWEBTORRENT(combinedoptions);
         Transports.addtransport(t);
 
@@ -79,6 +80,22 @@ class TransportWEBTORRENT extends Transport {
         }
         if (cb) cb(this);
         return this;
+    }
+
+    p_stop(refreshstatus) {
+        return new Promise((resolve, reject) => {
+            this.webtorrent.destroy((err) => {
+                this.status = Transport.STATUS_FAILED;
+                if (refreshstatus) refreshstatus(this);
+                if (err) {
+                    debug("Webtorrent error during stopping %o", err);
+                    reject(err);
+                } else {
+                    debug("Webtorrent stopped");
+                    resolve();
+                }
+            });
+        })
     }
 
     async p_status() {
@@ -196,13 +213,22 @@ class TransportWEBTORRENT extends Transport {
         });
     }
 
-    seed({relFilePath, directoryPath, torrentRelativePath }, cb) {
+    seed({fileRelativePath, directoryPath, torrentRelativePath }, cb) {
         /* Add a file to webTorrent - this will be called each time a file is cached and adds the torrent to WT handling so its seeding this (and other) files in directory */
-        const torrentfile = path.join(directoryPath, torrentRelativePath);
-        this.p_addTorrentFromTorrentFile(torrentfile, directoryPath)
-            .then(res => { debug("Added %s to webtorrent", relFilePath); cb(null)})
-            .catch(err => {
-                debug("addWebTorrent failed %s", relFilePath); cb(err); } );
+        if (!torrentRelativePath) { // If no torrentfile available then just skip WebTorrent, MirrorFS will often seed the file (eg to IPFS) while its fetching the torrent and then seed that.
+            cb(null);
+        } else {
+            const torrentfile = path.join(directoryPath, torrentRelativePath);
+            this.p_addTorrentFromTorrentFile(torrentfile, directoryPath)
+                .then(res => { debug("Added %s/%s to webtorrent", directoryPath, fileRelativePath); cb(null)})
+                .catch(err => {
+                    if (err.message.includes("Cannot add duplicate torrent")) { // Ignore silently if already added
+                        cb(null);
+                    } else {
+                        debug("addWebTorrent failed %s/%s", directoryPath, fileRelativePath); cb(err);
+                    }
+                });
+        }
     }
 
     async _p_fileTorrentFromUrl(url) {
@@ -289,7 +315,7 @@ class TransportWEBTORRENT extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :returns stream: The readable stream.
          */
-        debugwt("reading from stream %s %o", file.name, opts);
+        debug("reading from stream %s %o", file.name, opts);
         let through;
         try {
             through = new stream.PassThrough();
@@ -297,7 +323,7 @@ class TransportWEBTORRENT extends Transport {
             fileStream.pipe(through);
             return through;
         } catch(err) {
-            debugwt("createReadStream error %s", err);
+            debug("createReadStream error %s", err);
             if (typeof through.destroy === 'function')
                 through.destroy(err);
             else through.emit('error', err)
@@ -310,7 +336,7 @@ class TransportWEBTORRENT extends Transport {
         let filet = await this._p_fileTorrentFromUrl(url);
         return new ReadableStream({
             start (controller) {
-                debugwt("start %s %o", url, opts);
+                debug("start %s %o", url, opts);
                 // Create a webtorrent file stream
                 const filestream = filet.createReadStream(opts);
                 // When data comes out of webtorrent node.js style stream, put it into the WHATWG stream
