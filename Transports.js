@@ -38,11 +38,12 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
-    static async p_statuses() {
+    static p_statuses(cb) {
         /*
         resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
          */
-        return this._transports.map((t) => { return {"name": t.name, "status": t.status}})
+        const res = this._transports.map((t) => { return {"name": t.name, "status": t.status}})
+        if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
     }
     static validFor(urls, func, options) {
         /*
@@ -121,6 +122,21 @@ class Transports {
         // Set a callback for p_resolveNames
         this.namingcb = cb;
     }
+
+    static togglePaused(name, cb) { //TODO-API
+        /*
+        Toggle a transport by name,
+        name    e.g. "HTTP"
+        cb(err, status)
+         */
+        const transport = this._transports.find((t) => t.name === name);
+        if (!transport) {
+            cb(undefined);
+        } else {
+            transport.togglePaused(t => cb(null, t.status));
+        }
+    }
+    // Storage of data
 
     static async _p_rawstore(tt, data) {
         // Internal method to store at known transports
@@ -213,7 +229,7 @@ class Transports {
 
 // Seeding =====
     // Similar to storing.
-    static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb) {
+    static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined, torrentRelativePath=undefined}, cb) {
         /*
         TODO-API get thsi from the issue
         ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates.
@@ -232,7 +248,7 @@ class Transports {
             } else {
                 const res = {};
                 each(tt, // [ Transport]
-                    (t, cb2) => t.seed({directoryPath, fileRelativePath, ipfsHash, urlToFile},
+                    (t, cb2) => t.seed({directoryPath, torrentRelativePath, fileRelativePath, ipfsHash, urlToFile},
                         (err, oneres) => { res[t.name] = err ? { err: err.message } :  oneres; cb2(null)}), // Its not an error for t.seed to fail - errors should have been logged by transports
                     (unusederr) => cb1(null, res)); // Return result of any seeds that succeeded as e.g. { HTTP: {}, IPFS: {ipfsHash:} }
             }
