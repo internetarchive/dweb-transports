@@ -309,17 +309,19 @@ class Transport {
 
     static mergeoptions(a) {
         /*
-        Deep merge options dictionaries
+        Deep merge options dictionaries, careful since searchparameters from URL passed in as null
          */
         let c = {};
         for (let i = 0; i < arguments.length; i++) {
             let b = arguments[i];
             for (let key in b) {
                 let val = b[key];
-                if ((typeof val === "object") && !Array.isArray(val) && c[key]) {
-                    c[key] = Transport.mergeoptions(a[key], b[key]);
-                } else {
-                    c[key] = b[key];
+                if (val !== null) {
+                    if ((typeof val === "object") && !Array.isArray(val) && c[key]) {
+                        c[key] = Transport.mergeoptions(a[key], b[key]);
+                    } else {
+                        c[key] = b[key];
+                    }
                 }
             }
         }
