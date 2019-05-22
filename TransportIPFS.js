@@ -56,7 +56,6 @@ class TransportIPFS extends Transport {
 
     Fields:
     ipfs: object returned when starting IPFS
-    TODO - this is not complete
      */
 
     constructor(options) {
@@ -313,7 +312,7 @@ class TransportIPFS extends Transport {
             if (res.remainderPath.length)
             { // noinspection ExceptionCaughtLocallyJS
                 throw new errors.TransportError("Not yet supporting paths in p_rawfetch");
-            } //TODO-PATH
+            }
             let buff;
             if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.
                 // We retrieved a DAGNode, call files.cat (the node will come from the cache quickly)

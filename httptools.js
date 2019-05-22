@@ -62,7 +62,6 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries
     init:   {headers}
     resolves to: data as text or json depending on Content-Type header
     throws: TransportError if fails to fetch
-    //TODO explicitly parameterise if want it to loop
      */
     try {
         // THis was get("range") but that works when init.headers is a Headers, but not when its an object

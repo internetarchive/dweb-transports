@@ -1,7 +1,6 @@
 const Url = require('url');
 const errors = require('./Errors');
 const utils = require('./utils');
-//process.env.DEBUG = "dweb-transports";  //TODO-DEBUG set at top level
 const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
@@ -202,7 +201,6 @@ class Transports {
                 debug("Fetching %s via %s", url.href, t.name);
                 let data = await t.p_rawfetch(url, opts);   // throws errors if fails or timesout
                 debug("Fetching %s via %s succeeded %d bytes", url.href, t.name, data.length);
-                //TODO-MULTI-GATEWAY working here - it doesnt quite work yet as the "Add" on browser gets different url than on server
                 if (opts.relay && failedtransports.length) {
                     debug("Fetching attempting relay of %d bytes from %s to %o", data.length, url.href, failedtransports.map(t=>t.name));
                     this._p_rawstore(failedtransports, data)
@@ -293,8 +291,6 @@ class Transports {
         returns:    undefined
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
          */
-        //TODO-REFACTOR remove dependecy on the object having a .preflight, this should be handled one layer up.
-        //TODO-REFACTOR requires changes in: dweb-transports: TransportXyz, Transport, API.md; dweb-objects: CommonList.js, test.js; dweb-serviceworker/TransportsProxy.js;
         //TODO-MULTI-GATEWAY might be smarter about not waiting but Promise.race is inappropriate as returns after a failure as well.
         urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
@@ -788,6 +784,7 @@ class Transports {
         ]
         const arcpatts = [ // No overlap between patts & arcpatts, so order unimportant
             /^http[s]?:[/]+[^/]+[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/(archive.org)/(internal)
+            /^http[s]?:[/]+[^/]+[/]arc[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/arc/(archive.org)/(internal)
             /^http[s]?:[/]+dweb.(\w+)[.]([^/]+)[/]*(.*)/i,      // https://dweb.(proto).(dom.ain)/(internal) # Before dweb.dom.ain
             // /^http[s]?:[/]+dweb.([^/]+[.][^/]+[/]*.*)/i,     // https://dweb.(dom.ain)/internal) or https://dweb.(domain) Handled by coe on recognizing above
             /^(http[s])?:[/]+([^/]+)[/]+(.*)/i,                 // https://dom.ain/pa/th

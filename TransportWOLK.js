@@ -28,7 +28,6 @@ class TransportWOLK extends Transport {
       this.options = options;         // Dictionary of options
       this.wolk = undefined;
       this.name = "WOLK";          // For console log etc
-      //TODO: Change name to WOLK once we understand everything
       this.supportURLs = ['wolk'];
       this.supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
       this.status = Transport.STATUS_LOADED;

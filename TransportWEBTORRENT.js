@@ -259,7 +259,7 @@ class TransportWEBTORRENT extends Transport {
     }
 
     async p_addTorrentFromTorrentFile(torrentFilePath, filesPath) {
-        // TODO: doc
+        // TODO-API: doc
         try {
             const opts = { path: filesPath };
             const oldTorrent = this.webtorrent.get(torrentFilePath);
