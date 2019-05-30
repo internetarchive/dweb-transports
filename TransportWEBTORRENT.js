@@ -35,6 +35,7 @@ class TransportWEBTORRENT extends Transport {
         this.name = "WEBTORRENT";       // For console log etc
         this.supportURLs = ['magnet'];
         this.supportFunctions = ['fetch', 'createReadStream', "seed"];
+        this.supportFeatures = ['noCache']; // Note doesnt actually support noCache, but immutable is same
         this.status = Transport.STATUS_LOADED;
     }
 

@@ -69,6 +69,7 @@ class TransportIPFS extends Transport {
         this.name = "IPFS";             // For console log etc
         this.supportURLs = ['ipfs'];
         this.supportFunctions = ['fetch', 'store', 'seed', 'createReadStream'];   // Does not support reverse
+        this.supportFeatures = ['noCache']; // Note doesnt actually support noCache, but immutable is same
         this.status = Transport.STATUS_LOADED;
     }
 

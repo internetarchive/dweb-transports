@@ -30,6 +30,8 @@ class TransportWOLK extends Transport {
       this.name = "WOLK";          // For console log etc
       this.supportURLs = ['wolk'];
       this.supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
+      this.supportFeatures = []; // Doesnt support noCache and is mutable
+
       this.status = Transport.STATUS_LOADED;
     }
 

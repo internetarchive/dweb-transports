@@ -73,6 +73,7 @@ class TransportGUN extends Transport {
         this.supportFunctions = [ 'fetch', //'store'
                                  'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
                                  'add', 'list', 'listmonitor', 'newlisturls'];
+        this.supportFeatures = []; // Doesnt support noCache and is mutable
         this.status = Transport.STATUS_LOADED;
     }
 

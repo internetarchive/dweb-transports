@@ -44,7 +44,7 @@ class Transports {
         const res = this._transports.map((t) => { return {"name": t.name, "status": t.status}})
         if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
     }
-    static validFor(urls, func, options) {
+    static validFor(urls, func, opts) { //TODO-RELOAD check for noCache support
         /*
         Finds an array or Transports that can support this URL.
 
@@ -52,7 +52,7 @@ class Transports {
 
         urls:       Array of urls
         func:       Function to check support for: fetch, store, add, list, listmonitor, reverse - see supportFunctions on each Transport class
-        options:    For future use
+        opts:       Passed to each Transport, esp for supportFeatures
         returns:    Array of pairs of Url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
         throws:     CodingError if urls empty or [undefined...]
          */
@@ -62,19 +62,19 @@ class Transports {
             return [];
         }
         if (!(urls && urls.length > 0)) { // No url supplied we are just checking which transports support this function on no url.
-            return this._transports.filter((t) => (t.validFor(undefined, func)))
+            return this._transports.filter((t) => (t.validFor(undefined, func, opts)))
                 .map((t) => [undefined, t]);
         } else {
             return [].concat(
                 ...urls.map((url) => typeof url === 'string' ? Url.parse(url) : url) // parse URLs once
                     .map((url) =>
-                        this._transports.filter((t) => (t.validFor(url, func))) // [ t1, t2 ]
+                        this._transports.filter((t) => (t.validFor(url, func, opts))) // [ t1, t2 ]
                             .map((t) => [url, t]))); // [[ u, t1], [u, t2]]
         }
     }
-    static async p_urlsValidFor(urls, func, options) {
+    static async p_urlsValidFor(urls, func, opts) {
         // Need a async version of this for serviceworker and TransportsProxy
-        return this.validFor(urls, func, options).map((ut) => ut[0]);
+        return this.validFor(urls, func, opts).map((ut) => ut[0]);
     }
 
     // SEE-OTHER-ADDTRANSPORT
@@ -181,6 +181,7 @@ class Transports {
             start,  integer - first byte wanted
             end     integer - last byte wanted (note this is inclusive start=0,end=1023 is 1024 bytes
             timeoutMS   integer - max time to wait on transports (IPFS) that support it
+            noCache bool - Skip caching (passed to Transports)
             }
         returns:	string - arbitrary bytes retrieved.
         throws:     TransportError with concatenated error messages if none succeed.
@@ -189,7 +190,7 @@ class Transports {
         if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
         let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert name to [urls]
         if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
-        let tt = this.validFor(resolvedurls, "fetch"); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
+        let tt = this.validFor(resolvedurls, "fetch", {noCache: opts.noCache}); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
             throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + resolvedurls);
         }

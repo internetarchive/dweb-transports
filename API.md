@@ -317,7 +317,7 @@ Finds an array or Transports that are STARTED and can support this URL.
 urls:       Array of urls
 func:       Function to check support for: fetch, store, add, list, listmonitor, reverse
             - see supportFunctions on each Transport class
-options     For future use
+options     checks supportFeatures
 Returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
 ```
 
@@ -497,7 +497,7 @@ Option|Default|Meaning
 urlbase|https://dweb.me:443|Connect to dweb.me for contenthash urls
 supportURLS|http:*, https:*, contenthash:*}| (TODO: may in the future support `dweb:/contenthash/*`)
 supportFunctions|fetch, store, add, list, reverse, newlisturls, get, set, keys, getall, delete, newtable, newdatabase|
-supportFeatures|fetch.range|it will fetch a range of bytes if specified in {start, end} to p_rawfetch()
+supportFeatures|fetch.range, noCache|it will fetch a range of bytes if specified in {start, end} to p_rawfetch()
 
 
 ## TransportIPFS
@@ -525,7 +525,8 @@ supportURLS = `ipfs:*` (TODO: may in the future support `dweb:/ipfs/*`)
 SupportFunctions (note YJS uses IPFS and supports some other functions): 
     `fetch, store`
 SupportFeatures: 
-    fetch.range Not supported (currently April 2018))
+    fetch.range Not supported (currently May 2019))
+    noCache:    Not actually supported, but immutable
     
 Currently there is code for p_f_createReadStream. It works but because IPFS cannot return an error even if it 
 cannot open the stream, IPFS is usually set as the last choice transport for streams.
@@ -538,8 +539,9 @@ supportURLS = `yjs:*` (TODO: may in the future support `dweb:/yjs/*`)
 supportFunctions (note YJS uses IPFS and supports some other functions): 
     `fetch, add, list, listmonitor, newlisturls, connection, get, set, getall, keys, newdatabase, newtable, monitor`
 supportFeatures: 
-    fetch.range Not supported (currently April 2018)
-
+    fetch.range Not supported (currently May 2019)
+    noCache:    Not supported (currently May 2019)
+    
 ## TransportWEBTORRENT
 A subclass of Transport for handling WEBTORRENT connections (similar to, with interworking with BitTorrent)
 
@@ -553,7 +555,8 @@ supportFunctions:
     `fetch`, `createReadStream`
 
 supportFeatures: 
-    fetch.range Not supported (currently April 2018)
+    fetch.range Not supported (currently May 2019)
+    noCache:    Not actually supported, but immutable
 
 ## TransportGUN
 A subclass of Transport for handling GUN connections (decentralized database)
@@ -562,6 +565,7 @@ supportURLS = `gun:*` (TODO: may in the future support `dweb:/gun/*`)
 
 supportFunctions = `add`, `list`, `listmonitor`, `newlisturls`, `connection`, `get`, `set`, `getall`, `keys`, `newdatabase`, `newtable`, `monitor`
 supportFeatures: 
+    noCache:    Not supported (and cache flushing is hard)
 
 ## TransportWOLK 
 A subclass of Transport for handling the WOLK transport layer (decentralized, block chain based, incentivised storage)

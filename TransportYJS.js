@@ -50,6 +50,7 @@ class TransportYJS extends Transport {
         this.supportURLs = ['yjs'];
         this.supportFunctions = ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',
             'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor'];   // Only does list functions, Does not support reverse,
+        this.supportFeatures = []; // Doesnt support noCache and is mutable
         this.status = Transport.STATUS_LOADED;
     }
 

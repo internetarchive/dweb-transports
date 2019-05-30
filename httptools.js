@@ -105,18 +105,20 @@ httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and add
             start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
             wantstream,     // Return a stream rather than data
             retries=12,        // How many times to retry
+            noCache         // Add Cache-Control: no-cache header
             }
         returns result via promise or cb(err, result)
     */
     if (typeof opts  === "function") { cb = opts; opts = {}; }
     let headers = new Headers();
     if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${(opts.end<Infinity) ? opts.end : ""}`);
+    //if (opts.noCache) headers.append("Cache-Control", "no-cache"); It complains about preflight with no-cache
     const retries = typeof opts.retries === "undefined" ? 12 : opts.retries;
     let init = {    //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
         method: 'GET',
         headers: headers,
         mode: 'cors',
-        cache: 'default',
+        cache: opts.noCache ? 'no-cache' : 'default', // In Chrome, This will set Cache-Control: max-age=0
         redirect: 'follow',  // Chrome defaults to manual
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };

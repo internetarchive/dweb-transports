@@ -32,12 +32,13 @@ class TransportHTTP extends Transport {
         this.urlbase = options.urlbase; // e.g. https://dweb.me
         this.supportURLs = ['contenthash', 'http','https'];
         this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        this.supportFeatures = ['noCache'];
         if (typeof window === "undefined") {
             // running in node, can support createReadStream,  (browser can't - see createReadStream below)
             this.supportFunctions.push("createReadStream");
         }
         // noinspection JSUnusedGlobalSymbols
-        this.supportFeatures = ['fetch.range'];
+        this.supportFeatures = ['fetch.range', 'noCache'];
         this.name = "HTTP";             // For console log etc
         this.status = Transport.STATUS_LOADED;
     }
@@ -87,10 +88,10 @@ class TransportHTTP extends Transport {
         return url;
     }
 
-    validFor(url, func) {
+    validFor(url, func, opts) {
         // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me
         // in particular this allows urls like https://be-api.us.archive.org
-        return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func);
+        return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func, opts);
     }
     // noinspection JSCheckFunctionSignatures
     async p_rawfetch(url, opts={}) {
@@ -98,7 +99,7 @@ class TransportHTTP extends Transport {
         Fetch from underlying transport,
         Fetch is used both for contenthash requests and table as when passed to SmartDict.p_fetch may not know what we have
         url: Of resource - which is turned into the HTTP url in p_httpfetch
-        opts: {start, end, retries} see p_GET for documentation
+        opts: {start, end, retries, noCache} see p_GET for documentation
         throws: TransportError if fails
          */
         //if (!(url && url.includes(':') ))

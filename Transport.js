@@ -96,11 +96,12 @@ class Transport {
         // True if connected (status==STATUS_CONNECTED==0) should not need subclassing
         return ! this.status;
     }
-    supports(url, func) { //TODO-API
+    supports(url, func, {noCache=undefined}={}) { //TODO-API
         /*
         Determine if this transport supports a certain set of URLs and a func
 
         :param url: String or parsed URL
+        :param opts:    { noCache }  check against supportFeatures
         :return:    true if this protocol supports these URLs and this func
         :throw:     TransportError if invalid URL
          */
@@ -112,13 +113,15 @@ class Transport {
         } //Should be TransportError but out of scope here
         // noinspection Annotator  supportURLs is defined in subclasses
         return (    (!url || this.supportURLs.includes(url.protocol.slice(0, -1)))
-            && (!func || this.supportFunctions.includes(func)))
+            && (!func || this.supportFunctions.includes(func))
+            && (!noCache || this.supportFeatures.includes("noCache"))
+        )
     }
 
-    validFor(url, func) { //TODO-API
+    validFor(url, func, opts) { //TODO-API
         // By default a transport can handle a url and a func if its connected and supports that url/func
         // This shouldnt need subclassing, an exception is HTTP which only applies "connected" against urls heading for the gateway
-        return this.connected() && this.supports(url, func);
+        return this.connected() && this.supports(url, func, opts);
     }
 
 
