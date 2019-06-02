@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.48: Support for noCache
 * 0.1.47: Update dependencies (see yarn.lock)
 * 0.1.46: Correctly recognize /arc/archive.org urls
 * 0.1.45: Fix mergeoptions and update ipfs cache id
