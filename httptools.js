@@ -98,7 +98,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries
     }
 }
 
-httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
+httptools.p_GET = function(httpurl, opts={}, cb) {
     /*  Locate and return a block, based on its url
         Throws TransportError if fails
         opts {
@@ -127,7 +127,7 @@ httptools.p_GET = function(httpurl, opts={}, cb) { //TODO-API rearranged and add
     //if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)).catch((err) => debug("Uncaught error %O",err)); } else { return prom; } // Unpromisify pattern v4
     if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
 }
-httptools.p_POST = function(httpurl, opts={}, cb) { //TODO-API rearranged and addded cb
+httptools.p_POST = function(httpurl, opts={}, cb) {
     /* Locate and return a block, based on its url
     opts = { data, contenttype, retries }
     returns result via promise or cb(err, result)

@@ -26,7 +26,7 @@ class Transport {
         throw new errors.IntentionallyUnimplementedError("Intentionally undefined function Transport.setup0 should have been subclassed");
         }
 
-    p_setup1(options) {
+    p_setup1(cb) {
         /*
         Setup the resource and open any P2P connections etc required to be done just once. Asynchronous and should leave status=STATUS_STARTING until it resolves, or STATUS_FAILED if fails.
 
@@ -35,7 +35,7 @@ class Transport {
         */
         return this;
     }
-    p_setup2(options) {
+    p_setup2(cb) {
         /*
         Works like p_setup1 but runs after p_setup1 has completed for all transports. This allows for example YJS to wait for IPFS to be connected in TransportIPFS.setup1() and then connect itself using the IPFS object.
 
@@ -118,7 +118,7 @@ class Transport {
         )
     }
 
-    validFor(url, func, opts) { //TODO-API
+    validFor(url, func, opts) {
         // By default a transport can handle a url and a func if its connected and supports that url/func
         // This shouldnt need subclassing, an exception is HTTP which only applies "connected" against urls heading for the gateway
         return this.connected() && this.supports(url, func, opts);

@@ -109,6 +109,11 @@ Code|Name|Means
 3|STATUS_LOADED|Code loaded but havent tried to connect
 4|STATUS_PAUSED|It was launched, probably connected, but now paused so will be ignored by validfor()
 
+##### async p_stop(refreshstatus)
+Stop the transport, 
+```
+refreshstatus (optional)    callback(transport instance) to the UI to update status on display
+```
 ### Transport: General storage and retrieval of objects
 ##### p_rawstore(data)
 Store a opaque blob of data onto the decentralised transport.
@@ -147,15 +152,16 @@ sig        Signature data structure (see below - contains url, date, signedby, s
     signature   - verifiable signature of date+urls
     signedby    - url of data structure (typically CommonList) holding public key used for the signature
 ```
-##### seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined}, cb)
+##### seed({directoryPath, fileRelativePath, ipfsHash, urlToFile, torrentRelativePath}, cb)
 Seed the file to any transports that can handle it. 
 ```
-ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates. 
-                Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
-urlFile:        The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
-directoryPath: Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent) 
-                this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
-fileRelativePath: Path (relative to directoryPath) to the file to be seeded. 
+ipfsHash:               When passed as a parameter, its checked against whatever IPFS calculates. 
+                        Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
+urlFile:                The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
+directoryPath:          Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent) 
+                        this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
+fileRelativePath:       Path (relative to directoryPath) to the file to be seeded. 
+torrentRelativePath:    Path within directory to torrent file if present. 
 ```
 
 ##### p_rawlist(url)
@@ -277,6 +283,9 @@ Returns   True if this Transport supports that type of URL
 throw     TransportError if invalid URL
 ```
 
+##### validFor(url, func, opts)
+True if the url and/or function is supported and the Transport is connected appropriately.
+
 ##### p_info()
 Return a JSON with info about the server. 
 
@@ -297,9 +306,9 @@ _optionspaused      Saves paused option for setup
 returns Array of transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
 
-##### static async p_connectedNames()
+##### static async p_connectedNames(cb)
 ```
-resolves to: Array of names transports that are connected (i.e. status=STATUS_CONNECTED)
+returns via Promise or cb: Array of names transports that are connected (i.e. status=STATUS_CONNECTED)
 ```
 ##### static async p_connectedNamesParm()
 ```
@@ -357,6 +366,12 @@ Called by higher level libraries that provide name resolution function.
 See Naming below
 ```
 cb(urls) => urls    Provide callback function 
+```
+#### togglePaused(name, cb)
+Switch the state of a named transport between STATUS_CONNECTED and STATUS_PAUSED, 
+in the paused state it will not be used for transport but, in some cases, will still do background tasks like serving files. 
+```
+cb(transport)=>void a callback called after this is run, may be used for example to change the UI
 ```
 
 ##### static addtransport(t)
@@ -450,42 +465,49 @@ start,end    Inclusive byte range wanted - passed to
 relay        If first transport fails, try and retrieve on 2nd, then store on 1st, and so on.
 ```
 
-##### fetch(url,  {timeoutMS, start, end, relay}, cb)
+##### fetch(urls,  {timeoutMS, start, end, relay}, cb)
 As for p_rawfetch but returns either via callback or Promise
 
 ## httptools
 A utility class to support HTTP with or without TransportHTTP
 e.g. `httptools.http().p_httpfetch("http://foo.com/bar", {method: 'GET'} )`
 
-##### p_httpfetch(url, init)
-Fetch a url.
-If the result
+##### Common parameters
+```
+httpurl     HTTP or HTTPS url
+wantstream  True if want a stream returned
+retries     Number of times to retry on failure at network layer (i.e. 404 doesnt trigger a retry)
+noCache     Add Cache-Control: no-cache header
+```
 
-url:    HTTP or HTTPS url
-init:   Init parameter to fetch (see for docs)
+##### p_httpfetch(httpurl, init, {wantstream=false, retries=undefined})
+Fetch a url.
+
+```
+init:       {headers}
 returns:    Depends on mime type;
     If application/json returns a Object, 
     If text/* returns text
     Oherwise    Buffer
+```
 
-##### p_GET(url, {start, end, retries})
+##### p_GET(httpurl, {start, end, noCache, retries=12}, cb)
 Shortcut to do a HTTP/POST get, sets `mode: cors, redirect: follow, keepalive: true, cache: default`
-
+```
 start:      First byte to retrieve
 end:        Last byte to retrieve (undefined means end of file)
-wantstream: Return a stream rather than data
-retries:    How may times to retry if fails at the network layer (i.e. 404 is a success)
-
+returns     (via Promise or cb) from p_httpfetch
+```
 Note that it passes start and end as the Range header, most servers support it, 
 but it does not (yet) explicitly check the result. 
 
-##### p_POST(url, type, data, {retries})
+##### p_POST(httpurl, {contenttype, data, retries=0})
 Shortcut to do a HTTP/HTTPS POST. sets same options as p_GET
-
-data:   Data to send to fetch, typically the body, 
-contenttype:   Currently not passed as header{Content-type} because fetch appears to ignore it.
-retries: How may times to retry if fails at the network layer (i.e. 404 is a success)
-
+```
+data:           Data to send to fetch, typically the body, 
+contenttype:    Currently not passed as header{Content-type} because fetch appears to ignore it.
+returns     (via Promise or cb) from p_httpfetch
+```
 
 ## TransportHTTP
 A subclass of Transport for handling HTTP connections - both directly and for contenthash: urls.

@@ -26,7 +26,7 @@ class Transports {
          */
         return this._transports.filter((t) => (!t.status));
     }
-    static p_connectedNames(cb) { //TODO rename to connectedNames and TODO-API
+    static p_connectedNames(cb) { //TODO rename to connectedNames
         /*
         resolves to: an array of the names of connected transports
         Note this is async only because the TransportsProxy version of this has to be - that isn't currently used, so this could be made sync
@@ -122,7 +122,7 @@ class Transports {
         this.namingcb = cb;
     }
 
-    static togglePaused(name, cb) { //TODO-API
+    static togglePaused(name, cb) {
         /*
         Toggle a transport by name,
         name    e.g. "HTTP"
@@ -220,7 +220,7 @@ class Transports {
         debug("Fetching %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
-    static fetch(urls, opts={}, cb) { //TODO-API
+    static fetch(urls, opts={}, cb) {
         if (typeof opts === "function") { cb = opts; opts={}; }
         const prom = this.p_rawfetch(urls, opts);
         if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error in fetch %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
@@ -230,13 +230,13 @@ class Transports {
     // Similar to storing.
     static seed({directoryPath=undefined, fileRelativePath=undefined, ipfsHash=undefined, urlToFile=undefined, torrentRelativePath=undefined}, cb) {
         /*
-        TODO-API get thsi from the issue
         ipfsHash:       When passed as a parameter, its checked against whatever IPFS calculates.
                         Its reported, but not an error if it doesn't match. (the cases are complex, for example the file might have been updated).
-        urlFile:        The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
-        directoryPath: Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent)
+        urlToFile:      The URL where that file is available, this is to enable transports (e.g. IPFS) that just map an internal id to a URL.
+        directoryPath:  Absolute path to the directory, for transports that think in terms of directories (e.g. WebTorrent)
                         this is the unit corresponding to a torrent, and should be where the torrent file will be found or should be built
         fileRelativePath: Path (relative to directoryPath) to the file to be seeded.
+        torrentRelativePath:    Path within directory to torrent file if present.
          */
         if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
         function f(cb1) {
