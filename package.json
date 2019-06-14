@@ -14,7 +14,7 @@
     "canonical-json": "^0.0.4",
     "cids": "^0.5.7",
     "debug": "^4.1.1",
-    "gun": "^0.9.9999991",
+    "gun": "^0.2019.515",
     "ipfs": "^0.34.4",
     "ipfs-http-client": "^29.1.1",
     "ipfs-unixfs": "^0.1.16",
@@ -53,5 +53,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.49"
+  "version": "0.1.50"
 }

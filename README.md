@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.50: Update to GUN's new bizarre version numbering. 
 * 0.1.49: Disable WOLK - currently failing
 * 0.1.48: Support for noCache
 * 0.1.47: Update dependencies (see yarn.lock)
