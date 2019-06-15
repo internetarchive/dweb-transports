@@ -211,10 +211,12 @@ class TransportHTTP extends Transport {
         through = new stream.PassThrough();
         httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts))
             .then(s => s.pipe(through))
+            // Note any .catch is happening AFTER through returned
             .catch(err => {
                 console.warn(this.name, "createReadStream caught error", err.message);
                 if (typeof through.destroy === 'function') {
                     through.destroy(err); // Will emit error & close and free up resources
+                    // caller MUST implimit through.on('error', err=>) or will generate uncaught error message
                 } else {
                     through.emit('error', err);
                 }
