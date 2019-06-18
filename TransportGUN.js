@@ -5,7 +5,7 @@ See https://github.com/internetarchive/dweb-mirror/issues/43 for meta issue
 */
 const Url = require('url');
 process.env.GUN_ENV = "false";
-const Gun = require('gun/gun.js');  // TODO-GUN switchback to gun/gun at some point to get minimized version
+const Gun = require('gun/gun.js');  // gun/gun is the minimized version
 // Raw Gun has almost nothing in it, it needs at least the following to work properly.
 require('gun/lib/path.js');         // So that .path works
 /*
@@ -314,7 +314,8 @@ class TransportGUN extends Transport {
     //WORKAROUND-GUN-PROMISE suggest p_once as a good single addition
     //TODO-GUN expand this to workaround Gun weirdness with errors.
     _p_once(gun) {  // Note in some cases (e.g. p_getall) this will resolve to a object, others a string/number (p_get)
-        return new Promise((resolve) => gun.once(resolve));
+        // TODO-GUN Temporarily added a 2000ms delay to workaround https://github.com/internetarchive/dweb-archive/issues/106 / https://github.com/amark/gun/issues/762
+        return new Promise((resolve) => gun.once(resolve, {wait: 2000}));
     }
 
     async p_keys(url) {
