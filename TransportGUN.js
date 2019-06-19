@@ -8,13 +8,19 @@ process.env.GUN_ENV = "false";
 const Gun = require('gun/gun.js');  // gun/gun is the minimized version
 // Raw Gun has almost nothing in it, it needs at least the following to work properly.
 require('gun/lib/path.js');         // So that .path works
-/*
-WORKAROUND-GUN-STORAGE
+
+//WORKAROUND-GUN-STORAGE
 // The next step is to stop it failing as soon as its cached 5Mb in localstorage
 // see https://github.com/amark/gun/blob/master/test/tmp/indexedDB.html and https://github.com/amark/gun/issues/590
 // but the instructions on how to do this are obviously broken so waiting on @amark to get this working.
-require('gun/lib/radix.js');
-require('gun/lib/radisk.js');
+
+// See https://github.com/internetarchive/dweb-archive/issues/106 unable to get this working (Gun doesnt work well with webpack)
+//require('gun/nts');
+//require('gun/lib/wire'); // NodeJS websocket
+//require('gun/lib/multicast'); // Local area broadcasting needs passing `multicast: true` in options (which is safe in node + browser)
+/*
+require('gun/lib/radix.js'); // loaded by store but required for webpack
+require('gun/lib/radisk.js'); // loaded by store but required for webpack
 require('gun/lib/store.js');
 require('gun/lib/rindexed.js');
 */

@@ -19,7 +19,8 @@ module.exports = {
         clearImmediate: false,
         Buffer: true,
         setImmediate: false,
-        console: false
+        console: false,
+        dgram: 'empty'
     },
 
     plugins: [
