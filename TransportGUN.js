@@ -57,7 +57,7 @@ let defaultoptions = {
         for now just throw an error on undefined
     WORKAROUND-GUN-STORAGE: GUN defaults to local storage, which then fails on 5Mb or more of data, need to use radix, which has to be included and has bizarre config requirement I can't figure out
     TODO-GUN, handle error callbacks which are available in put etc
-    Errors and Promises: Note that GUN's use of promises is seriously uexpected (aka weird), see https://gun.eco/docs/SEA#errors
+    Errors and Promises: Note that GUN's use of promises is seriously unexpected (aka weird), see https://gun.eco/docs/SEA#errors
         instead of using .reject or throwing an error at async it puts the error in SEA.err, so how that works in async parallel context is anyone's guess
  */
 
