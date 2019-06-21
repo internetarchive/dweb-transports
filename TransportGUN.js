@@ -18,12 +18,11 @@ require('gun/lib/path.js');         // So that .path works
 //require('gun/nts');
 //require('gun/lib/wire'); // NodeJS websocket
 //require('gun/lib/multicast'); // Local area broadcasting needs passing `multicast: true` in options (which is safe in node + browser)
-/*
 require('gun/lib/radix.js'); // loaded by store but required for webpack
 require('gun/lib/radisk.js'); // loaded by store but required for webpack
 require('gun/lib/store.js');
 require('gun/lib/rindexed.js');
-*/
+
 const debuggun = require('debug')('dweb-transports:gun');
 const stringify = require('canonical-json');
 
@@ -38,8 +37,8 @@ const utils = require('./utils'); // Utility functions
 //unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
-    peers: [ "https://dweb.me:4246/gun" ]
-    //localstore: true                     #True is default TODO-GUN check if false turns it off, or defaults to a different store.
+    peers: [ "https://dweb.me:4246/gun" ],
+    localStorage: false                         // Need to be false to turn localStorage off on browser (do this if include radix/radisk)
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
 //setenv GUN_ENV false; node examples/http.js 4246
