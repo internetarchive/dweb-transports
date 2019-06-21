@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.54: queue for http; disable fallback from IPFS to http://ipfs.io
 * 0.1.53: Reenable Wolk as fixed
 * 0.1.52: Gun fixes but off by default https://github.com/internetarchive/dweb-archive/issues/106
 * 0.1.51: Temporary fix to GUN failures by adding wait:2000
