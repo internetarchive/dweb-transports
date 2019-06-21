@@ -715,7 +715,7 @@ class Transports {
             // WOLK is currently failing, and what is worse returning a data structure with a 404 instead of just failing
             // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
             //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
-            if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT"]; } // SEE-OTHER-ADDTRANSPORT
+            if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
             let transports = this.setup0(tabbrevs, options);
             ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
