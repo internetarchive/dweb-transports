@@ -48,6 +48,8 @@ const defaultoptions = {
     //init: true, // Comment out for Y
     EXPERIMENTAL: { pubsub: true },
     preload: { enabled: false },
+    //Off by default, it never seems to have the content (routing issues) pass as an argument if want to use
+    //httpIPFSgateway: "https://ipfs.io",
 };
 
 class TransportIPFS extends Transport {
@@ -60,10 +62,10 @@ class TransportIPFS extends Transport {
 
     constructor(options) {
         super(options);
-        if (options.urlUrlstore) {
-            this.urlUrlstore = options.urlUrlstore;
-            delete options.urlUrlstore;
-        }
+        [ "urlUrlstore", "httpIPFSgateway"].forEach(k => {
+            this[k] = options[k];
+            delete options[k];
+        });
         this.ipfs = undefined;          // Undefined till start IPFS
         this.options = options;         // Dictionary of options
         this.name = "IPFS";             // For console log etc
@@ -262,14 +264,14 @@ class TransportIPFS extends Transport {
         throw new errors.CodingError(`TransportIPFS.ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
 
-    static ipfsGatewayFrom(url) {
+    ipfsGatewayFrom(url) {
         /*
         url: CID, Url, or a string
         returns:    https://ipfs.io/ipfs/<cid>
          */
         url = this._stringFrom(url); // Convert CID or Url to a string hopefully containing /ipfs/
         if (url.indexOf('/ipfs/') > -1) {
-            return "https://ipfs.io" + url.slice(url.indexOf('/ipfs/'));
+            return this.httpIPFSgateway + url.slice(url.indexOf('/ipfs/'));
         }
         throw new errors.CodingError(`TransportIPFS.ipfsGatewayFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
@@ -325,16 +327,21 @@ class TransportIPFS extends Transport {
             // Success logged by Transports
             return buff;
         } catch (err) { // TimeoutError or could be some other error from IPFS etc
-            debug("Caught error '%s' fetching via IPFS, trying IPFS HTTP gateway", err.message);
-            try {
-                let ipfsurl = TransportIPFS.ipfsGatewayFrom(url);
-                return await utils.p_timeout(
-                    httptools.p_GET(ipfsurl), // Returns a buffer
-                    timeoutMS, "Timed out IPFS fetch of "+ipfsurl)
-            } catch (err) {
-                // Failure logged by Transports:
-                //debug("Failed to retrieve from gateway: %s", err.message);
-                throw err;
+            debug("Caught error '%s' fetching via IPFS", err.message);
+            if (!this.httpIPFSgateway) {
+                throw(err);
+            } else {
+                try {
+                    debug("Trying IPFS HTTP gateway");
+                    let ipfsurl = this.ipfsGatewayFrom(url);
+                    return await utils.p_timeout(
+                        httptools.p_GET(ipfsurl), // Returns a buffer
+                        timeoutMS, "Timed out IPFS fetch of "+ipfsurl)
+                } catch (err) {
+                    // Failure logged by Transports:
+                    //debug("Failed to retrieve from gateway: %s", err.message);
+                    throw err;
+                }
             }
         }
     }
