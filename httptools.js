@@ -36,8 +36,9 @@ function queueSetup({concurrency}) {
                   task.cb(null, res);
               })
               .catch(err => {
-                  //TODO-QUEUE add loopguard back in
-                  httpTaskQueue.concurrency = Math.max(httpTaskQueue.concurrency-1, 6)
+                  // Adjust concurrency, dont go below running number (which is running-1 because this failed task counts)
+                  // and we know browser doesnt complain below 6
+                  httpTaskQueue.concurrency = Math.max(httpTaskQueue.concurrency-1, 6, httpTaskQueue.running()-1);
                   debug("Dropping concurrency to %s", httpTaskQueue.concurrency);
                   cb(err);
                   if (--task.count > 0) {
