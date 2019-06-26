@@ -183,21 +183,19 @@ class TransportIPFS extends Transport {
         return this;
     }
 
-    p_stop(refreshstatus) {
-        return new Promise((resolve, reject) => {
-            if (this.ipfstype === "client") {
-                this.ipfs.stop((err, res) => {
-                    this.status = Transport.STATUS_FAILED;
-                    if (refreshstatus) refreshstatus(this);
-                    if (err) { reject(err); } else { resolve(res); }
-                });
-            } else {
-                // We didn't start it, don't try and stop it
+    stop(refreshstatus, cb) { //TODO-API p_stop > stop
+        if (this.ipfstype === "client") {
+            this.ipfs.stop((err, res) => {
                 this.status = Transport.STATUS_FAILED;
                 if (refreshstatus) refreshstatus(this);
-                resolve(this);
-            }
-        })
+                cb(err, res);
+            });
+        } else {
+            // We didn't start it, don't try and stop it
+            this.status = Transport.STATUS_FAILED;
+            if (refreshstatus) refreshstatus(this);
+            cb(miull, this);
+        }
     }
     async p_status() {
         /*

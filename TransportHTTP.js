@@ -3,12 +3,13 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
 const Url = require('url');
 const stream = require('readable-stream');
-const debughttp = require('debug')('dweb-transports:http');
+const debug = require('debug')('dweb-transports:http');
 const stringify = require('canonical-json');
 
 
 defaulthttpoptions = {
-    urlbase: 'https://dweb.me'
+    urlbase: 'https://dweb.me',
+    heartbeat: { delay: 30000 } // By default check twice a minute
 };
 
 servercommands = {  // What the server wants to see to return each of these
@@ -25,6 +26,16 @@ servercommands = {  // What the server wants to see to return each of these
 
 
 class TransportHTTP extends Transport {
+  /* Subclass of Transport for handling HTTP - see API.md for docs
+
+    options {
+        urlbase:    e.g. https://dweb.me    Where to go for URLS like /arc/...
+        heartbeat: {
+            delay       // Time in milliseconds between checks - 30000 might be appropriate - if missing it wont do a heartbeat
+            statusCB    // Callback  cb(transport) when status changes
+        }
+    }
+   */
 
     constructor(options) {
         super(options); // These are now options.http
@@ -54,26 +65,57 @@ class TransportHTTP extends Transport {
             throw err;
         }
     }
-    async p_setup1(cb) {
-        this.status = Transport.STATUS_STARTING;
-        if (cb) cb(this);
-        await this.p_status();
-        if (cb) cb(this);
-        return this;
+
+    p_setup1(statusCB) {
+        return new Promise((resolve, unusedReject) => {
+            this.status = Transport.STATUS_STARTING;
+            if (statusCB) statusCB(this);
+            this.updateStatus((unusedErr, unusedRes) => {
+                if (statusCB) statusCB(this);
+                this.startHeartbeat(this.options.heartbeat);
+                resolve(this);  // Note always resolve even if error from p_status as have set status to failed
+            });
+        })
     }
 
-    async p_status() {
+    async p_status(cb) { //TODO-API
         /*
-        Return a numeric code for the status of a transport.
+        Return (via cb or promise) a numeric code for the status of a transport.
          */
-        try {
-            this.info = await this.p_info();
-            this.status = Transport.STATUS_CONNECTED;
-        } catch(err) {
-            console.error(this.name, ": Error in p_status.info",err.message);
-            this.status = Transport.STATUS_FAILED;
+        if (cb) { try { this.updateStatus(cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { this.updateStatus((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2f
+    }
+    updateStatus(cb) { //TODO-API
+        this.updateInfo((err, res) => {
+            if (err) {
+                debug("Error status call to info failed %s", err.message);
+                this.status = Transport.STATUS_FAILED;
+                cb(null, this.status); // DOnt pass error up,  the status indicates the error
+            } else {
+                this.info = res;    // Save result
+                this.status = Transport.STATUS_CONNECTED;
+                cb(null, this.status);
+            }
+        });
+    }
+
+    startHeartbeat({delay=undefined, statusCB=undefined}) {
+        if (delay) {
+            this.heartbeatTimer = setInterval(() => {
+                this.updateStatus((err, res)=>{ // Pings server and sets status
+                    if (statusCB) statusCB(this); // repeatedly call callback if supplies
+                }, (unusedErr, unusedRes)=>{}); // Dont wait for status to complete
+            }, delay);
         }
-        return super.p_status();
+    }
+    stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.hearbeatTimer);}
+    }
+    stop(refreshstatus, cb) {
+        this.stopHeartbeat();
+        this.status = Transport.STATUS_FAILED;
+        if (refreshstatus) { refreshstatus(this); }
+        cb(null, this);
     }
 
     _cmdurl(command) {
@@ -180,7 +222,7 @@ class TransportHTTP extends Transport {
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
         //Logged by Transports
-        //debughttp("p_f_createreadstream %s", Url.parse(url).href);
+        //debug("p_f_createreadstream %s", Url.parse(url).href);
         try {
             let self = this;
             if (wanturl) {
@@ -206,7 +248,7 @@ class TransportHTTP extends Transport {
          */
         // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
         // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
-        debughttp("createreadstream %s %o", Url.parse(url).href, opts);
+        debug("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();
         httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts))
@@ -233,7 +275,7 @@ class TransportHTTP extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :resolves to stream: The readable stream.
          */
-        debughttp("createreadstream %s %o", Url.parse(url).href, opts);
+        debug("createreadstream %s %o", Url.parse(url).href, opts);
         try {
             return await httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
         } catch(err) {
@@ -270,7 +312,7 @@ class TransportHTTP extends Transport {
     async p_set(url, keyvalues, value) {  // url = yjs:/yjs/database/table/key
         if (!url || !keyvalues) throw new errors.CodingError("TransportHTTP.p_set: invalid parms", url, keyvalyes);
         // Logged by Transports
-        //debughttp("p_set %o %o %o", url, keyvalues, value);
+        //debug("p_set %o %o %o", url, keyvalues, value);
         if (typeof keyvalues === "string") {
             let data = stringify([{key: keyvalues, value: value}]);
             await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
@@ -309,11 +351,20 @@ class TransportHTTP extends Transport {
         return {
             table: "keyvaluetable",
             _map: await this.p_getall(url)
-        };   // Data struc is ok as SmartDict.p_fetch will pass to KVT constructor
+        };   // Data structure is ok as SmartDict.p_fetch will pass to KVT constructor
     }
     */
 
-    p_info() { return httptools.p_GET(`${this.urlbase}/info`, {retries: 5}); } // Try info, but dont wait more than approx 10secs
+    async p_info() { //TODO-API
+        /*
+        Return (via cb or promise) a numeric code for the status of a transport.
+         */
+        return new Promise((resolve, reject) => { try { this.updateInfo((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}}) // Promisify pattern v2b (no CB)
+    }
+
+    updateInfo(cb) {
+        httptools.p_GET(`${this.urlbase}/info`, {retries: 1}, cb);   // Try info, but dont retry (usually heartbeat will reconnect)
+    }
 
     static async p_test(opts={}) {
         {console.log("TransportHTTP.test")}

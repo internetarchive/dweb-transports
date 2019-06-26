@@ -54,15 +54,11 @@ class Transport {
         return t.p_setup2(cb);     // And connect
     }
     /* Disconnect from the transport service - there is no guarrantee that a restart will be successfull so this is usually only for when exiting */
-    p_stop(refreshstatus) {
+    stop(refreshstatus, cb) {
         // refreshstatus(Transport instance) => optional callback to the UI to update the status on the display
-        return new Promise((resolve, reject) => {
-            this.status = Transport.STATUS_FAILED;
-            if (refreshstatus) refreshstatus(this);
-            //if (err) { reject(err) } else {
-            resolve();
-            //}
-        });
+        this.status = Transport.STATUS_FAILED;
+        if (refreshstatus) refreshstatus(this);
+        cb(null, this);
     }
     togglePaused(cb) {
         /*

@@ -109,10 +109,11 @@ Code|Name|Means
 3|STATUS_LOADED|Code loaded but havent tried to connect
 4|STATUS_PAUSED|It was launched, probably connected, but now paused so will be ignored by validfor()
 
-##### async p_stop(refreshstatus)
-Stop the transport, 
+##### async stop(refreshstatus, cb)
+Stop the transport,
 ```
 refreshstatus (optional)    callback(transport instance) to the UI to update status on display
+cb(err, this)
 ```
 ### Transport: General storage and retrieval of objects
 ##### p_rawstore(data)
@@ -286,8 +287,8 @@ throw     TransportError if invalid URL
 ##### validFor(url, func, opts)
 True if the url and/or function is supported and the Transport is connected appropriately.
 
-##### p_info()
-Return a JSON with info about the server. 
+##### p_info() and info(cb)
+Return a JSON with info about the server via promise or callback
 
 ## Transports class
 The Transports Class manages multiple transports 

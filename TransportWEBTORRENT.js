@@ -83,20 +83,17 @@ class TransportWEBTORRENT extends Transport {
         return this;
     }
 
-    p_stop(refreshstatus) {
-        return new Promise((resolve, reject) => {
-            this.webtorrent.destroy((err) => {
-                this.status = Transport.STATUS_FAILED;
-                if (refreshstatus) refreshstatus(this);
-                if (err) {
-                    debug("Webtorrent error during stopping %o", err);
-                    reject(err);
-                } else {
-                    debug("Webtorrent stopped");
-                    resolve();
-                }
-            });
-        })
+    stop(refreshstatus, cb) {
+        this.webtorrent.destroy((err) => {
+            this.status = Transport.STATUS_FAILED;
+            if (refreshstatus) refreshstatus(this);
+            if (err) {
+                debug("Webtorrent error during stopping %o", err);
+            } else {
+                debug("Webtorrent stopped");
+            }
+            cb(err, this);
+        });
     }
 
     async p_status() {

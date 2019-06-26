@@ -4,6 +4,7 @@ const utils = require('./utils');
 const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
+const map = require('async/map');
 
 class Transports {
     /*
@@ -41,7 +42,7 @@ class Transports {
         /*
         resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
          */
-        const res = this._transports.map((t) => { return {"name": t.name, "status": t.status}})
+        const res = Transports._transports.map((t) => { return {"name": t.name, "status": t.status}})
         if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
     }
     static validFor(urls, func, opts) { //TODO-RELOAD check for noCache support
@@ -673,15 +674,18 @@ class Transports {
             }));
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
-    static p_stop(refreshstatus, cb) {
+    static p_stop(refreshstatus, cb) { //TODO-API cb
+        if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
         /* Disconnect from all services, may not be able to reconnect */
-
-        const prom = Promise.all(this._connected()
-            .map((t) => {
-                debug("Stopping %s", t.name);
-                return t.p_stop(refreshstatus);
-            }));
-        if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
+        //TODO rewrite with async/map
+        function f(cb) {
+            map(this._connected(),
+              (t, cb2) => {
+                  debug("Stopping %s", t.name);
+                  t.stop(refreshstatus, cb2);
+              },
+              cb);
+        }
     }
 
     static async refreshstatus(t) {
