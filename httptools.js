@@ -30,7 +30,7 @@ function queueSetup({concurrency}) {
             fetch(task.req)
               .then(res => {
                   debug("Fetch of %s succeded", task.what);
-                  httpTaskQueue.concurrency++;
+                  httpTaskQueue.concurrency = Math.min(httpTaskQueue.concurrency+1, httpTaskQueue.running()+6);
                   debug("Raising concurrency to %s", httpTaskQueue.concurrency);
                   cb(null);
                   task.cb(null, res);
