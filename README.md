@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.56: tweak http queue; changes to stop, status, info to support heartbeat on HTTP
 * 0.1.55: tweaking queue concurrency
 * 0.1.54: queue for http; disable fallback from IPFS to http://ipfs.io
 * 0.1.53: Reenable Wolk as fixed
