@@ -29,9 +29,9 @@ function queueSetup({concurrency}) {
         if (task.loopguard === ((typeof window != "undefined") && window.loopguard)) {
             fetch(task.req)
               .then(res => {
-                  debug("Fetch of %s succeded", task.what);
+                  debug("Fetch of %s succeeded", task.what);
                   httpTaskQueue.concurrency = Math.min(httpTaskQueue.concurrency+1, httpTaskQueue.running()+6);
-                  debug("Raising concurrency to %s", httpTaskQueue.concurrency);
+                  //debug("Raising concurrency to %s", httpTaskQueue.concurrency);
                   cb(null);
                   task.cb(null, res);
               })
@@ -39,7 +39,7 @@ function queueSetup({concurrency}) {
                   // Adjust concurrency, dont go below running number (which is running-1 because this failed task counts)
                   // and we know browser doesnt complain below 6
                   httpTaskQueue.concurrency = Math.max(httpTaskQueue.concurrency-1, 6, httpTaskQueue.running()-1);
-                  debug("Dropping concurrency to %s", httpTaskQueue.concurrency);
+                  //debug("Dropping concurrency to %s", httpTaskQueue.concurrency);
                   cb(err);
                   if (--task.count > 0) {
                       debug("Retrying fetch of %s in %s ms: %s", task.what, task.ms, err.message);

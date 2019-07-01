@@ -100,7 +100,8 @@ class TransportHTTP extends Transport {
 
     startHeartbeat({delay=undefined, statusCB=undefined}) {
         if (delay) {
-            this.heartbeatTimer = setInterval(() => {
+            debug("HTTP Starting Heartbeat")
+            this.HTTPheartbeatTimer = setInterval(() => {
                 this.updateStatus((err, res)=>{ // Pings server and sets status
                     if (statusCB) statusCB(this); // repeatedly call callback if supplies
                 }, (unusedErr, unusedRes)=>{}); // Dont wait for status to complete
@@ -108,8 +109,9 @@ class TransportHTTP extends Transport {
         }
     }
     stopHeartbeat() {
-        if (this.heartbeatTimer) {
-            clearInterval(this.hearbeatTimer);}
+        if (this.HTTPheartbeatTimer) {
+            debug("HTTP stopping heartbeat");
+            clearInterval(this.HTTPheartbeatTimer);}
     }
     stop(refreshstatus, cb) {
         this.stopHeartbeat();
