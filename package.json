@@ -14,7 +14,7 @@
     "canonical-json": "^0.0.4",
     "cids": "^0.5.7",
     "debug": "^4.1.1",
-    "gun": "^0.2019.515",
+    "gun": "^0.2019.627",
     "ipfs": "^0.34.4",
     "ipfs-http-client": "^29.1.1",
     "ipfs-unixfs": "^0.1.16",

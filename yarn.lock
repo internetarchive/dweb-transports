@@ -2850,10 +2850,10 @@ graceful-fs@^4.1.11, graceful-fs@^4.1.15, graceful-fs@^4.1.2:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.15.tgz#ffb703e1066e8a0eeaa4c8b80ba9253eeefbfb00"
   integrity sha512-6uHUhOPEBgQ24HM+r6b/QwWfZq+yiFcipKFrOFiBEnWdy5sdzYoi+pJeQaPI5qOLRFqWmAXUPQNsielzdLoecA==
 
-gun@^0.2019.515:
-  version "0.2019.612"
-  resolved "https://registry.yarnpkg.com/gun/-/gun-0.2019.612.tgz#1159e63568abe00d3924d0b1f52fa55403234abd"
-  integrity sha512-Tc/iAGVcZmPNNVefwtw18sfFKz4rearWHA1M/jOmRl5F2c/KNyhLj1Xyfznowy68T53ctuZgHnYRXTs/arM9MQ==
+gun@^0.2019.627:
+  version "0.2019.627"
+  resolved "https://registry.yarnpkg.com/gun/-/gun-0.2019.627.tgz#6bf00a86eb084661cf2bf500f3123185ef3ea459"
+  integrity sha512-PiZPUO5PBTrmbPHvxtPHPtkiqvcbkvyGzETu+57hig/YqC6yR+Ownx2wXOntNXff9al/FnvSMFQL7fYp3GHoow==
   dependencies:
     ws "~>7.0.0"
   optionalDependencies:
