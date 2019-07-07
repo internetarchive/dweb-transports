@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.58: Upgrade GUN and IPFS to v0.35.0 (0.36 breaks webpack as currently configured)
 * 0.1.57: Fix heartbeat timer stopping
 * 0.1.56: tweak http queue; changes to stop, status, info to support heartbeat on HTTP
 * 0.1.55: tweaking queue concurrency
