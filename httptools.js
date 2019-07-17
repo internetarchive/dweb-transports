@@ -29,7 +29,7 @@ function queueSetup({concurrency}) {
         if (task.loopguard === ((typeof window != "undefined") && window.loopguard)) {
             fetch(task.req)
               .then(res => {
-                  debug("Fetch of %s succeeded", task.what);
+                  debug("Fetch of %s completed", task.what);
                   httpTaskQueue.concurrency = Math.min(httpTaskQueue.concurrency+1, httpTaskQueue.running()+6);
                   //debug("Raising concurrency to %s", httpTaskQueue.concurrency);
                   cb(null);
@@ -122,7 +122,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries
         // Using window.fetch, because it doesn't appear to be in scope otherwise in the browser.
         let req = new Request(httpurl, init);
         //let response = await fetch(req);
-        let response = await queuedFetch(req, 500, retries, "fetching "+httpurl);
+        let response = await queuedFetch(req, 500, retries, httpurl);
         // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
         // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
         if (response.ok) {
@@ -175,8 +175,6 @@ httptools.p_GET = function(httpurl, opts={}, cb) {
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
     const prom = httptools.p_httpfetch(httpurl, init, {retries, wantstream: opts.wantstream}); // This s a real http url
-    //if (cb) { prom.then((res)=>cb(null,res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
-    //if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)).catch((err) => debug("Uncaught error %O",err)); } else { return prom; } // Unpromisify pattern v4
     if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("Uncaught error %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
 }
 httptools.p_POST = function(httpurl, opts={}, cb) {

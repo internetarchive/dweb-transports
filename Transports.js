@@ -17,6 +17,8 @@ class Transports {
     _optionspaused       Saves paused option for setup
     */
 
+    //TODO a few of these things could be much better as events that are listened for, especially p_statuses
+
     constructor(options) {
         // THIS IS UNUSED - ALL METHODS ARE STATIC, THERE IS NO Transports INSTANCE
     }
@@ -38,12 +40,20 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
+    static statuses({connected=undefined}) { //TODO-API
+      /*
+      Return array of statuses,
+      connected:  If true then only connected transports
+       */
+      const ss = Transports._transports.map((t) => { return {"name": t.name, "status": t.status}});
+      return connected ? ss.filter(s => !s.status) : ss;
+    }
     static p_statuses(cb) {
-        /*
-        resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
-         */
-        const res = Transports._transports.map((t) => { return {"name": t.name, "status": t.status}})
-        if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
+      /*
+      resolves to: a dictionary of statuses of transports, e.g. { TransportHTTP: STATUS_CONNECTED }
+       */
+      const res = this.statuses({connected: false}); // No errors possible
+      if (cb) { cb(null, res)} else { return new Promise((resolve, reject) => resolve(res))}
     }
     static validFor(urls, func, opts) { //TODO-RELOAD check for noCache support
         /*
