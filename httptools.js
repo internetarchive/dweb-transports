@@ -38,15 +38,15 @@ function queueSetup({concurrency}) {
                   debug("Fetch of %s completed", task.what);
                   httpTaskQueue.concurrency = Math.min(httpTaskQueue.concurrency+1, httpTaskQueue.running()+6);
                   //debug("Raising concurrency to %s", httpTaskQueue.concurrency);
-                  cb(null);
-                  task.cb(null, res);
+                  cb(null); // This is telling the queue that we are done
+                  task.cb(null, res); // This is the caller of the task
               })
               .catch(err => {
                   // Adjust concurrency, dont go below running number (which is running-1 because this failed task counts)
                   // and we know browser doesnt complain below 6
                   httpTaskQueue.concurrency = Math.max(httpTaskQueue.concurrency-1, 6, httpTaskQueue.running()-1);
                   //debug("Dropping concurrency to %s", httpTaskQueue.concurrency);
-                  cb(err);
+                  cb(err); // Tell queue done with an error
                   if (--task.count > 0) {
                       debug("Retrying fetch of %s in %s ms: %s", task.what, task.ms, err.message);
                       httpTaskQueue.push(task);
@@ -61,7 +61,10 @@ function queueSetup({concurrency}) {
                   }
               });
         } else {
+            err = new Error(`Dropping fetch of ${task.what} as window changed from ${task.loopguard} to ${window.loopguard}`)
             debug("Dropping fetch of %s as window changed from %s to %s", task.what, task.loopguard, window.loopguard);
+            task.cb(err); // Tell caller it failed
+            cb(err); // Tell queue it failed
         }
     }, concurrency)
 }

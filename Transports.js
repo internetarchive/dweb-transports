@@ -40,12 +40,12 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
-    static statuses({connected=undefined}) { //TODO-API
+    static statuses({connected=undefined}) { //TODO-API (especially add info:)
       /*
       Return array of statuses,
       connected:  If true then only connected transports
        */
-      const ss = Transports._transports.map((t) => { return {"name": t.name, "status": t.status}});
+      const ss = Transports._transports.map((t) => { return {name: t.name, status: t.status, info: t.info}});
       return connected ? ss.filter(s => !s.status) : ss;
     }
     static p_statuses(cb) {
