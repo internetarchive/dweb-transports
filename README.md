@@ -126,6 +126,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.1.62: Upgrade dependencies
 * 0.1.61: loopguard to return correct error from queuedFetch; add info to statuses 
 * 0.1.60: Back on master release of webtorrent
 * 0.1.59: Add DwebTransports.statuses synchronous API

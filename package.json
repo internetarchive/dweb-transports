@@ -12,16 +12,16 @@
   },
   "dependencies": {
     "canonical-json": "^0.0.4",
-    "cids": "^0.5.7",
+    "cids": "^0.7.1",
     "debug": "^4.1.1",
-    "gun": "^0.2019.627",
-    "ipfs": "0.35.0",
-    "ipfs-http-client": "^29.1.1",
+    "gun": "^0.2019.726",
+    "ipfs": "^0.37.0",
+    "ipfs-http-client": "^33.1.1",
     "ipfs-unixfs": "^0.1.16",
     "node-fetch": "^2.3.0",
     "readable-stream": "^3.3.0",
     "webpack": "^4.29.3",
-    "webtorrent": "^0.105.1",
+    "webtorrent": "^0.107.3",
     "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",
@@ -53,5 +53,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.61"
+  "version": "0.1.62"
 }
