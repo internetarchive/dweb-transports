@@ -18,6 +18,8 @@ class Transport {
         */
     }
 
+    //TODO-SPLIT define load()
+
     static setup0(options) {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.

@@ -41,7 +41,9 @@ class TransportWOLK extends Transport {
       return wolknode
     }
 
-    //stuff that happens b/f using ntwk bandwidth (config/connect/stuff)
+  //TODO-SPLIT define load()
+
+  //stuff that happens b/f using ntwk bandwidth (config/connect/stuff)
     static setup0(options) {
       let combinedoptions = Transport.mergeoptions(defaultoptions, options.wolk);
       debug("setup options=%o", combinedoptions);

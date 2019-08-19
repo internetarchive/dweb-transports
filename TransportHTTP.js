@@ -55,6 +55,8 @@ class TransportHTTP extends Transport {
         this.status = Transport.STATUS_LOADED;
     }
 
+    //TODO-SPLIT define load()
+
     static setup0(options) {
         let combinedoptions = Transport.mergeoptions(defaulthttpoptions, options.http);
         try {

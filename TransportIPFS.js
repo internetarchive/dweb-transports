@@ -9,13 +9,15 @@ const httptools = require('./httptools'); // Expose some of the httptools so tha
 const debug = require('debug')('dweb-transports:ipfs');
 
 // IPFS components
-const IPFS = require('ipfs');
+//TODO-SPLIT remove this import depend on archive.html or node to pre-load
+let IPFS; //TODO-SPLIT move this line lower when fix structure
+//IPFS = require('ipfs');
+//TODO-SPLIT remove this import depend on archive.html or node to pre-load
 const ipfsAPI = require('ipfs-http-client');
-const CID = require('cids');
-//Removed next two as not needed if use "Kludge" flagged below.
-//const dagPB = require('ipld-dag-pb');
-//const DAGNode = dagPB.DAGNode; // So can check its type
-const unixFs = require('ipfs-unixfs');
+//TODO-SPLIT looks like can get this from Ipfs.CID
+//const CID = require('cids');
+//TODO-SPLIT unclear why need unixfs - only appears to be used in test_ipfs.js
+//const unixFs = require('ipfs-unixfs');
 
 // Library packages other than IPFS
 const Url = require('url');
@@ -89,10 +91,17 @@ class TransportIPFS extends Transport {
         });
     }
     IPFSAutoConnect(cb) {
+        if (global.Ipfs) {
+            IPFS = global.Ipfs; //Loaded by <script etc but still need a create
+        } else if (window.Ipfs) {
+            IPFS = window.Ipfs; //Loaded by <script etc but still need a create
+        }
+        //TODO-SPLIT I think next few lines are wrong, dont think I've seen global.ipfs or window.ipfs but
+        //TODO-SPLIT https://github.com/ipfs/js-ipfs implies global.Ipfs but needs a "create" or "new"
         if (global.ipfs) {
             this._ipfsversion(global.ipfs, "global.ipfs", cb );
         } else if (typeof window !== "undefined" && window.ipfs) {
-            this._ipfsversion(window.ipfs, "window.ipfs", cb );
+            this._ipfsversion(window.ipfs, "window.ipfs", cb);
         } else {
             // noinspection ES6ConvertVarToLetConst
             var ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'}); // leaving out the arguments will default to these values
@@ -138,6 +147,8 @@ class TransportIPFS extends Transport {
             });
     }
     */
+
+    //TODO-SPLIT define load()
 
     static setup0(options) {
         /*
@@ -212,7 +223,7 @@ class TransportIPFS extends Transport {
         /*
         Convert a CID into a standardised URL e.g. ipfs:/ipfs/abc123
          */
-        if (unknown instanceof CID)
+        if (unknown instanceof IPFS.CID) //TODO-SPLIT - I think there is a way to get this from a types array
             return "ipfs:/ipfs/"+unknown.toBaseEncodedString();
         if (typeof unknown === "object" && unknown.hash) // e.g. from files.add
             return "ipfs:/ipfs/"+unknown.hash;
@@ -228,7 +239,7 @@ class TransportIPFS extends Transport {
         returns: CID
         throws:  TransportError if cant convert
          */
-        if (url instanceof CID) return url;
+        if (url instanceof IPFS.CID) return url;
         if (typeof(url) === "string") url = Url.parse(url);
         if (url && url["pathname"]) { // On browser "instanceof Url" isn't valid)
             const patharr = url.pathname.split('/');
@@ -236,7 +247,7 @@ class TransportIPFS extends Transport {
                 throw new errors.TransportError("TransportIPFS.cidFrom bad format for url should be dweb: or ipfs:/ipfs/...: " + url.href);
             if (patharr.length > 3)
                 throw new errors.TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be dweb: or ipfs:/ipfs/...: " + url.href);
-            return new CID(patharr[2]);
+            return new IPFS.CID(patharr[2]);
         } else {
             throw new errors.CodingError("TransportIPFS.cidFrom: Cant convert url", url);
         }
@@ -244,7 +255,7 @@ class TransportIPFS extends Transport {
 
     static _stringFrom(url) {
         // Tool for ipfsFrom and ipfsGatewayFrom
-        if (url instanceof CID)
+        if (url instanceof IPFS.CID)
             return "/ipfs/"+url.toBaseEncodedString();
         if (typeof url === 'object' && url.path) { // It better be URL which unfortunately is hard to test
             return url.path;
@@ -275,7 +286,7 @@ class TransportIPFS extends Transport {
     }
 
     static multihashFrom(url) {
-        if (url instanceof CID)
+        if (url instanceof IPFS.CID)
             return url.toBaseEncodedString();
         if (typeof url === 'object' && url.path)
             url = url.path;     // /ipfs/Q...

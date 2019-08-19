@@ -96,6 +96,8 @@ class TransportGUN extends Transport {
         return this.gun.path(patharray);           // Not sure how this could become undefined as it will return g before the path is walked, but if do a lookup on this "g" then should get undefined
     }
 
+    //TODO-SPLIT define load()
+
     static setup0(options) {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.

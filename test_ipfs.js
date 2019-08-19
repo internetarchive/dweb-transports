@@ -2,7 +2,6 @@ const IPFS = require('ipfs');
 
 const canonicaljson = require('@stratumn/canonicaljson');
 var ipfs;
-const CID = require('cids');
 const unixFs = require('ipfs-unixfs');
 const multihashes = require('multihashes');
 let tryexpectedfailures = true; // Set to false if want to check the things we expect to fail.
@@ -31,7 +30,7 @@ function ipfsFrom(url) {
     Convert to a ipfspath i.e. /ipfs/Qm....
     Required because of strange differences in APIs between files.cat and dag.get  see https://github.com/ipfs/js-ipfs/issues/1229
      */
-    if (url instanceof CID)
+    if (url instanceof ipfs.CID)
         return "/ipfs/"+url.toBaseEncodedString();
     if (typeof(url) !== "string") { // It better be URL which unfortunately is hard to test
         url = url.path;
@@ -42,7 +41,7 @@ function ipfsFrom(url) {
     throw new errors.CodingError(`ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
 }
 function multihashFrom(url) {
-    if (url instanceof CID)
+    if (url instanceof ipfs.CID)
         return url.toBaseEncodedString();
     if (typeof url === 'object' && url.path)
         url = url.path;     // /ipfs/Q...

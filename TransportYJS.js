@@ -96,7 +96,7 @@ class TransportYJS extends Transport {
         return this.p__y(url, { share: {map: "Map"}}); // Copies options, ipfs will be set already
     }
 
-
+    //TODO-SPLIT define load()
 
     static setup0(options) {
         /*

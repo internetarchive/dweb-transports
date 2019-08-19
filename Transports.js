@@ -651,6 +651,7 @@ class Transports {
         // "IPFS" or "IPFS,LOCAL,HTTP"
         let localoptions = {http: {urlbase: "http://localhost:4244"}}; //TODO-MIRROR "localoptions" may not be needed any more
         return tabbrevs.map((tabbrev) => {
+            //TODO-SPLIT-UPNEXT remove LOCAL - not used any more
             let transportclass = this._transportclasses[ (tabbrev === "LOCAL") ? "HTTP" : tabbrev ];
             if (!transportclass) {
                 debug("Connection to %s unavailable", tabbrev);
@@ -731,8 +732,9 @@ class Transports {
             //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
             if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
             tabbrevs = tabbrevs.map(n => n.toUpperCase());
-            let transports = this.setup0(tabbrevs, options);
+            let transports = this.setup0(tabbrevs, options); // synchronous
             ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
+            //TODO move this to function and then call this from consumer
             if (!!options.statuselement) {
                 let statuselement = options.statuselement;
                 while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
@@ -746,6 +748,7 @@ class Transports {
                     }))
                 );
             }
+            //TODO-SPLIT-UPNEXT invert this, use a waterfall here, and then wrap in promise for p_setup, then put load's here
             await this.p_setup1(this.refreshstatus);
             await this.p_setup2(this.refreshstatus);
             debug("Connection completed to %o", this._connected().map(t=>t.name))
