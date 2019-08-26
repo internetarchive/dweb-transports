@@ -1,5 +1,4 @@
 const Url = require('url');
-const stream = require('readable-stream');
 const errors = require('./Errors'); // Standard Dweb Errors
 
 function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
