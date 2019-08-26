@@ -11,7 +11,7 @@
     "url": "https://github.com/internetarchive/dweb-transports/issues"
   },
   "dependencies": {
-    "canonical-json": "^0.0.4",
+    "@stratumn/canonicaljson": "^1.0.3",
     "cids": "^0.7.1",
     "debug": "^4.1.1",
     "gun": "^0.2019.726",

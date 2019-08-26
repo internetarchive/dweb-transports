@@ -1,6 +1,6 @@
 const IPFS = require('ipfs');
 
-const stringify = require('canonical-json');
+const canonicaljson = require('@stratumn/canonicaljson');
 var ipfs;
 const CID = require('cids');
 const unixFs = require('ipfs-unixfs');
@@ -81,7 +81,7 @@ function check_result(name, buff, expected, expectfailure) {
     if ( (typeof(expected) === "number") && (expected !== buff.length)) {
         console.log(name, "Expected block length", expected, "but got", buff.length, expectfailure ? "Note this was expected to fail." : "");
         //console.log(buff); // Normally leave commented out - will be long if looking at 250k file !
-    } else if ((typeof(expected) !== "number") && (stringify(expected) !== stringify(buff))) {
+    } else if ((typeof(expected) !== "number") && (canonicaljson.stringify(expected) !== canonicaljson.stringify(buff))) {
         console.log(name, "Expected:", expected.constructor.name, expected, "got", buff.constructor.name, buff, expectfailure ? "Note this was expected to fail." : "");
     } else {
         console.log(name, "Retrieved successfully");

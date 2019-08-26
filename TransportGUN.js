@@ -24,8 +24,7 @@ require('gun/lib/store.js');
 require('gun/lib/rindexed.js');
 
 const debuggun = require('debug')('dweb-transports:gun');
-const stringify = require('canonical-json');
-
+const canonicaljson = require('@stratumn/canonicaljson');
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -225,7 +224,7 @@ class TransportGUN extends Transport {
         // Logged by Transports
         console.assert(url && sig.urls.length && sig.signature && sig.signedby.length, "TransportGUN.p_rawadd args", url, sig);
         this.connection(url)
-        .set( stringify( sig.preflight( Object.assign({}, sig))));
+        .set( canonicaljson.stringify( sig.preflight( Object.assign({}, sig))));
     }
 
     // noinspection JSCheckFunctionSignatures
@@ -278,13 +277,13 @@ class TransportGUN extends Transport {
          */
         let table = this.connection(url);
         if (typeof keyvalues === "string") {
-            table.path(keyvalues).put(stringify(value));
+            table.path(keyvalues).put(canonicaljson.stringify(value));
         } else {
             // Store all key-value pairs without destroying any other key/value pairs previously set
             console.assert(!Array.isArray(keyvalues), "TransportGUN - shouldnt be passsing an array as the keyvalues");
             table.put(
                 Object.keys(keyvalues).reduce(
-                    function(previous, key) { previous[key] = stringify(keyvalues[key]); return previous; },
+                    function(previous, key) { previous[key] = canonicaljson.stringify(keyvalues[key]); return previous; },
                     {}
             ))
         }

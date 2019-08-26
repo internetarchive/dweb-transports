@@ -5,7 +5,7 @@ Y Lists have listeners and generate events - see docs at ...
 */
 const Url = require('url');
 const debugyjs = require('debug')('dweb-transports:yjs');
-const stringify = require('canonical-json');
+const canonicaljson = require('@stratumn/canonicaljson');
 
 //const Y = require('yjs/dist/y.js'); // Explicity require of dist/y.js to get around a webpack warning but causes different error in YJS
 const Y = require('yjs'); // Explicity require of dist/y.js to get around a webpack warning
@@ -262,7 +262,7 @@ class TransportYJS extends Transport {
          */
         let y = await this.p_connection(url);
         if (typeof keyvalues === "string") {
-            y.share.map.set(keyvalues, stringify(value));
+            y.share.map.set(keyvalues, canonicaljson.stringify(value));
         } else {
             Object.keys(keyvalues).map((key) => y.share.map.set(key, keyvalues[key]));
         }

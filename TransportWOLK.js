@@ -8,7 +8,7 @@ if( typeof window === 'undefined' ) {
 } else {
   WOLK = require("wolkjs").WOLK;
 }
-const stringify = require('canonical-json');
+const canonicaljson = require('@stratumn/canonicaljson');
 const debug = require('debug')('dweb-transports:wolk');
 
 // Other Dweb modules
@@ -141,7 +141,7 @@ class TransportWOLK extends Transport {
         //TODO: use this.wolk.parseWolkUrl eventually
         var wolkurl = this.parseWolkUrl(url)
 /*
-        console.log("WOLK p_rawfetch url: " + JSON.stringify(wolkurl));
+        console.log("WOLK p_rawfetch url: " + canonicaljson.stringify(wolkurl));
         console.log("WOLK owner: " + wolkurl.owner);
         console.log("WOLK bucket: " + wolkurl.bucket);
         console.log("WOLK key: " + wolkurl.path);
@@ -155,7 +155,7 @@ class TransportWOLK extends Transport {
           return this.wolk.getKey(wolkurl.owner, wolkurl.bucket, wolkurl.path, "latest")
             .then(function(responseData) {
               //TODO-WOLK: error checking
-              //debug("Response: %s", JSON.stringify(responseData)); //Commented as could be big
+              //debug("Response: %s", canonicaljson.stringify(responseData)); //Commented as could be big
               return responseData;
             })
             .catch( (err) => {
@@ -180,7 +180,7 @@ class TransportWOLK extends Transport {
       */
       var wolkurl = this.parseWolkUrl(url)
 /*
-      console.log("WOLK p_set url: " + JSON.stringify(wolkurl));
+      console.log("WOLK p_set url: " + canonoicaljson.stringify(wolkurl));
       console.log("WOLK owner: " + wolkurl.owner);
       console.log("WOLK bucket: " + wolkurl.bucket);
       console.log("WOLK key: " + wolkurl.path);
@@ -188,7 +188,7 @@ class TransportWOLK extends Transport {
       console.log("WOLK urltype: " + wolkurl.urltype);
 */
       if (typeof keyvalues === "string") {
-        return this.wolk.setKey(wolkurl.owner, wolkurl.bucket, keyvalues, stringify(value))
+        return this.wolk.setKey(wolkurl.owner, wolkurl.bucket, keyvalues, canonicaljson.stringify(value))
           .then( (hash) => {
             return hash;
           })
@@ -204,7 +204,7 @@ class TransportWOLK extends Transport {
         table.put(
             Object.keys(keyvalues).reduce(
               function(previous, key) {
-                previous[key] = stringify(keyvalues[key]);
+                previous[key] = canonicaljson.stringify(keyvalues[key]);
                 return previous;
               },
               {}
@@ -217,7 +217,7 @@ class TransportWOLK extends Transport {
     async p_get(url, keys) {
       var wolkurl = this.parseWolkUrl(url)
 
-      debug("Getting url: %s", JSON.stringify(wolkurl));
+      debug("Getting url: %s", canonicaljson.stringify(wolkurl));
 /*
       console.log("WOLK owner: " + wolkurl.owner);
       console.log("WOLK bucket: " + wolkurl.bucket);

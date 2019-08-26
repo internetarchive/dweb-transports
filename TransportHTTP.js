@@ -4,7 +4,8 @@ const httptools = require('./httptools'); // Expose some of the httptools so tha
 const Url = require('url');
 const stream = require('readable-stream');
 const debug = require('debug')('dweb-transports:http');
-const stringify = require('canonical-json');
+const canonicaljson = require('@stratumn/canonicaljson');
+
 
 
 defaulthttpoptions = {
@@ -184,7 +185,7 @@ class TransportHTTP extends Transport {
     p_rawadd(url, sig) {
         // Logged by Transports
         if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms", url, sig);
-        const data = stringify(sig.preflight(Object.assign({},sig)))+"\n";
+        const data = canonicaljson.stringify(sig.preflight(Object.assign({},sig)))+"\n";
         return httptools.p_POST(this._url(url, servercommands.rawadd), {data, contenttype: "application/json"}); // Returns immediately
     }
 
@@ -316,10 +317,10 @@ class TransportHTTP extends Transport {
         // Logged by Transports
         //debug("p_set %o %o %o", url, keyvalues, value);
         if (typeof keyvalues === "string") {
-            let data = stringify([{key: keyvalues, value: value}]);
+            let data = canonicaljson.stringify([{key: keyvalues, value: value}]);
             await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
         } else {
-            let data = stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
+            let data = canonicaljson.stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
             await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
         }
     }

@@ -289,6 +289,13 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"
   integrity sha512-9NET910DNaIPngYnLLPeg+Ogzqsi9uM4mSboU5y6p8S5DzMTVEsJZrawi+BoDNUVBa2DhJqQYUFvMDfgU062LQ==
 
+"@stratumn/canonicaljson@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@stratumn/canonicaljson/-/canonicaljson-1.0.3.tgz#4130525b7a264eeefabb5eadbe9e4d616c2f1ca7"
+  integrity sha512-OTP6z1+aJuKw9M3WKWLVf0yxjfzkCq3Uw2iMhwjQ02s5SSgTRxUqPtX1gJXj1RhSZiABLd9uI0Rj02N4gCNvpA==
+  dependencies:
+    bignumber.js "^8.1.1"
+
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@szmarczak/http-timer/-/http-timer-1.1.2.tgz#b1665e2c461a2cd92f4c1bbf50d5454de0d4b421"
@@ -1633,11 +1640,6 @@ camelcase@^5.0.0, camelcase@^5.3.1:
   version "5.3.1"
   resolved "https://registry.yarnpkg.com/camelcase/-/camelcase-5.3.1.tgz#e3c9b31569e106811df242f715725a1f4c494320"
   integrity sha512-L28STB170nwWS63UjtlEOE3dldQApaJXZkOI1uMFfzf3rRuPegHaHesyee+YxQ+W6SvRDQV6UrdOdRiR153wJg==
-
-canonical-json@^0.0.4:
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/canonical-json/-/canonical-json-0.0.4.tgz#6579c072c3db5c477ec41dc978fbf2b8f41074a3"
-  integrity sha1-ZXnAcsPbXEd+xB3JePvyuPQQdKM=
 
 caseless@~0.12.0:
   version "0.12.0"
