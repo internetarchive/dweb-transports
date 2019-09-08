@@ -83,7 +83,8 @@ Error feedback is a little fuzzy.
 There are issues with IPFS swarms that we haven’t been able to figure out about how to ensure that “put”ting to IPFS creates an object that can be read at all other browsers, and persists. See DT issue#2
 
 Naming hasn’t been implemented in IPFS yet, partly because IPNS is not available in the JS-IPFS, and partly because IPNS has serious problems: 
-(requirement to rebroadcast every 24 house so not persistent; merkle tree so change at leaf changes top level; doesnt work in JS-IPFS;) We implemented naming outside of IPFS (in Domain.js) to get it to work. 
+(requirement to rebroadcast every 24 house so not persistent; merkle tree so change at leaf changes top level; doesnt work in JS-IPFS;) 
+We implemented naming outside of IPFS (in Naming.js) to get it to work. 
 
 #### Implementation on WebTorrent
 WebTorrent implements the BitTorrent protocol in the browser. It will work for retrieval of objects and currently has the fastest/most-reliable stream interface.

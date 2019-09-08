@@ -117,10 +117,9 @@ class Transports {
     }
 
     static async p_resolveNames(urls) {
-        /* If and only if TransportNAME was loaded (it might not be as it depends on higher level classes like Domain and SmartDict)
-            then resolve urls that might be names, returning a modified array.
+        /* Resolve urls that might be names, returning a modified array.
          */
-        if (this.mirror) {
+        if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
             return Array.isArray(urls) ? this.gatewayUrls(urls) : this.gatewayUrl(url);
         } else if (this.namingcb) {
             return await this.namingcb(urls);  // Array of resolved urls
@@ -787,6 +786,7 @@ class Transports {
     static canonicalName(url, options={}) {
         /*
         Utility function to convert a variety of missentered, or presumed names into a canonical result that can be resolved or passed to a transport
+        returns [ protocol e.g. arc or ipfs,  locally relevant address e.g. archive.org/metadata/foo or Q12345
          */
         if (typeof url !== "string") url = Url.parse(url).href;
         // In patterns below http or https; and  :/ or :// are treated the same

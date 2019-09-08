@@ -11,7 +11,8 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 See [Writing Shims](./WRITINGSHIMS.md) for guidelines for adding a new Transport and adding shims to the Archive
 
 ## General API notes and conventions
-We use a naming convention that anything starting “p_” returns a promise so you know to "await" it if you want a result.
+We were using a naming convention that anything starting “p_” returns a promise so you know to "await" it if you want a result, 
+this is being phased out as many functions now take a callback or promise.
 
 Ideally functions should take a String, Buffer or where applicable Object as parameters with automatic conversion. 
 And anything that takes a URL should take either a string or parsed URL object. 
@@ -604,7 +605,6 @@ See p_resolveNames(urls) and resolveNamesWith(cb)
 In practice this means that an application should do.
 ```
 require('@internetarchive/dweb-transports)
-require('@internetarchive/dweb-objects/Domain)   # Sets the callbacks.
 ```
 When setup this way, then calls to most functions that take an array of urls will first try and expand names.
 

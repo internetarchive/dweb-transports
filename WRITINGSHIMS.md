@@ -138,9 +138,9 @@ and `[gun_https_archive.js](https://github.com/internetarchive/dweb-transport/bl
 
 This will also work if the address of the table is a hash for example `xyz:/xyz/Q1234567/commute` 
 where `Q1234567` would be `xyz`'s address for the metadata table. 
-The mapping to that table's address can be hard-coded in code, or included in the Domain.js resolution.
+The mapping to that table's address can be hard-coded in code, or included in the dweb-transports/Naming.js resolution.
 
-The dweb-archive code needs to know to try Gun for the metadata, and this is configured in [dweb-objects/Domain.js/p_setupOnce()](https://github.com/internetarchive/dweb-objects/blob/master/Domain.js#L404) which we have to run. 
+The dweb-archive code needs to know to try Gun for the metadata, and this is configured in [./Naming.js]
 Note that this configuration mechanism is likely to change in the future though the address (on GUN) checked should remain the same.
 
 File retrieval can work similarly if the platform allows addressing by name. 
