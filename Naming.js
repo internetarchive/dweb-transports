@@ -91,4 +91,4 @@ function test() {
 test();
 */
 
-exports = module.exports = {p_namingcb};
+exports = module.exports = {naming, p_namingcb};
