@@ -5,6 +5,8 @@ See https://github.com/internetarchive/dweb-mirror/issues/43 for meta issue
 */
 const Url = require('url');
 process.env.GUN_ENV = "false";
+
+/* This should be done in the caller (see dweb-archive/archive.html for example)
 const Gun = require('gun/gun.js');  // gun/gun is the minimized version
 // Raw Gun has almost nothing in it, it needs at least the following to work properly.
 require('gun/lib/path.js');         // So that .path works
@@ -22,7 +24,7 @@ require('gun/lib/radix.js'); // loaded by store but required for webpack
 require('gun/lib/radisk.js'); // loaded by store but required for webpack
 require('gun/lib/store.js');
 require('gun/lib/rindexed.js');
-
+*/
 const debuggun = require('debug')('dweb-transports:gun');
 const canonicaljson = require('@stratumn/canonicaljson');
 

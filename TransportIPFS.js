@@ -9,24 +9,17 @@ const httptools = require('./httptools'); // Expose some of the httptools so tha
 const debug = require('debug')('dweb-transports:ipfs');
 
 // IPFS components
-//TODO-SPLIT remove this import depend on archive.html or node to pre-load
 let IPFS; //TODO-SPLIT move this line lower when fix structure
+//TODO-SPLIT remove this import depend on archive.html or node to pre-load
 //IPFS = require('ipfs');
 //TODO-SPLIT remove this import depend on archive.html or node to pre-load
 const ipfsAPI = require('ipfs-http-client');
-//TODO-SPLIT looks like can get this from Ipfs.CID
+//We now get this from IPFS.CID
 //const CID = require('cids');
-//TODO-SPLIT unclear why need unixfs - only appears to be used in test_ipfs.js
-//const unixFs = require('ipfs-unixfs');
 
 // Library packages other than IPFS
 const Url = require('url');
 const stream = require('readable-stream');  // Needed for the pullthrough - this is NOT Ipfs streams
-// Alternative to through - as used in WebTorrent
-
-// Utility packages (ours) And one-liners
-//No longer reqd: const promisify = require('promisify-es6');
-//const makepromises = require('./utils/makepromises'); // Replaced by direct call to promisify
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
