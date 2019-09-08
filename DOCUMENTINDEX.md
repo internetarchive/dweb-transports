@@ -1,13 +1,14 @@
 # Dweb Index and Links
 Mitra Ardron - last update 15th September 2018
 
+NOTE THIS DOC IS OUT OF DATE, SOME OF THE LINKS ARE PROBABLY STILL USEFUL BUT ITS NOT COMPREHENSIVE
+
 This is a short document of links relevant to the Dweb Project at the Internet Archive.
 
 This doc will gradually replace the myriad, mostly out of date, links sections in each of the doc files.
 
 ## Sites
 * [dweb.archive.org](https://dweb.archive.org) - The Internet Archive but decentralized - front page of IA
-* [Examples](https://dweb.me/examples) - index of our examples demonstrating libraries and archive site
 * [Decentralizedweb.net](https://Decentralizedweb.net) - Webpage for the Decentralized Web Summits of 2016 & 2018
 
 # Repositories
@@ -20,11 +21,10 @@ This doc will gradually replace the myriad, mostly out of date, links sections i
     * Webtorrent Seeder & Tracker - that collaborate to provide access to all IA torrents
     * URI-forwarding: .[MD](https://github.com/internetarchive/dweb-transport/blob/master/URL-forwards.md) .[JPG](https://github.com/internetarchive/dweb-transport/blob/master/URL-forwards.jpg) Documentation of URI forwarding in various tools
 * [Dweb-Serviceworker](https://github.com/internetarchive/dweb-serviceworker) - [README](https://github.com/internetarchive/dweb-serviceworker/blob/master/README.md) - Experimental (incomplete, unused) service worker proxy for Dweb-Transports
-* [Dweb-Mirror](https://github.com/internetarchive/dweb-mirror) - [README](https://github.com/internetarchive/dweb-mirror/blob/master/README.md) Mirroring and serving subsets of the Archive - builds on dweb-transports and dweb-objects and dweb-archive
+* [Dweb-Mirror](https://github.com/internetarchive/dweb-mirror) - [README](https://github.com/internetarchive/dweb-mirror/blob/master/README.md) Offline Archive - Mirroring and serving subsets of the Archive - builds on dweb-transports and dweb-objects and dweb-archive
 * [Dweb-Universal](https://github.com/mitra42/dweb-universal) - [README](https://github.com//mitra42/dweb-universal/blob/master/README.md)  Overview repo for the 2019 “universal” project - making the IA more accessible where the internet is poor. 
     * [Internet Archive Dweb overview.md](https://github.com/mitra42/dweb-universal/blob/master/Internet Archive Dweb overview.md) Higher level overview of the Dweb projects and repos.
     * [Dweb Universal architecture.pdf](https://github.com/mitra42/dweb-universal/blob/master/Dweb%20Universal%20architecture.pdf) Diagram 
-    * [Naming](https://github.com/mitra42/dweb-universal/blob/master/naming.md)  - proposal for naming in the dweb
     * [URI structure for HTTP Server](https://github.com/mitra42/dweb-universal/blob/master/uri%20structure%20for%20http%20server.md)
     * [Xyz but decentralized](https://github.com/mitra42/dweb-universal/blob/master/xyz%20but%20decentralized.md)
 * [Dweb-Ext](https://github.com/abhidas17695/dweb-ext/) - [README](https://github.com/abhidas17695/dweb-ext/blob/master/README.md) - Browser extension for booting into the dweb

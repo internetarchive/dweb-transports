@@ -15,7 +15,7 @@
     "cids": "^0.7.1",
     "debug": "^4.1.1",
     "gun": "^0.2019.726",
-    "ipfs": "^0.37.0",
+    "ipfs": "^0.35.0",
     "ipfs-http-client": "^33.1.1",
     "ipfs-unixfs": "^0.1.16",
     "node-fetch": "^2.3.0",
@@ -53,5 +53,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.62"
+  "version": "0.1.63"
 }
