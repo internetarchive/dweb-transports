@@ -17,7 +17,6 @@
     "node-fetch": "^2.3.0",
     "readable-stream": "^3.3.0",
     "webpack": "^4.29.3",
-    "webtorrent": "^0.107.3",
     "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",

@@ -6,7 +6,8 @@ Y Lists have listeners and generate events - see docs at ...
 
 // WebTorrent components
 
-const WebTorrent = require('webtorrent');
+//Require in consumer;
+//const WebTorrent = require('webtorrent');
 const stream = require('readable-stream');
 const Url = require('url');
 const path = require('path');
