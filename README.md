@@ -127,6 +127,8 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.0: Start moving transport dependencies to consumer, specifically IPFS, GUN, WebTorrent
+------
 * 0.1.63: Move naming internal
 * 0.1.62: Upgrade dependencies
 * 0.1.61: loopguard to return correct error from queuedFetch; add info to statuses 

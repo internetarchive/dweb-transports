@@ -16,7 +16,6 @@
     "ipfs-http-client": "^33.1.1",
     "node-fetch": "^2.3.0",
     "readable-stream": "^3.3.0",
-    "webpack": "^4.29.3",
     "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
     "y-array": "^10.1.4",
     "y-indexeddb": "^8.1.9",
@@ -32,6 +31,7 @@
     "chai": "^4.2.0",
     "uglifyjs-webpack-plugin": "^1.3.0",
     "watchify": "^3.11.0",
+    "webpack": "^4.29.3",
     "webpack-cli": "^3.2.3"
   },
   "homepage": "https://github.com/internetarchive/dweb-transports#readme",
@@ -48,5 +48,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.1.63"
+  "version": "0.2.0"
 }
