@@ -368,4 +368,5 @@ class TransportYJS extends Transport {
 }
 TransportYJS.Y = Y; // Allow node tests to find it
 Transports._transportclasses["YJS"] = TransportYJS;
+TransportYJS.requires = []; //TODO-SPLIT correct this
 exports = module.exports = TransportYJS;

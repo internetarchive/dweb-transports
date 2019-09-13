@@ -269,4 +269,5 @@ class TransportWOLK extends Transport {
     }
 }
 Transports._transportclasses["WOLK"] = TransportWOLK;
+TransportWOLK.requires = []; //TODO-SPLIT correct this
 exports = module.exports = TransportWOLK;

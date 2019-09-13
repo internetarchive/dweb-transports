@@ -712,10 +712,36 @@ class Transports {
         }
     }
 
+    static _tabbrevs(options) {
+        // options = {transports, defaulttransports, ... }
+        // returns [ABBREVIATION] e.g. ["IPFS","HTTP"]
+        let tabbrevs = options.transports;    // Array of transport abbreviations
+        if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
+        // WOLK is currently working (I think)
+        // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
+        //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
+        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
+        tabbrevs = tabbrevs.map(n => n.toUpperCase());
+        return tabbrevs;
+    }
+    /**
+     * Load required javascript into an html page
+     * This is tricky - order is significant,  (see dweb-archive/archive.html for a hopefully working example)
+     */
+    static loadIntoHtmlPage(options) {
+        this._tabbrevs(options).forEach(t => {
+            this._transportclasses[t].requires.map(s => {
+                debug("Loading %s %s", t, s);
+                document.write('<script src="' + s + '"><\/script>');
+            });
+        })
+    }
+
     static connect(options, cb) {
         const prom = this.p_connect(options);
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
+
     static async p_connect(options) {
         /*
             This is a standardish starting process, feel free to subclass or replace !
@@ -724,15 +750,8 @@ class Transports {
          */
         try {
             options = options || {};
-            let tabbrevs = options.transports;    // Array of transport abbreviations
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
-            if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
-            // WOLK is currently failing, and what is worse returning a data structure with a 404 instead of just failing
-            // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
-            //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
-            if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
-            tabbrevs = tabbrevs.map(n => n.toUpperCase());
-            let transports = this.setup0(tabbrevs, options); // synchronous
+            let transports = this.setup0(this._tabbrevs(options), options); // synchronous
             ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
             //TODO move this to function and then call this from consumer
             if (!!options.statuselement) {

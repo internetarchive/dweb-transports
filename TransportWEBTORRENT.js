@@ -398,5 +398,6 @@ class TransportWEBTORRENT extends Transport {
 
 }
 Transports._transportclasses["WEBTORRENT"] = TransportWEBTORRENT;
+TransportWEBTORRENT.requires = ['https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js'];
 
 exports = module.exports = TransportWEBTORRENT;

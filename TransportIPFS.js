@@ -141,8 +141,6 @@ class TransportIPFS extends Transport {
     }
     */
 
-    //TODO-SPLIT define load()
-
     static setup0(options) {
         /*
             First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
@@ -507,6 +505,9 @@ class TransportIPFS extends Transport {
     }
 
 }
+TransportIPFS.requires=['https://unpkg.com/ipfs/dist/index.min.js']; // 2.3Mb
+
+
 Transports._transportclasses["IPFS"] = TransportIPFS;
 // noinspection JSUndefinedPropertyAssignment
 exports = module.exports = TransportIPFS;
