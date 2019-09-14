@@ -127,6 +127,8 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.2: Add Wolk, YJS, and add function for node loading
+* 0.2.1: Move script loading into Transports
 * 0.2.0: Start moving transport dependencies to consumer, specifically IPFS, GUN, WebTorrent
 ------
 * 0.1.63: Move naming internal
