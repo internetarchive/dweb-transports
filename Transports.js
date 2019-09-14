@@ -729,12 +729,23 @@ class Transports {
      * This is tricky - order is significant,  (see dweb-archive/archive.html for a hopefully working example)
      */
     static loadIntoHtmlPage(options) {
+        //TODO move the scripts to dweb-gateway and dweb-mirror then point cdn there (depending on options.mirror or even options.cdn)
+        const cdnUrl = "https://cdn.jsdelivr.net/npm";
+        //const cdnUrl = "https://unpkg.com";
         this._tabbrevs(options).forEach(t => {
-            this._transportclasses[t].requires.map(s => {
+            this._transportclasses[t].scripts.map(s => {
                 debug("Loading %s %s", t, s);
-                document.write('<script src="' + s + '"><\/script>');
+                document.write('<script src="' + [cdnUrl, s].join('/') + '"><\/script>');
             });
         })
+    }
+    static loadIntoNode(options) {
+        this._tabbrevs(options).forEach(t => {
+            this._transportclasses[t].requires.map(r => {
+                debug("Requiring %s %s", t, s);
+                require(r);
+            });
+        });
     }
 
     static connect(options, cb) {

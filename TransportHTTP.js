@@ -391,6 +391,6 @@ class TransportHTTP extends Transport {
 
 }
 Transports._transportclasses["HTTP"] = TransportHTTP;
-TransportHTTP.requires = []; // Nothing to load
+TransportHTTP.requires = TransportHTTP.scripts = []; // Nothing to load
 exports = module.exports = TransportHTTP;
 

@@ -1,3 +1,4 @@
+//Note if now that its included by the consumer (nodejs or html) its unclear if this requires a new Y and then Y.extend("y-text",..." but YJS is no longer maintained
 /*
 This Transport layers builds on the YJS DB and uses IPFS as its transport.
 
@@ -8,7 +9,8 @@ const debugyjs = require('debug')('dweb-transports:yjs');
 const canonicaljson = require('@stratumn/canonicaljson');
 
 //const Y = require('yjs/dist/y.js'); // Explicity require of dist/y.js to get around a webpack warning but causes different error in YJS
-const Y = require('yjs'); // Explicity require of dist/y.js to get around a webpack warning
+/* See TransportYJS.requires at bottom
+const Y = require('yjs');
 require('y-memory')(Y);
 require('y-array')(Y);
 require('y-text')(Y);
@@ -16,7 +18,7 @@ require('y-map')(Y);
 require('y-ipfs-connector')(Y);
 require('y-indexeddb')(Y);
 //require('y-leveldb')(Y); //- can't be there for browser, node seems to find it ok without this, though not sure why..
-
+*/
 // Utility packages (ours) And one-liners
 function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
@@ -366,7 +368,9 @@ class TransportYJS extends Transport {
 
 
 }
-TransportYJS.Y = Y; // Allow node tests to find it
+//TransportYJS.Y = Y; // Allow node tests to find it
 Transports._transportclasses["YJS"] = TransportYJS;
-TransportYJS.requires = []; //TODO-SPLIT correct this
-exports = module.exports = TransportYJS;
+TransportYJS.requires = ["yjs", "y-array", "y-memory", "y-text", "y-map", "y-ipfs-connector", "y-indexeddb"]; //~130KB
+// If start using YJS again, it needs something like Y = new yjs; Y.extend(y-array, y-memory ... - see yjs/README.md
+TransportYJS.scripts = ["yjs/dist/y.js", "y-array/dist/y-array.js", "y-memory/dist/y-memory.js",
+    "y-text/dist/y-text.js", "y-map/dist/y-map.js", "y-ipfs-connector/dist/y-ipfs-connector", "y-indexeddb/dist/y-indexeddb"]; //~130KB

@@ -13,7 +13,7 @@ let IPFS; //TODO-SPLIT move this line lower when fix structure
 //TODO-SPLIT remove this import depend on archive.html or node to pre-load
 //IPFS = require('ipfs');
 //TODO-SPLIT remove this import depend on archive.html or node to pre-load
-const ipfsAPI = require('ipfs-http-client');
+//const ipfsAPI = require('ipfs-http-client');
 //We now get this from IPFS.CID
 //const CID = require('cids');
 
@@ -84,11 +84,8 @@ class TransportIPFS extends Transport {
         });
     }
     IPFSAutoConnect(cb) {
-        if (global.Ipfs) {
-            IPFS = global.Ipfs; //Loaded by <script etc but still need a create
-        } else if (window.Ipfs) {
-            IPFS = window.Ipfs; //Loaded by <script etc but still need a create
-        }
+        IPFS = global.Ipfs || window.Ipfs;  //Loaded by <script etc but still need a create
+        const ipfsAPI = global.IpfsHttpClient || window.IpfsHttpClient;
         //TODO-SPLIT I think next few lines are wrong, dont think I've seen global.ipfs or window.ipfs but
         //TODO-SPLIT https://github.com/ipfs/js-ipfs implies global.Ipfs but needs a "create" or "new"
         if (global.ipfs) {
@@ -505,7 +502,9 @@ class TransportIPFS extends Transport {
     }
 
 }
-TransportIPFS.requires=['https://unpkg.com/ipfs/dist/index.min.js']; // 2.3Mb
+TransportIPFS.scripts=['ipfs/dist/index.min.js', // window.Ipfs 2.3Mb
+    'ipfs-http-client/dist/index.min.js']; //window.IpfsHttpClient
+TransportIPFS.requires=['ipfs', 'ipfs-http-client'];
 
 
 Transports._transportclasses["IPFS"] = TransportIPFS;

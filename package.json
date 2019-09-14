@@ -16,21 +16,11 @@
     "ipfs-http-client": "^33.1.1",
     "node-fetch": "^2.3.0",
     "readable-stream": "^3.3.0",
-    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master",
-    "y-array": "^10.1.4",
-    "y-indexeddb": "^8.1.9",
-    "y-ipfs-connector": "^2.3.0",
-    "y-map": "^10.1.3",
-    "y-memory": "^8.0.9",
-    "y-text": "^9.5.1",
-    "yjs": "^12.0.0"
+    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master"
   },
   "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {
-    "browserify": "^16.2.3",
-    "chai": "^4.2.0",
     "uglifyjs-webpack-plugin": "^1.3.0",
-    "watchify": "^3.11.0",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.2.3"
   },
@@ -48,5 +38,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.2.1"
+  "version": "0.2.2"
 }

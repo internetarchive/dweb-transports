@@ -392,7 +392,7 @@ class TransportGUN extends Transport {
     }
 }
 Transports._transportclasses["GUN"] = TransportGUN;
-TransportGUN.requires = ['gun/gun.js', 'gun/lib/path.js', 'gun/nts', 'gun/lib/wire', 'gun/lib/multicast', 'gun/lib/radix.js',
-    'gun/lib/radisk.js', 'gun/lib/store.js', 'gun/lib/rindexed.js']
-      .map(s => 'https://cdn.jsdelivr.net/npm/' + s);
+// Defines global.Gun
+TransportGUN.requires =  TransportGUN.scripts = ['gun/gun.js', 'gun/lib/path.js', 'gun/nts', 'gun/lib/wire', 'gun/lib/multicast', 'gun/lib/radix.js',
+    'gun/lib/radisk.js', 'gun/lib/store.js', 'gun/lib/rindexed.js'];
 exports = module.exports = TransportGUN;
