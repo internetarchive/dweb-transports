@@ -719,8 +719,8 @@ class Transports {
         if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
         // WOLK is currently working (I think)
         // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
-        //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
-        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK"]; } // SEE-OTHER-ADDTRANSPORT
+        //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK", "HASH"]; } // SEE-OTHER-ADDTRANSPORT
+        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK", "HASH"]; } // SEE-OTHER-ADDTRANSPORT
         tabbrevs = tabbrevs.map(n => n.toUpperCase());
         return tabbrevs;
     }
@@ -810,7 +810,10 @@ class Transports {
         Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
         this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.
          */
-        return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
+        //TODO this could be cleverer, it could ask each Transport for a http url and then use them in order of prefernece?
+        //TODO which would allow IPFS for example to return a gateway URL
+        //return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
+        return urls.find(u => u.startsWith("http"));
     }
 
     static canonicalName(url, options={}) {

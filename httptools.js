@@ -115,15 +115,17 @@ async function loopfetch(req, ms, count, what) {
     }
 }
 
+/**
+ * Fetch a url
+ *
+ * @param httpurl string    URL.href i.e. http:... or https:...
+ * @param init {headers}
+ * @param wantstream BOOL   True if want to return a stream (otherwise buffer)
+ * @param retries INT       Number of times to retry if underlying OS call fails (eg. "INSUFFICIENT RESOURCES") (wont retry on 404 etc)
+ * @returns {Promise<*>}    Data as text, or json as object or stream depending on Content-Type header adn wantstream
+ * @throws TransportError   if fails to fetch
+ */
 httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries=undefined}={}) { // Embrace and extend "fetch" to check result etc.
-    /*
-    Fetch a url
-
-    httpurl: optional (depends on command)
-    init:   {headers}
-    resolves to: data as text or json depending on Content-Type header
-    throws: TransportError if fails to fetch
-     */
     try {
         // THis was get("range") but that works when init.headers is a Headers, but not when its an object
         debug("p_httpfetch: %s %o", httpurl, init.headers.range || "" );
@@ -165,6 +167,19 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries
     }
 }
 
+/**
+ *
+ * @param httpurl STRING|Url
+ * @param opts
+ *         opts {
+ *           start, end,     // Range of bytes wanted - inclusive i.e. 0,1023 is 1024 bytes
+ *          wantstream,     // Return a stream rather than data
+ *          retries=12,        // How many times to retry
+ *          noCache         // Add Cache-Control: no-cache header
+ *          }
+ * @param cb f(err, res)    // See p_httpfetch for resul
+ * @returns {Promise<*>}    // If no cb.
+ */
 httptools.p_GET = function(httpurl, opts={}, cb) {
     /*  Locate and return a block, based on its url
         Throws TransportError if fails
@@ -176,7 +191,7 @@ httptools.p_GET = function(httpurl, opts={}, cb) {
             }
         returns result via promise or cb(err, result)
     */
-    if (typeof opts  === "function") { cb = opts; opts = {}; }
+    if (typeof httpurl !== "string") httpurl = httpurl.href;    // Assume its a URL as no way to use "instanceof" on URL across node/browser
     let headers = new Headers();
     if (opts.start || opts.end) headers.append("range", `bytes=${opts.start || 0}-${(opts.end<Infinity) ? opts.end : ""}`);
     //if (opts.noCache) headers.append("Cache-Control", "no-cache"); It complains about preflight with no-cache
@@ -201,6 +216,7 @@ httptools.p_POST = function(httpurl, opts={}, cb) {
     //let headers = new window.Headers();
     //headers.set('content-type',type); Doesn't work, it ignores it
     if (typeof opts  === "function") { cb = opts; opts = {}; }
+    if (typeof httpurl !== "string") httpurl = httpurl.href;    // Assume its a URL as no way to use "instanceof" on URL across node/browser
     const retries = typeof opts.retries === "undefined" ? 0 : opts.retries;
     let init = {
         //https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch

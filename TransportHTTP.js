@@ -4,27 +4,12 @@ const httptools = require('./httptools'); // Expose some of the httptools so tha
 const Url = require('url');
 const stream = require('readable-stream');
 const debug = require('debug')('dweb-transports:http');
-const canonicaljson = require('@stratumn/canonicaljson');
-
-
+//TODO-SPLIT pull /arc out of here, then dont need by default to hearbeat to dweb.me
 
 defaulthttpoptions = {
     urlbase: 'https://dweb.me',
     heartbeat: { delay: 30000 } // By default check twice a minute
 };
-
-servercommands = {  // What the server wants to see to return each of these
-    rawfetch: "contenthash",   // was content/rawfetch which should still work.
-    rawstore: "contenturl/rawstore",
-    rawadd: "void/rawadd",
-    rawlist: "metadata/rawlist",
-    get:    "get/table",
-    set:    "set/table",
-    delete: "delete/table",
-    keys:    "keys/table",
-    getall:    "getall/table"
-};
-
 
 class TransportHTTP extends Transport {
   /* Subclass of Transport for handling HTTP - see API.md for docs
@@ -42,8 +27,8 @@ class TransportHTTP extends Transport {
         super(options); // These are now options.http
         this.options = options;
         this.urlbase = options.urlbase; // e.g. https://dweb.me
-        this.supportURLs = ['contenthash', 'http','https'];
-        this.supportFunctions = ['fetch', 'store', 'add', 'list', 'reverse', 'newlisturls', "get", "set", "keys", "getall", "delete", "newtable", "newdatabase"]; //Does not support: listmonitor - reverse is disabled somewhere not sure if here or caller
+        this.supportURLs = ['http','https'];
+        this.supportFunctions = ['fetch'];
         this.supportFeatures = ['noCache'];
         if (typeof window === "undefined") {
             // running in node, can support createReadStream,  (browser can't - see createReadStream below)
@@ -62,7 +47,7 @@ class TransportHTTP extends Transport {
             Transports.addtransport(t);
             return t;
         } catch (err) {
-            console.error("HTTP unable to setup0", err.message);
+            debug("ERROR: HTTP unable to setup0", err.message);
             throw err;
         }
     }
@@ -101,8 +86,8 @@ class TransportHTTP extends Transport {
 
     startHeartbeat({delay=undefined, statusCB=undefined}) {
         if (delay) {
-            debug("HTTP Starting Heartbeat")
-            this.HTTPheartbeatTimer = setInterval(() => {
+            debug("%s Starting Heartbeat", this.name)
+            this.heartbeatTimer = setInterval(() => {
                 this.updateStatus((err, res)=>{ // Pings server and sets status
                     if (statusCB) statusCB(this); // repeatedly call callback if supplies
                 }, (unusedErr, unusedRes)=>{}); // Dont wait for status to complete
@@ -110,9 +95,9 @@ class TransportHTTP extends Transport {
         }
     }
     stopHeartbeat() {
-        if (this.HTTPheartbeatTimer) {
-            debug("HTTP stopping heartbeat");
-            clearInterval(this.HTTPheartbeatTimer);}
+        if (this.heartbeatTimer) {
+            debug("stopping heartbeat");
+            clearInterval(this.heartbeatTimer);}
     }
     stop(refreshstatus, cb) {
         this.stopHeartbeat();
@@ -121,24 +106,11 @@ class TransportHTTP extends Transport {
         cb(null, this);
     }
 
-    _cmdurl(command) {
-        return  `${this.urlbase}/${command}`
-    }
-    _url(url, command, parmstr) {
-        if (!url) throw new errors.CodingError(`${command}: requires url`);
-        if (typeof url !== "string") { url = url.href }
-        url = url.replace('contenthash:/contenthash', this._cmdurl(command)) ;   // Note leaves http: and https: urls unchanged
-        url = url.replace('getall/table', command);
-        url = url + (parmstr ? "?"+parmstr : "");
-        return url;
-    }
-
     validFor(url, func, opts) {
         // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me
         // in particular this allows urls like https://be-api.us.archive.org
         return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func, opts);
     }
-    // noinspection JSCheckFunctionSignatures
     async p_rawfetch(url, opts={}) {
         /*
         Fetch from underlying transport,
@@ -147,67 +119,11 @@ class TransportHTTP extends Transport {
         opts: {start, end, retries, noCache} see p_GET for documentation
         throws: TransportError if fails
          */
-        //if (!(url && url.includes(':') ))
-        //    throw new errors.CodingError("TransportHTTP.p_rawfetch bad url: "+url);
-        //if (url.href.includes('contenthash//'))
-        //    console.error("XXX@91", url)
-        if (((typeof url === "string") ? url : url.href).includes('/getall/table')) {
-            throw new Error("Probably dont want to be calling p_rawfetch on a KeyValueTable, especially since dont know if its keyvaluetable or subclass"); //TODO-NAMING
-        } else {
-            return await httptools.p_GET(this._url(url, servercommands.rawfetch), opts);
-        }
-    }
-
-    p_rawlist(url) {
-        // obj being loaded
-        // Locate and return a block, based on its url
-        if (!url) throw new errors.CodingError("TransportHTTP.p_rawlist: requires url");
-        return httptools.p_GET(this._url(url, servercommands.rawlist));
-    }
-    rawreverse() { throw new errors.ToBeImplementedError("Undefined function TransportHTTP.rawreverse"); }
-
-    async p_rawstore(data) {
-        /*
-        Store data on http server,
-        data:   string
-        resolves to: {string}: url
-        throws: TransportError on failure in p_POST > p_httpfetch
-         */
-        //PY: res = self._sendGetPost(True, "rawstore", headers={"Content-Type": "application/octet-stream"}, urlargs=[], data=data)
-        console.assert(data, "TransportHttp.p_rawstore: requires data");
-        const res = await httptools.p_POST(this._cmdurl(servercommands.rawstore), {data, contenttype: "application/octet-stream"}); // resolves to URL
-        let parsedurl = Url.parse(res);
-        let pathparts = parsedurl.pathname.split('/');
-        return `contenthash:/contenthash/${pathparts.slice(-1)}`
-
-    }
-
-    p_rawadd(url, sig) {
-        // Logged by Transports
-        if (!url || !sig) throw new errors.CodingError("TransportHTTP.p_rawadd: invalid parms", url, sig);
-        const data = canonicaljson.stringify(sig.preflight(Object.assign({},sig)))+"\n";
-        return httptools.p_POST(this._url(url, servercommands.rawadd), {data, contenttype: "application/json"}); // Returns immediately
-    }
-
-    p_newlisturls(cl) {
-        let  u = cl._publicurls.map(urlstr => Url.parse(urlstr))
-            .find(parsedurl =>
-                ((parsedurl.protocol === "https:" && ["gateway.dweb.me", "dweb.me"].includes(parsedurl.host)
-                    && (parsedurl.pathname.includes('/content/rawfetch') || parsedurl.pathname.includes('/contenthash/')))
-                    || (parsedurl.protocol === "contenthash:") && (parsedurl.pathname.split('/')[1] === "contenthash")));
-        if (!u) {
-            // noinspection JSUnresolvedVariable
-            u = `contenthash:/contenthash/${ cl.keypair.verifyexportmultihashsha256_58() }`; // Pretty random, but means same test will generate same list and server is expecting base58 of a hash
-        }
-        return [u,u];
+        return await httptools.p_GET(url, opts);
     }
 
     // ============================== Stream support
 
-    /*
-      Code disabled until have a chance to test it with <VIDEO> tag etc, problem is that it returns p_createReadStream whch is async
-      if need sync, look at WebTorrent and how it buffers through a stream which can be returned immediately
-     */
     async p_f_createReadStream(url, {wanturl=false}={}) {
         /*
         Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
@@ -254,7 +170,7 @@ class TransportHTTP extends Transport {
         debug("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();
-        httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts))
+        httptools.p_GET(url, Object.assign({wantstream: true}, opts))
             .then(s => s.pipe(through))
             // Note any .catch is happening AFTER through returned
             .catch(err => {
@@ -280,83 +196,12 @@ class TransportHTTP extends Transport {
          */
         debug("createreadstream %s %o", Url.parse(url).href, opts);
         try {
-            return await httptools.p_GET(this._url(url, servercommands.rawfetch), Object.assign({wantstream: true}, opts));
+            return await httptools.p_GET(url, Object.assign({wantstream: true}, opts));
         } catch(err) {
             console.warn(this.name, "caught error", err);
             throw err;
         }
     }
-
-
-    // ============================== Key Value support
-
-
-    // Support for Key-Value pairs as per
-    // https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#
-    async p_newdatabase(pubkey) {
-        //if (pubkey instanceof Dweb.PublicPrivate)
-        if (pubkey.hasOwnProperty("keypair"))
-            pubkey = pubkey.keypair.signingexport();
-        // By this point pubkey should be an export of a public key of form xyz:abc where xyz
-        // specifies the type of public key (NACL VERIFY being the only kind we expect currently)
-        let u =  `${this.urlbase}/getall/table/${encodeURIComponent(pubkey)}`;
-        return {"publicurl": u, "privateurl": u};
-    }
-
-
-    async p_newtable(pubkey, table) {
-        if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
-        let database = await this.p_newdatabase(pubkey);
-        // If have use cases without a database, then call p_newdatabase first
-        return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
-    }
-
-    //TODO-KEYVALUE needs signing with private key of list
-    async p_set(url, keyvalues, value) {  // url = yjs:/yjs/database/table/key
-        if (!url || !keyvalues) throw new errors.CodingError("TransportHTTP.p_set: invalid parms", url, keyvalyes);
-        // Logged by Transports
-        //debug("p_set %o %o %o", url, keyvalues, value);
-        if (typeof keyvalues === "string") {
-            let data = canonicaljson.stringify([{key: keyvalues, value: value}]);
-            await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
-        } else {
-            let data = canonicaljson.stringify(Object.keys(keyvalues).map((k) => ({"key": k, "value": keyvalues[k]})));
-            await httptools.p_POST(this._url(url, servercommands.set), {data, contenttype: "application/json"}); // Returns immediately
-        }
-    }
-
-    _keyparm(key) {
-        return `key=${encodeURIComponent(key)}`
-    }
-    async p_get(url, keys) {
-        if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys);
-        const res = await httptools.p_GET(this._url(url, servercommands.get, parmstr));
-        return Array.isArray(keys) ? res : res[keys]
-    }
-
-    async p_delete(url, keys) {
-        if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        let parmstr =  keys.map(k => this._keyparm(k)).join('&');
-        await httptools.p_GET(this._url(url, servercommands.delete, parmstr));
-    }
-
-    async p_keys(url) {
-        if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        return await httptools.p_GET(this._url(url, servercommands.keys));
-    }
-    async p_getall(url) {
-        if (!url && keys) throw new errors.CodingError("TransportHTTP.p_get: requires url and at least one key");
-        return await httptools.p_GET(this._url(url, servercommands.getall));
-    }
-    /* Make sure doesnt shadow regular p_rawfetch
-    async p_rawfetch(url) {
-        return {
-            table: "keyvaluetable",
-            _map: await this.p_getall(url)
-        };   // Data structure is ok as SmartDict.p_fetch will pass to KVT constructor
-    }
-    */
 
     async p_info() { //TODO-API
         /*
