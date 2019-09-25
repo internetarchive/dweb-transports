@@ -739,13 +739,17 @@ class Transports {
             });
         })
     }
+
+    /**
+     * Load in the required
+     * @param {transports: [TRANSPORTNAME], ...}
+     *
+     * Each transport should have Transport.requires = STRING | [STRING] | { GLOBAL: STRING}
+     */
     static loadIntoNode(options) {
-        this._tabbrevs(options).forEach(t => {
-            this._transportclasses[t].requires.map(r => {
-                debug("Requiring %s %s", t, s);
-                require(r);
-            });
-        });
+      this._tabbrevs(options).forEach(t => {
+        this._transportclasses[t].loadIntoNode();
+      });
     }
 
     static connect(options, cb) {

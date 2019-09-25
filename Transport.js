@@ -18,7 +18,31 @@ class Transport {
         */
     }
 
-    //TODO-SPLIT define load()
+    /**
+     * Load the code for the transport,
+     * By default uses TransportXXX.requires
+     * requires can be any of
+     * STRING: require it and return result
+     * {KEY: STRING}  require string and assign to global Key
+     * [STRING]: Require each of them (e.g. Gun)
+     * Can also be superclassed e.g. Wolk
+     */
+    static loadIntoNode() {
+        const requires = this.requires;
+        if (Array.isArray(requires)) {
+            requires.map(r => {
+                debug("Requiring %s %s", t, s);
+                require(r);
+            });
+        } else if (typeof requires === "object") {
+            Object.entries(requires).map(kv => {
+                debug("Requiring %s %s", t, s);
+                global[kv[0]] = require(kv[1]);
+            })
+        } else if (typeof requires === "string") {
+            return require(requires);
+        }
+    }
 
     static setup0(options) {
         /*

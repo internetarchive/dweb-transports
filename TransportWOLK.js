@@ -1,13 +1,14 @@
 /*
 This Transport layers uses Wolk NoSQL + Cloudstore.
 */
-var WOLK
 const Url = require('url');
+/*
 if( typeof window === 'undefined' ) {
   WOLK = require("wolkjs").FS;
 } else {
   WOLK = require("wolkjs").WOLK;
 }
+*/
 const canonicaljson = require('@stratumn/canonicaljson');
 const debug = require('debug')('dweb-transports:wolk');
 
@@ -15,7 +16,6 @@ const debug = require('debug')('dweb-transports:wolk');
 const errors = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
-const utils = require('./utils'); // Utility functions
 
 let defaultoptions = {
     wolk_addr: "https://cloud.wolk.com",
@@ -42,6 +42,10 @@ class TransportWOLK extends Transport {
     }
 
   //TODO-SPLIT define load()
+
+  loadIntoNode() {
+    var WOLK = super.loadIntoNode().FS; // globally accessible  (note .WOLK instead of .FS is the browser version)
+  }
 
   //stuff that happens b/f using ntwk bandwidth (config/connect/stuff)
     static setup0(options) {
@@ -269,5 +273,7 @@ class TransportWOLK extends Transport {
     }
 }
 Transports._transportclasses["WOLK"] = TransportWOLK;
-TransportWOLK.requires = TransportWOLK.scripts = []; //TODO-SPLIT correct this
+TransportWOLK.scripts = ["https://raw.githubusercontent.com/wolkdb/wolkjs/dev/lib/wolk-browserify.js"];
+TransportWOLK.requires = 'wolkjs';
+// Note not defining .requires as loadIntoNode defined above
 exports = module.exports = TransportWOLK;
