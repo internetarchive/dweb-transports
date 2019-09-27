@@ -41,7 +41,7 @@ class Transports {
     static async p_connectedNamesParm() { // Doesnt strictly need to be async, but for consistency with Proxy it has to be.
         return (await this.p_connectedNames()).map(n => "transport="+n).join('&')
     }
-    static statuses({connected=undefined}) { //TODO-API (especially add info:)
+    static statuses({connected=undefined}={}) { //TODO-API (especially add info:)
       /*
       Return array of statuses,
       connected:  If true then only connected transports
