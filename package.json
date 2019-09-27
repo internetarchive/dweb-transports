@@ -38,5 +38,5 @@
     "test": "cd src; node ./test.js",
     "help": "echo 'test (test it)'; echo 'build (creates dweb-transports-bundle)'"
   },
-  "version": "0.2.2"
+  "version": "0.2.3"
 }
