@@ -3,7 +3,7 @@ const Transport = require('./Transport'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const errors = require('./Errors'); // Standard Dweb Errors
 const canonicaljson = require('@stratumn/canonicaljson');
-const fluence = require('fluence');
+//const fluence = require('fluence');
 
 const debug = require('debug')('dweb-transports:fluence');
 
@@ -13,7 +13,7 @@ const defaultOptions = {
     appId: '4' // Redis
 };
 
-class TransportFluence extends Transport {
+class TransportFLUENCE extends Transport {
 
     constructor(options) {
         super(options);
@@ -49,7 +49,7 @@ class TransportFluence extends Transport {
         console.assert(combinedOptions.nodePort, 'Fluence Node port should be specified');
         console.assert(combinedOptions.appId, 'Fluence AppId should be specified');
 
-        let t = new TransportFluence(combinedOptions);
+        let t = new TransportFLUENCE(combinedOptions);
         Transports.addtransport(t);
         return t;
     }
@@ -253,7 +253,7 @@ class TransportFluence extends Transport {
             console.assert(!Array.isArray(keyvalues), 'TransportFLUENCE - shouldnt pass an array as the keyvalues');
 
             await Promise.all(
-              Object.keys(keyvalues).map(hKey => this.session.request(`HSET ${url} ${hKey} ${canonicaljson.stringify(keyvalues[hKey])}`))
+                Object.keys(keyvalues).map(hKey => this.session.request(`HSET ${url} ${hKey} ${canonicaljson.stringify(keyvalues[hKey])}`))
             );
         }
     }
@@ -308,5 +308,8 @@ class TransportFluence extends Transport {
     }
 }
 
-Transports._transportclasses['FLUENCE'] = TransportFluence;
-exports = module.exports = TransportFluence;
+Transports._transportclasses['FLUENCE'] = TransportFLUENCE;
+TransportFLUENCE.scripts = ["fluence@0.3.14/bundle/bundle.js"];
+TransportFLUENCE.requires = {"fluence": "fluence"};
+
+exports = module.exports = TransportFLUENCE;

@@ -725,7 +725,7 @@ class Transports {
         // WOLK is off by default till get working script to include in browsers etc
         // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
         // FLUENCE is turned off by default until tested
-        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", HASH"]; } // SEE-OTHER-ADDTRANSPORT
+        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "HASH"]; } // SEE-OTHER-ADDTRANSPORT
         tabbrevs = tabbrevs.map(n => n.toUpperCase());
         return tabbrevs;
     }
