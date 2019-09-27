@@ -127,6 +127,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.4: Lighter Fluence transport and Wolk scripting issue
 * 0.2.3: Add Fluence transport, split HASH (contenthash) out of HTTP
 * 0.2.2: Add Wolk, YJS, and add function for node loading
 * 0.2.1: Move script loading into Transports
