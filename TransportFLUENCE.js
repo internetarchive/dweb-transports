@@ -309,7 +309,7 @@ class TransportFLUENCE extends Transport {
 }
 
 Transports._transportclasses['FLUENCE'] = TransportFLUENCE;
-TransportFLUENCE.scripts = ["fluence@0.3.14/bundle/bundle.js"];
+TransportFLUENCE.scripts = ["fluence@0.3.14-no-webj/bundle/bundle.js"];
 TransportFLUENCE.requires = {"fluence": "fluence"};
 
 exports = module.exports = TransportFLUENCE;
