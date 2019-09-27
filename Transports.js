@@ -740,7 +740,7 @@ class Transports {
         this._tabbrevs(options).forEach(t => {
             this._transportclasses[t].scripts.map(s => {
                 debug("Loading %s %s", t, s);
-                document.write('<script src="' + [cdnUrl, s].join('/') + '"><\/script>');
+                document.write('<script src="' + (s.startsWith("http") ? s : [cdnUrl, s].join('/')) + '"><\/script>');
             });
         })
     }
