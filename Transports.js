@@ -116,6 +116,11 @@ class Transports {
         return Transports._connected().find((t) => t.name === "GUN")
     }
 
+    static fluence() {
+        // Find a FLUENCE transport if it exists
+        return Transports._connected().find((t) => t.name === "FLUENCE")
+    }
+
     static async p_resolveNames(urls) {
         /* Resolve urls that might be names, returning a modified array.
          */
@@ -717,10 +722,10 @@ class Transports {
         // returns [ABBREVIATION] e.g. ["IPFS","HTTP"]
         let tabbrevs = options.transports;    // Array of transport abbreviations
         if (!(tabbrevs && tabbrevs.length)) { tabbrevs = options.defaulttransports || [] }
-        // WOLK is currently working (I think)
+        // WOLK is off by default till get working script to include in browsers etc
         // GUN is turned off by default because it fills up localstorage on browser and stops working, https://github.com/internetarchive/dweb-archive/issues/106
-        //if (! tabbrevs.length) { tabbrevs = ["HTTP", "YJS", "IPFS", "WEBTORRENT", "GUN", "WOLK", "HASH"]; } // SEE-OTHER-ADDTRANSPORT
-        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", "WOLK", "HASH"]; } // SEE-OTHER-ADDTRANSPORT
+        // FLUENCE is turned off by default until tested
+        if (! tabbrevs.length) { tabbrevs = ["HTTP", "IPFS", "WEBTORRENT", HASH"]; } // SEE-OTHER-ADDTRANSPORT
         tabbrevs = tabbrevs.map(n => n.toUpperCase());
         return tabbrevs;
     }
@@ -829,7 +834,7 @@ class Transports {
         // In patterns below http or https; and  :/ or :// are treated the same
         const gateways = ["dweb.me", "ipfs.io"]; // Known gateways, may dynamically load this at some point
         // SEE-OTHER-ADDTRANSPORT
-        const protocols = ["ipfs","gun","magnet","yjs","wolk","arc", "contenthash", "http", "https"];
+        const protocols = ["ipfs","gun","magnet","yjs","wolk","arc", "contenthash", "http", "https", "fluence"];
         const protocolsWantingDomains = ["arc", "http", "https"];
         const gatewaypatts = [ // Must be before patts because gateway names often start with a valid proto
             /^http[s]?:[/]+([^/]+)[/](\w+)[/](.*)/i,   // https://(gateway)/proto/(internal)  + gateway in list (IPFS gateways. dweb.me)

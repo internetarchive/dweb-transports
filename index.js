@@ -9,5 +9,6 @@ require("./TransportWEBTORRENT.js");
 require("./TransportWOLK.js");
 require("./TransportGUN.js");
 require("./TransportHASH.js");
+require("./TransportFLUENCE.js");
 if (typeof window !== "undefined") { window.DwebTransports = DwebTransports; }
 exports = module.exports = DwebTransports;
