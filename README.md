@@ -86,19 +86,46 @@ Naming hasn’t been implemented in IPFS yet, partly because IPNS is not availab
 (requirement to rebroadcast every 24 house so not persistent; merkle tree so change at leaf changes top level; doesnt work in JS-IPFS;) 
 We implemented naming outside of IPFS (in Naming.js) to get it to work. 
 
-#### Implementation on WebTorrent
+To install IPFS for Node (and this needs testing)
+```
+yarn add ipfs ipfs-http-client
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
+
+To use IPFS pass "IPFS" in during the "connect" step
+
+### Implementation on WebTorrent
 WebTorrent implements the BitTorrent protocol in the browser. It will work for retrieval of objects and currently has the fastest/most-reliable stream interface.
 
 We also have a modified Seeder/Tracker which are currently (Sept2018) in testing on our gateway.
 
-#### Implementation on YJS (TransportYJS.js)
+To install WebTorrent for Node (and this needs testing)
+```
+yarn add webtorrent
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
+
+To use WebTorrent pass "WEBTORRENT" in during the "connect" step
+
+### Implementation on YJS (TransportYJS.js)
 
 YJS implements a decentralized database over a number of transports including IPFS. It supports several modes of which we only use “Arrays” to implement append-only logs and "Map" to implement key-value tables. 
 
 There is no authentication built into YJS but If using via the higher level CommonList (CL) object, 
 the authentication isnt required since the CL will validate anything sent. 
 
-#### Implementation on GUN
+To install YJS for Node (and this needs testing)
+```
+yarn add yjs
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
+
+To use YJS pass "YJS" in during the "connect" step
+
+### Implementation on GUN
 
 GUN implements a decentralized database and we have mostly migrated to it (from YJS) because there is some support and an active team.
 
@@ -106,16 +133,49 @@ Our tables and Lists are mapped as JSON objects inside GUN nodes due to some lim
 
 Still (as of Sept2018) working on Authentiction, and some reliability/bug issues.
 
-#### Implementation on OrbitDB
-OrbitDB is similar to YJS, but adds an authentication layer, which is particularly useful if using the rawlist/rawadd interface rather than the higher level CommonList. 
+To install GUN for Node (and this needs testing)
+```
+yarn add gun
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
 
-This was in the process of being implemented, but was stopped because they weren't responsive to problems we hit. 
+To use GUN pass "GUN" in during the "connect" step
 
-#### Implementation on DAT
+### Implementation on WOLK
 
-DAT has some interesting different choices from IPFS (The IPFS team forked out of DAT). In particular it allow for large sparse arrays such as used for scientific data, and is more focused on making mutable data work well, while IPFS focuses on immutable. 
+WOLK has implemented and maintain there own shim which is part of dweb-transports
 
-We didn't implement it initially because its not supported in browsers, but are planning (as of Sept 2018) to implement in dweb-transorts for use in dweb-mirror.
+To install WOLK for Node (and this needs testing)
+```
+yarn add "git://github.com/wolkdb/wolkjs.git#master"
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
+
+To use WOLK pass "WOLK" in during the "connect" step
+
+### Implementation on FLUENCE
+
+FLUENCE has implemented and maintain there own shim which is part of dweb-transports
+
+To install FLUENCE for Node (and this needs testing)
+```
+yarn add fluence
+```
+This will get overridden by an update of dweb-mirror, so its probably you will want
+this as a dependency of whatever is using dweb-transports instead.
+
+To use FLUENCE pass "FLUENCE" in during the "connect" step
+
+### Implementation of ContentHash 
+
+We have a simple Contenthash store/fetch that supports lists and key-value databases, 
+and knows about retrieving content by sha1 hash from the Archive
+
+No installation is required - it builds on the HTTP transport
+
+To use, pass "HASH" in during the "connect" step
 
 ### See also
 

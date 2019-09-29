@@ -13,10 +13,8 @@
   "dependencies": {
     "@stratumn/canonicaljson": "^1.0.3",
     "debug": "^4.1.1",
-    "ipfs-http-client": "^33.1.1",
     "node-fetch": "^2.3.0",
-    "readable-stream": "^3.3.0",
-    "wolkjs": "git://github.com/wolkdb/wolkjs.git#master"
+    "readable-stream": "^3.3.0"
   },
   "description": "Internet Archive Decentralized Web Transports Library",
   "devDependencies": {
