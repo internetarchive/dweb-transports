@@ -40,6 +40,18 @@ class TransportWEBTORRENT extends Transport {
         this.status = Transport.STATUS_LOADED;
     }
 
+    loadIntoNode() {
+        super.loadIntoNode(); // should be globally accessible at "WebTorrent", if not then assign to WebTorrent
+        //Dont have opts to check
+        //if (connectOpts.transports.includes('WEBTORRENT') && connectOpts.webtorrent && (connectOpts.webtorrent.tracker === "wrtc")) {
+        try {
+            const wrtc = "wrtc"; // Define string to avoid error in webpack when wrtc not installed
+            this.wrtc = require(wrtc); // Will be undefined if not installed, used by setup0
+        } catch (err) {
+            debug("wrtc requested but not present"); // Allow to continue without wrtc
+        }
+    }
+
     p_webtorrentstart() {
         /*
         Start WebTorrent and wait until for ready.
@@ -65,10 +77,16 @@ class TransportWEBTORRENT extends Transport {
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
         let combinedoptions = Transport.mergeoptions(defaultoptions, options.webtorrent);
+        if (combinedoptions.tracker === "wrtc") { // We want wrtc
+            if (this.wrtc) { // Do we have it (loaded in loadIntoNode, currently no way in browser)
+                combinedoptions.tracker = this.wrtc; // replace string "wrtc" with the code
+            } else {
+                delete combinedoptions.tracker; // Not available
+            }
+        }
         debug("setup0: options=%o", combinedoptions);
         let t = new TransportWEBTORRENT(combinedoptions);
         Transports.addtransport(t);
-
         return t;
     }
 
@@ -399,6 +417,6 @@ class TransportWEBTORRENT extends Transport {
 }
 Transports._transportclasses["WEBTORRENT"] = TransportWEBTORRENT;
 TransportWEBTORRENT.scripts = ['webtorrent@latest/webtorrent.min.js'];
-TransportWEBTORRENT.requires = ['webtorrent'];
+TransportWEBTORRENT.requires = ['webtorrent']; // Note wrtc loaded in loadIntoNode above
 
 exports = module.exports = TransportWEBTORRENT;
