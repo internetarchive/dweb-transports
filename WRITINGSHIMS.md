@@ -11,8 +11,6 @@ and to reach out to [Mitra](mitra@archive.org) for assistance.
 
 If you are working on integration, please add a comment to [dweb-transports issue#10](https://github.com/internetarchive/dweb-transports/issues/10)
 
-All the repos are open-source, `dweb-objects` for example refers to [https://github.com/internetarchive/dweb-objects]
-
 ## Overview
 
 Integrating a Dweb platform (aka Transport) into this library has two main stages.
@@ -178,9 +176,6 @@ def store(self, data=None, # If passed, this data will be pushed
 ```
 and should return a string that is the URL to be used for access, e.g. `ipfs:/ipfs/Q12345`
 
-We'll need to integrate it into `dweb-gateway` in [Archive.py.item2thumbnail()](https://github.com/internetarchive/dweb-objects/blob/master/Archive.py#L360]
-and [NameResolver.py/cache_content()](https://github.com/internetarchive/dweb-objects/blob/master/NameResolver.py#L222)
-
 #### 3. Hybrid - Precalculate + hijack.
 
 For WebTorrent we have done a much more complex process which we dont want to do again if possible. 
@@ -200,7 +195,7 @@ It involves:
 ### Installation for testing
 
 To make this work we'll need ... 
-* Pull request on dweb-objects, dweb-transports.
+* Pull request on dweb-transports.
 * Access to a repo (or branch) for the platform that has the hijacking code, this can be 
 either a separate repo or a pull request on dweb-transport where you can take over a directory (GUN does this).
 

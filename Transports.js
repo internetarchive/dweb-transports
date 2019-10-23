@@ -883,7 +883,7 @@ class Transports {
     }
     static _o2url(o) {
         return ["http","https"].includes(o.proto)   ? [o.proto, o.internal].join('://') // Shouldnt be relative
-               : o.proto                            ? [this.mirror, o.proto, o.internal].join('/')
+                :  o.proto                            ? [this.mirror, o.proto, o.internal].join('/')
                                                     : o.internal; // Uncanonicalizable
     }
     static gatewayUrl(url) {
@@ -896,7 +896,8 @@ class Transports {
         // Easier to work on single form [ { proto, internal } ]
         const oo = urls.map(url => Transports.canonicalName(url) || { proto: undefined, internal: url });  //if not canonicalizable then just pass the url along
         const oArc = oo.filter(o => ["arc"].includes(o.proto)); // Prefered
-        return (oArc.length ? oArc : oo)    // Prefered if have them, else others
+        const oProtoOk = oo.filter(o => ["http","https"].includes(o.proto)); // TODO Temporary to fix see https://github.com/internetarchive/dweb-mirror/issues/272
+        return (oArc.length ? oArc : oProtoOk)    // Prefered if have them, else others
             .map(o=>this._o2url(o))
     }
 }
