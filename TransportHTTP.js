@@ -70,19 +70,19 @@ class TransportHTTP extends Transport {
          */
         if (cb) { try { this.updateStatus(cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { this.updateStatus((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2f
     }
-    updateStatus(cb) { //TODO-API
-        this.updateInfo((err, res) => {
-            if (err) {
-                debug("Error status call to info failed %s", err.message);
-                this.status = Transport.STATUS_FAILED;
-                cb(null, this.status); // DOnt pass error up,  the status indicates the error
-            } else {
-                this.info = res;    // Save result
-                this.status = Transport.STATUS_CONNECTED;
-                cb(null, this.status);
-            }
-        });
-    }
+  updateStatus(cb) { //TODO-API
+    this.updateInfo({silentFinalError: true}, (err, res) => {
+      if (err) {
+        debug("Error status call to info failed %s", err.message);
+        this.status = Transport.STATUS_FAILED;
+        cb(null, this.status); // DOnt pass error up,  the status indicates the error
+      } else {
+        this.info = res;    // Save result
+        this.status = Transport.STATUS_CONNECTED;
+        cb(null, this.status);
+      }
+    });
+  }
 
     startHeartbeat({delay=undefined, statusCB=undefined}) {
         if (delay) {
@@ -116,7 +116,7 @@ class TransportHTTP extends Transport {
         Fetch from underlying transport,
         Fetch is used both for contenthash requests and table as when passed to SmartDict.p_fetch may not know what we have
         url: Of resource - which is turned into the HTTP url in p_httpfetch
-        opts: {start, end, retries, noCache} see p_GET for documentation
+        opts: {start, end, retries, noCache, silentFinalError} see p_GET for documentation
         throws: TransportError if fails
          */
         return await httptools.p_GET(url, opts);
@@ -162,7 +162,7 @@ class TransportHTTP extends Transport {
         NOTE THIS DOESNT WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway - reports stream.on an filestream.pipe aren't functions
 
         :param file:    Webtorrent "file" as returned by webtorrentfindfile
-        :param opts: { start: byte to start from; end: optional end byte }
+        :param opts: { start: byte to start from; end: optional end byte; silentFinalError: optional true to supress final error  }
         :returns stream: The readable stream - it is returned immediately, though won't be sending data until the http completes
          */
         // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
@@ -170,14 +170,16 @@ class TransportHTTP extends Transport {
         debug("createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();
-        httptools.p_GET(url, Object.assign({wantstream: true}, opts))
+        httptools.p_GET(url, Object.assign({wantstream: true}, Object.assign({}, opts, {silentFinalError: true})))
             .then(s => s.pipe(through))
             // Note any .catch is happening AFTER through returned
             .catch(err => {
-                console.warn(this.name, "createReadStream caught error", err.message);
+                if (!opts.silentFinalError) {
+                    debug("ERROR: %s createReadStream caught error", this.name, err.message);
+                }
                 if (typeof through.destroy === 'function') {
                     through.destroy(err); // Will emit error & close and free up resources
-                    // caller MUST implimit through.on('error', err=>) or will generate uncaught error message
+                    // caller MUST impliment through.on('error', err=>) or will generate uncaught error message
                 } else {
                     through.emit('error', err);
                 }
@@ -207,11 +209,12 @@ class TransportHTTP extends Transport {
         /*
         Return (via cb or promise) a numeric code for the status of a transport.
          */
-        return new Promise((resolve, reject) => { try { this.updateInfo((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}}) // Promisify pattern v2b (no CB)
+        return new Promise((resolve, reject) => { try { this.updateInfo({}, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}}) // Promisify pattern v2b (no CB)
     }
 
-    updateInfo(cb) {
-        httptools.p_GET(`${this.urlbase}/info`, {retries: 1}, cb);   // Try info, but dont retry (usually heartbeat will reconnect)
+    updateInfo(opts = {}, cb) {
+        if (typeof opts === "function") { cb = opts; opts={}; }
+        httptools.p_GET(`${this.urlbase}/info`, Object.assign({retries: 1, silentFinalError: false}, opts), cb);   // Try info, but dont retry (usually heartbeat will reconnect)
     }
 
     static async p_test(opts={}) {

@@ -10,9 +10,9 @@ const domains = {
       "images": ["https://dweb.me/archive/images/"],
       "serve": ["https://dweb.archive.org/download/"],
       "metadata": [
-        "wolk://dweb.archive.org/metadata/",
-        "gun:/gun/arc/archive.org/metadata/",
-        "https://dweb.me/arc/archive.org/metadata/"],
+        "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-torrent
+        "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-torrent
+        "https://dweb.me/arc/archive.org/metadata/"], // TODO-TORRENT move to dweb-metadata when that is running
       "search.php": ["https://dweb.me/archive/archive.html?query="],
       "search": ["https://dweb.me/archive/archive.html?query="],
     },

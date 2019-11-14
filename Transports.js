@@ -216,7 +216,7 @@ class Transports {
         for (const [url, t] of tt) {
             try {
                 debug("Fetching %s via %s", url.href, t.name);
-                let data = await t.p_rawfetch(url, opts);   // throws errors if fails or timesout
+                let data = await t.p_rawfetch(url, Object.assign({}, opts, {silentFinalError: true}));   // throws errors if fails or timesout
                 debug("Fetching %s via %s succeeded %d bytes", url.href, t.name, data.length);
                 if (opts.relay && failedtransports.length) {
                     debug("Fetching attempting relay of %d bytes from %s to %o", data.length, url.href, failedtransports.map(t=>t.name));
@@ -233,7 +233,9 @@ class Transports {
                 //TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
             }
         }
-        debug("Fetching %o failed on all transports", urls);
+        if (!opts.silentFinalError) {
+            debug("Fetching %o failed on all transports", urls);
+        }
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static fetch(urls, opts={}, cb) {
@@ -385,7 +387,8 @@ class Transports {
             try {
                 debug("Opening stream from %s via %s", url.href, t.name);
                 let res = await t.p_f_createReadStream(url, {wanturl} );
-                debug("Opening stream from %s via %s succeeded", url.href, t.name);
+                if (!["IPFS","HTTP"].includes(t.name))  // some transports always succeed to open stream (even when it fails) so meaningless
+                    debug("Opening stream from %s via %s succeeded", url.href, t.name);
                 return res;
             } catch (err) {
                 errs.push(err);
