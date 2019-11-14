@@ -187,6 +187,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.8: Better HTTP error handling
 * 0.2.7: Hack to handle URL rewrite issue see https://github.com/internetarchive/dweb-mirror/issues/272
 * 0.2.6: Move require of wrtc into TransportWEBTORRENT
 * 0.2.5: Remove dependencies on ipfs-http-client and wolkjs which need separate installation now, update README to clarify
