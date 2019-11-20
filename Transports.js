@@ -261,7 +261,7 @@ class Transports {
             let tt = this.validFor(undefined, "seed").map(([u, t]) => t); // Valid connected transports that support "seed"
             if (!tt.length) {
                 debug("Seeding: no transports available");
-                cb1(null); // Its not (currently) an error to be unable to seed
+                cb1(null, null); // Its not (currently) an error to be unable to seed
             } else {
                 const res = {};
                 each(tt, // [ Transport]
@@ -851,10 +851,10 @@ class Transports {
         ]
         const arcpatts = [ // No overlap between patts & arcpatts, so order unimportant
             /^http[s]?:[/]+[^/]+[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/(archive.org)/(internal)
-            /^http[s]?:[/]+[^/]+[/]arc[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/arc/(archive.org)/(internal)
+            /^http[s]?:[/]+[^/]+[/]arc[/](archive).(org)[/]*(.*)/i,   // https://localhost:123/arc/(archive.org)/(internal)
             /^http[s]?:[/]+dweb.(\w+)[.]([^/]+)[/]*(.*)/i,      // https://dweb.(proto).(dom.ain)/(internal) # Before dweb.dom.ain
             // /^http[s]?:[/]+dweb.([^/]+[.][^/]+[/]*.*)/i,     // https://dweb.(dom.ain)/internal) or https://dweb.(domain) Handled by coe on recognizing above
-            /^(http[s])?:[/]+([^/]+)[/]+(.*)/i,                 // https://dom.ain/pa/th
+            /^(http[s])?:[/]+([^/]+)[/]+(.*)/i,                 // https://dom.ain/int/er/nal
         ]
 
         for (let patt of gatewaypatts)  {
@@ -884,7 +884,8 @@ class Transports {
         let o = this.canonicalName(url, options);
         return o.protocol + ":/" + o.internal;
     }
-    static _o2url(o) {
+    static _o2url(o) { 
+        //TODO-GATEWAY this is obsolete, while mirror will handle /arc/archive.org/foo it prefers /foo as does dweb.archive.org
         return ["http","https"].includes(o.proto)   ? [o.proto, o.internal].join('://') // Shouldnt be relative
                 :  o.proto                            ? [this.mirror, o.proto, o.internal].join('/')
                                                     : o.internal; // Uncanonicalizable
@@ -897,6 +898,7 @@ class Transports {
     static gatewayUrls(urls) { //TODO-API
         // Convert urls to gateway urls,
         // Easier to work on single form [ { proto, internal } ]
+        // TODO-GATEWAY trap calls here in browser and see what is happening. 
         const oo = urls.map(url => Transports.canonicalName(url) || { proto: undefined, internal: url });  //if not canonicalizable then just pass the url along
         const oArc = oo.filter(o => ["arc"].includes(o.proto)); // Prefered
         const oProtoOk = oo.filter(o => ["http","https"].includes(o.proto)); // TODO Temporary to fix see https://github.com/internetarchive/dweb-mirror/issues/272

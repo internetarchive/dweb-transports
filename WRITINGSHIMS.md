@@ -131,8 +131,8 @@ and be able to cache and share it in a decentralized fashion prior to an abiliy 
 Obviously this could run quite complex functionality but in may cases simple mapping to URLs on our gateway will work well.
 
 See [dweb-transport/gun/gun_https_hijackable.js](https://github.com/internetarchive/dweb-transport/blob/master/gun/gun_https_hijackable.js) for the code modification 
-and `[gun_https_archive.js](https://github.com/internetarchive/dweb-transport/blob/master/gun/gun_https_archive.js)` for the configuration that maps `/arc/archive/metadata` to `https://dweb.me/arc/archive.org/metadata/` so that for example
-`gun:/arc/archive/metadata/commute` retrieves metadata for the `commute` Internet Archive item at [https://dweb.me/arc/archive.org/metadata/commute].
+and `[gun_https_archive.js](https://github.com/internetarchive/dweb-transport/blob/master/gun/gun_https_archive.js)` for the configuration that maps `/arc/archive/metadata` to `https://www-dweb-metadata.dev.archive.org/metadata/` so that for example
+`gun:/arc/archive/metadata/commute` retrieves metadata for the `commute` Internet Archive item at [https://www-dweb-metadata.dev.archive.org/metadata/commute].
 
 This will also work if the address of the table is a hash for example `xyz:/xyz/Q1234567/commute` 
 where `Q1234567` would be `xyz`'s address for the metadata table. 
@@ -142,7 +142,7 @@ The dweb-archive code needs to know to try Gun for the metadata, and this is con
 Note that this configuration mechanism is likely to change in the future though the address (on GUN) checked should remain the same.
 
 File retrieval can work similarly if the platform allows addressing by name. 
-For example gun:/arc/archive/download could be mapped to https://dweb.me/arc/archive.org/download so that gun:/arc/archive/download/commute/commute.avi
+For example gun:/arc/archive/download could be mapped to https://dweb.archive.org/download so that gun:/arc/archive/download/commute/commute.avi
 would resolve. Similarly the mapping could be to an opaque hash-based address like `xyz:/xyz/Q99999/commute/commute.avi` works.
 In this case the Archive client would be configured to automatically add a transformed URL like this as one of the places to look for a file.
 

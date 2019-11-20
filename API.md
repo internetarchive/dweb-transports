@@ -599,7 +599,7 @@ supportURLs = ['wolk'];
 supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
 
 ## Naming
-Independently from the transport, the Transport library can resolve names if provided an appropriate callback. 
+Independently from the transport, the Transport library can map names or urls if provided an appropriate callback. 
 See p_resolveNames(urls) and resolveNamesWith(cb)
 
 In practice this means that an application should do.
@@ -608,6 +608,4 @@ require('@internetarchive/dweb-transports)
 ```
 When setup this way, then calls to most functions that take an array of urls will first try and expand names.
 
-The format of names currently (April 2018) is under development but its likely to be something like 
-`dweb:/arc/archive.org/details/foo` 
-to allow smooth integration with existing HTTP urls that are moving to decentralization. 
+By default it maps names (now obsolete) like dweb:/arc/archive.org/metadata/foo and urls like https://archive.org/metadata/foo .

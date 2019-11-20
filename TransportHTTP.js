@@ -171,7 +171,9 @@ class TransportHTTP extends Transport {
         let through;
         through = new stream.PassThrough();
         httptools.p_GET(url, Object.assign({wantstream: true}, Object.assign({}, opts, {silentFinalError: true})))
-            .then(s => s.pipe(through))
+            .then(s => {
+              s.pipe(through);
+            })
             // Note any .catch is happening AFTER through returned
             .catch(err => {
                 if (!opts.silentFinalError) {

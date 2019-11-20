@@ -90,9 +90,9 @@ p_test({transport: ["GUN"])
 // Intentionally testing this with no connection
 const sampleMagnetURL = "magnet:?xt=urn:btih:465HQWPEN374LABVHUBUPBUX4WZU6HDS&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Fdweb.archive.org%3A6969&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=wss%3A%2F%2Ftracker.fastcast.nz&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Ffav-mitra/fav-mitra_members.json";
 const sampleMagnetURLMirrorresolve = "http://localhost:4244/magnet/?xt=urn:btih:465HQWPEN374LABVHUBUPBUX4WZU6HDS&tr=http%3A%2F%2Fbt1.archive.org%3A6969%2Fannounce&tr=http%3A%2F%2Fbt2.archive.org%3A6969%2Fannounce&tr=wss%3A%2F%2Fdweb.archive.org%3A6969&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com&tr=wss%3A%2F%2Ftracker.fastcast.nz&ws=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Fdownload%2F&xs=https%3A%2F%2Fdweb.me%2Farc%2Farchive.org%2Ftorrent%2Ffav-mitra/fav-mitra_members.json"
-const sampleGatewayURL = "http://dweb.me/arc/archive.org/download/foo/bar";
+const sampleGatewayURL = "http://dweb.archive.org/download/foo/bar";
 const sampleHttpURL = "http://somewhere.com/zzz/xxx/download/foo/bar";  // XXX Looks like this is handled wrong
-const sampleGatewayURLMirrorResolve = "http://localhost:4244/arc/archive.org/download/foo/bar";
+const sampleGatewayURLMirrorResolve = "http://localhost:4244/download/foo/bar";
 let tests = [
     {u: sampleMagnetURL, cn_proto:"magnet", gw: sampleMagnetURLMirrorresolve, resolve:sampleMagnetURL, resolveM: sampleMagnetURLMirrorresolve},
     {u: sampleGatewayURL, cn_proto: "arc", gw: sampleGatewayURLMirrorResolve, resolve: sampleGatewayURL, resolveM: sampleGatewayURLMirrorResolve},
