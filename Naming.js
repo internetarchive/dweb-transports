@@ -2,16 +2,16 @@ const debug = require('debug')('dweb-transports:naming');
 
 const archiveOrg = { // Mapping from archive.org URLs to dweb
     ".": [ "https://archive.org/" ],  // Handles at least "/about"
-    "details": ["https://dweb.me/archive/archive.html?item="],
-    "examples": ["https://dweb.me/archive/examples/"],
-    "images": ["https://dweb.me/archive/images/"],
+    "details": ["https://dweb.archive.org/archive/archive.html?item="],
+    "examples": ["https://dweb.archive.org/archive/examples/"],
+    "images": ["https://dweb.archive.org/archive/images/"],
     "serve": ["https://dweb.archive.org/download/"],
     "metadata": [
       "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
       "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
       "https://www-dweb-metadata.dev.archive.org/metadata/"], // Obsoletes https://dweb.me/arc/archive.org/metadata/
-    "search.php": ["https://dweb.me/archive/archive.html?query="],
-    "search": ["https://dweb.me/archive/archive.html?query="]
+    "search.php": ["https://dweb.archive.org/archive/archive.html?query="],
+    "search": ["https://dweb.archive.org/archive/archive.html?query="]
 }
 const domains = {
   'dweb:': {
@@ -74,7 +74,7 @@ function resolveName(url) {
     : url.startsWith("http://archive.org/")
     ? resolve(["https://archive.org"], archiveOrg, url.slice(19) )
     : url.startsWith("https://dweb.archive.org/")
-    ? resolve(["https://archive.org"], archiveOrg, url.slice(25) )
+    ? resolve(["https://dweb.archive.org"], archiveOrg, url.slice(25) )
     : url; //
 
 }
