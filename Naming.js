@@ -2,6 +2,7 @@ const debug = require('debug')('dweb-transports:naming');
 
 const archiveOrg = { // Mapping from archive.org URLs to dweb
     ".": [ "https://archive.org/" ],  // Handles at least "/about"
+    "advancedsearch": ["https://dweb.archive.org/advancedsearch"],
     "details": ["https://dweb.archive.org/archive/archive.html?item="],
     "examples": ["https://dweb.archive.org/archive/examples/"],
     "images": ["https://dweb.archive.org/archive/images/"],
