@@ -187,6 +187,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.10: Naming debugging for dweb.archive.org
 * 0.2.9: Major naming refactor
 * 0.2.8: Better HTTP error handling
 * 0.2.7: Hack to handle URL rewrite issue see https://github.com/internetarchive/dweb-mirror/issues/272
