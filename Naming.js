@@ -2,11 +2,16 @@ const debug = require('debug')('dweb-transports:naming');
 
 const archiveOrg = { // Mapping from archive.org URLs to dweb
     ".": [ "https://archive.org/" ],  // Handles at least "/about"
-    "advancedsearch": ["https://dweb.archive.org/advancedsearch"],
-    "details": ["https://dweb.archive.org/archive/archive.html?item="],
+    "advancedsearch": ["https://dweb.archive.org/advancedsearch"], // TODO possibly move to archive.org or cors.archive.org
+    "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
     "examples": ["https://dweb.archive.org/archive/examples/"],
     "images": ["https://dweb.archive.org/archive/images/"],
     "serve": ["https://dweb.archive.org/download/"],
+    // See: https://github.com/internetarchive/dweb-transports/issues/26
+    "services": {
+      "img": [ "https://dweb.archive.org/services/img/"]  // archive.org/services isnt CORS safe and cors.archive.org has some 403s
+    },
+    "thumbnail": [ "https://dweb.archive.org/services/img/" ],  // archive.org/services isnt CORS safe and cors.archive.org has some 403s
     "metadata": [
       "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
       "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
