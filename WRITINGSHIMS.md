@@ -5,11 +5,14 @@ Second draft: Mitra 19 Dec 2018
 Our intention with the dweb-transports and dweb-archive libraries is to be available for integrating with any decentralized platform (what we call a transport), 
 and this guide is intended to help the process.
 
-In our experience the process of adding a transport to a platform is pretty easy **when** we collaborate with someone intimately familiar with the platform.
-So feel free to ask questions in the [dweb-transports](https://github.com/internetarchive/dweb-transports/issues) repo,
+In our experience the process of adding a transport to a platform is pretty easy
+**when** we collaborate with someone intimately familiar with the platform.
+So feel free to ask questions in the 
+[dweb-transports](https://github.com/internetarchive/dweb-transports/issues) repo,
 and to reach out to [Mitra](mitra@archive.org) for assistance. 
 
-If you are working on integration, please add a comment to [dweb-transports issue#10](https://github.com/internetarchive/dweb-transports/issues/10)
+If you are working on integration, please add a comment to
+[dweb-transports issue#10](https://github.com/internetarchive/dweb-transports/issues/10)
 
 ## Overview
 
@@ -19,6 +22,7 @@ Integrating a Dweb platform (aka Transport) into this library has two main stage
 which mostly involves writing a file with a name like TransportXYZ.js 
 and integrating in a couple of places. This can be done entirely by a third party,
 though it will work smoother with collaboration.
+
 2. integrating a shim that enables the Internet Archive's content to be available 
 in the decentralized platform either via the [dweb.archive.org](https://dweb.archive.org) UI or otherwise.
 This is only necessary if you want to make IA content available, 
@@ -35,24 +39,33 @@ In this file are implementations of:
 * KeyValues - setting and getting the value of a key in a table. 
 * Lists - append only logs.
 
+To make Archive content available, only the Chunk reading and writing is required,
+though GUN uses KeyValues for storing/retrieving metadata json. 
+
 See [API.md](./API.md) and the existing code examples for detailed function by function documentation. 
 
 #### Error handling
-One common problem with decentralized platforms is reliability.  We handle this by falling back from one platform to another,
-e.g. if IPFS fails we can try WEBTORRENT or HTTP. But this only works if the Transports.js layer can detect when a failure has occurred. 
-This means it is really important to return an error (via a throw, promise rejection, or callback)
+One common problem with decentralized platforms is reliability.  
+We handle this by falling back from one platform to another,
+e.g. if IPFS fails we can try WEBTORRENT or HTTP. 
+But this only works if the Transports.js layer can detect when a failure has occurred. 
+This means it is really important to return an error (via a throw, promise rejection, or callback) if the retrieval
+is going to fail, IPFS doesn't currently do this which makes it an unreliable transport.
 
 #### Promises or callbacks
 We've tried to suport both promises and callbacks, though this isn't complete yet.  
-In general it will work best if each outward facing function supports a `cb(err, res)` parameter, and where this is absent, a Promise is returned that will `resolve` to `res` or `reject` with `err`.
+In general it will work best if each outward facing function supports a `cb(err, res)` parameter,
+and where this is absent, a Promise is returned that will `resolve` to `res` or `reject` with `err`.
 
-The `p_foo()` naming convention was previously used to indicate which functions returned a Promise and is gradually being phased out. 
+The `p_foo()` naming convention was previously used to indicate which functions returned a Promise 
+and is gradually being phased out. 
 
 ### Integration other than TransportXYZ.js
 
-Searching dweb-transports for `SEE-OTHER-ADDTRANSPORT` should find any places in the code where a tweak is required to add a new transport. 
+Searching dweb-transports for `SEE-OTHER-ADDTRANSPORT` should find any places in the code where a tweak is
+required to add a new transport. 
 
-The current list of places to integrate includes:
+The current (but possibly out of date) list of places to integrate includes:
 
 * [index.js](./index.js): needs to require the new TransportXYZ
 * [package.json/dependencies](./package.json#L13): Should specify which version range of a transport to include
@@ -69,10 +82,12 @@ for example:
 * a list can be implemented on top of a KeyValue system by adding a new item with a key being a timestamp.
 * key-value can be implemented on top of lists, by appending a {key: value} data structure, and filtering on retrieval.
 
-**monitor** and **listmonitor** will only work if the underlying system supports them, and its perfectly reasonable not to implement them. 
+**monitor** and **listmonitor** will only work if the underlying system supports them,
+and its perfectly reasonable not to implement them. 
 They aren't currently used by the dweb-archive / dweb.archive.org code.
 
-Make sure that `TransportXYZ.js` `constructor()` correctly covers what functions are implemented in the `.supportFunctions` field. 
+Make sure that `TransportXYZ.js` `constructor()` correctly covers what functions are implemented in the
+`.supportFunctions` field. 
 This field is used by Transports to see which transports to try for which functionality.
 
 For example if "store" is listed in TransportXYZ.supportFunctions,
@@ -87,7 +102,11 @@ but below is an outline.
 The key challenge is that the Archive has about 50 petabytes of data, 
 and none of the distributed platforms can pratically handle that currently.
 So we use 'lazy-seeding' techniques to push/pull data into a platform as its requested by users. 
-Optionally, if the process of adding a, possibly large, item is slow (e.g. in IPFS, WEBTORRENT),  we can also crawl some subset of Archive resources and pre-seed those files to the platform.
+
+Optionally, if the process of adding a, possibly large, item is slow (e.g. in IPFS, WEBTORRENT),  
+some subset of Archive resources could be pre-crawled and those files pre-seeded to the platform. 
+The biggest challenge in that preseeding is scalably keeping a mapping from Archive addresses to addresses
+in the transport. 
 
 In all cases, we presume that we run a (potentially) modified peer at the Archive, 
 so that interaction between the Archive servers and the system is fast and bandwidth essentially free.
@@ -98,7 +117,7 @@ In case its useful .... our servers have:
 * An implementation of REDIS answering on 0.0.0.0:6379 which saves to the persistent volume
 * A HTTPS or WSS proxy (we prefer this over giving access to dweb.me's certificate to the superpeer)
 * Log files (including rotation)
-* cron (not currently used, but can be)
+* Cron (not currently used, but can be)
 
 These are available to superpeers but will require some liason so we know how they are being used.
 
@@ -111,17 +130,22 @@ Please follow conventions i.e.
 ### Options for integration: Hijack, Push, Hybrid
 
 The actual choices to be made will depend on some of the differences between transports, specifically.
-* Is data immutable, and refered to by a content address or hash (IPFS, WEBTORRENT), or is it mutable and refered to by a name. (GUN, YJS, FLUENCE)
-* Will it be easier to 
+
+Is data immutable, and refered to by a content address or hash (IPFS, WEBTORRENT), or is it mutable and refered to by a name. 
+(GUN, YJS, FLUENCE)?
+
+Will it be easier to:
 1. 'hijack' specific addresses and use the peer to initiate retrieval from our servers (GUN)
-2. Have the server Push data into the platform and share the hash generated by the platform in the metadata (IPFS) and/or pass a URL to the platform which it can pull and return its hash.
-3. Hybrid - precalculate content addresses during item creation, then hijack the request for the data (this is expensive for the Archive so is going to take a lot longer to setup). (WEBTORRENT)
+2. Have the server Push data into the platform and share the hash generated by the platform in the metadata (IPFS)
+   and/or pass a URL to the platform which it can pull and return its hash.
+3. Hybrid - precalculate content addresses during item creation, then hijack the request for the data 
+   (this is expensive for the Archive so is going to take a lot longer to setup). (WEBTORRENT)
 
 Each of these requires a different technique, the documentation below currently only covers metadata access for material addressed by name. 
 
 #### 1. Hijacking
 
-For hijacking, currently used by GUN, the peer implements in its code,
+For hijacking, currently used by GUN and WOLK, the peer implements in its code,
 a way to map from a specific address to an action, with the simplest being a URL access.
 
 We think that hijacking is a generically useful function 
@@ -139,7 +163,6 @@ where `Q1234567` would be `xyz`'s address for the metadata table.
 The mapping to that table's address can be hard-coded in code, or included in the dweb-transports/Naming.js resolution.
 
 The dweb-archive code needs to know to try Gun for the metadata, and this is configured in [./Naming.js]
-Note that this configuration mechanism is likely to change in the future though the address (on GUN) checked should remain the same.
 
 File retrieval can work similarly if the platform allows addressing by name. 
 For example gun:/arc/archive/download could be mapped to https://dweb.archive.org/download so that gun:/arc/archive/download/commute/commute.avi
@@ -149,6 +172,8 @@ In this case the Archive client would be configured to automatically add a trans
 #### 2. Push of URL mapping (prefered) or content.
 
 This is more complex, and can only integrate files access, not metadata. 
+Because of its complexity we are unlikely to implement this ourselves but would be happy to collaborate with 
+a transport wanting to implement a microservice that performed this task.
 
 The general path is that a client requests metadata (via HTTP or GUN currently), 
 the dweb-gateway server then passes a URL to the platform (IPFS) which retrieves the URL, 
@@ -163,7 +188,9 @@ especially if it uses an internally generated address (for example IPFS uses a m
 
 This is used for IPFS.
 
-We will need a HTTP API, and a snippet of code (currently only python is supported) that we can integrate. 
+For the python integration we used to require an HTTP API, and a snippet of code in Python that we can integrate. 
+We don't have the resources to do this integration now, BUT we can work with you on a microservice design which
+would probably have to be in Javascript.
 
 It should have a signature like:
 ```
@@ -197,7 +224,7 @@ It involves:
 To make this work we'll need ... 
 * Pull request on dweb-transports.
 * Access to a repo (or branch) for the platform that has the hijacking code, this can be 
-either a separate repo or a pull request on dweb-transport where you can take over a directory (GUN does this).
+either a separate repo (WOLK does this) or a pull request on dweb-transport where you can take over a directory (GUN does this).
 
 ### Installation for production integration
 
