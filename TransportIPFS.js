@@ -1,3 +1,4 @@
+/* global Ipfs IpfsHttpClient*/
 /*
 This is a shim to the IPFS library, (Lists are handled in YJS or OrbitDB)
 See https://github.com/ipfs/js-ipfs but note its often out of date relative to the generic API doc.
@@ -19,7 +20,7 @@ let IPFS; //TODO-SPLIT move this line lower when fix structure
 
 // Library packages other than IPFS
 const Url = require('url');
-const stream = require('readable-stream');  // Needed for the pullthrough - this is NOT Ipfs streams
+//Appears Unsed: const stream = require('readable-stream');  // Needed for the pullthrough - this is NOT Ipfs streams
 
 // Other Dweb modules
 const errors = require('./Errors'); // Standard Dweb Errors
@@ -84,34 +85,39 @@ class TransportIPFS extends Transport {
         });
     }
     IPFSAutoConnect(cb) {
-        IPFS = global.Ipfs || window.Ipfs;  //Loaded by <script etc but still need a create
-        const ipfsAPI = global.IpfsHttpClient || window.IpfsHttpClient;
-        //TODO-SPLIT I think next few lines are wrong, dont think I've seen global.ipfs or window.ipfs but
-        //TODO-SPLIT https://github.com/ipfs/js-ipfs implies global.Ipfs but needs a "create" or "new"
-        if (global.ipfs) {
-            this._ipfsversion(global.ipfs, "global.ipfs", cb );
-        } else if (typeof window !== "undefined" && window.ipfs) {
-            this._ipfsversion(window.ipfs, "window.ipfs", cb);
-        } else {
-            // noinspection ES6ConvertVarToLetConst
-            var ipfs = ipfsAPI('localhost', '5001', {protocol: 'http'}); // leaving out the arguments will default to these values
-            ipfs.version((err, data) => {
-                if (err) {
-                    debug("IPFS via API failed %s, trying running own IPFS client", err.message);
-                    ipfs = new IPFS(this.options);
-                    ipfs.on('ready', () => {
-                        this._ipfsversion(ipfs, "client", cb);
-                    });   // This only works in the client version, not on API
-                    ipfs.on('error', (err) => {
-                        debug("IPFS via client error %s", err.message); // Calls error, note this could be a problem if it gets errors after "ready"
-                        cb(err);
-                    }) // This only works in the client version, not on API
-                } else {
+      IPFS = global.Ipfs || window.Ipfs;  //Loaded by <script etc but still need a create
+      const ipfsAPI = global.IpfsHttpClient || window.IpfsHttpClient;
+      //TODO-SPLIT I think next few lines are wrong, dont think I've seen global.ipfs or window.ipfs but
+      //TODO-SPLIT https://github.com/ipfs/js-ipfs implies global.Ipfs but needs a "create" or "new"
+      if (global.ipfs) {
+          this._ipfsversion(global.ipfs, "global.ipfs", cb );
+      } else if (typeof window !== "undefined" && window.ipfs) {
+          this._ipfsversion(window.ipfs, "window.ipfs", cb);
+      } else {
+        try { // Wrap IPFS API - notorious for bit-rot (Changing API's causing crashes)
+          // noinspection ES6ConvertVarToLetConst
+          var ipfs = ipfsAPI('http://localhost:5001'); // leaving out the arguments will default to these values
+          ipfs.version((err, unusedData) => {
+            if (err) {
+              debug("IPFS via API failed %s, trying running own IPFS client", err.message);
+              ipfs = new IPFS(this.options);
+              ipfs.on('ready', () => {
+                this._ipfsversion(ipfs, "client", cb);
+              });   // This only works in the client version, not on API
+              ipfs.on('error', (err) => {
+                debug("IPFS via client error %s", err.message); // Calls error, note this could be a problem if it gets errors after "ready"
+                cb(err);
+              }) // This only works in the client version, not on API
+            } else {
 
-                    this._ipfsversion(ipfs, "API", cb); // Note wastes an extra ipfs.version call but that's cheap
-                }
-            });
+              this._ipfsversion(ipfs, "API", cb); // Note wastes an extra ipfs.version call but that's cheap
+            }
+          });
+        } catch(err) {
+          debug("IPFSAutoConnect failed with exception %o", err);
+          cb(err,null);
         }
+      }
     }
 
     /*OBS
@@ -150,32 +156,40 @@ class TransportIPFS extends Transport {
     }
 
     p_setup1(cbstatus, cb) {
-        /* Start IPFS connection
-            cbstatus    function(this), for updating status, it must be ale to be called multiple times.
-            returns     this via cb(err,res) or promise
-            errors      This should never "fail" as it will break the Promise.all, it should return "this" but set this.status = Transport.STATUS_FAILED
-         */
+      /* Start IPFS connection
+          cbstatus    function(this), for updating status, it must be ale to be called multiple times.
+          returns     this via cb(err,res) or promise
+          errors      This should never "fail" as it will break the Promise.all, it should return "this" but set this.status = Transport.STATUS_FAILED
+       */
 
-        if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
-        function f(cb) {
-            // Logged by Transports
-            this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
+      if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
+      function f(cb) {
+        try {
+          // Logged by Transports
+          this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
+          if (cbstatus) cbstatus(this);
+          this.IPFSAutoConnect((err, ipfs) => {  // Various errors possible inc websocket
+            if (err) {
+              debug("Failed to connect %s", err.message);
+              this.status = Transport.STATUS_FAILED;
+            } else {
+              this.ipfs = ipfs;
+              this.status = Transport.STATUS_CONNECTED;
+            }
             if (cbstatus) cbstatus(this);
-            this.IPFSAutoConnect((err, ipfs) => {  // Various errors possible inc websocket
-                if (err) {
-                    debug("Failed to connect %s", err.message);
-                    this.status = Transport.STATUS_FAILED;
-                } else {
-                    this.ipfs = ipfs;
-                    this.status = Transport.STATUS_CONNECTED;
-                }
-                if (cbstatus) cbstatus(this);
-                cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
-            })
+            cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
+          })
+        } catch(err) {
+          // Catch errors as IPFS is a notorious bit-rotter (previously working code fails due to changes in its API
+          debug("Exception in IPFS.setup1 %o", err);
+          this.status = Transport.STATUS_FAILED;
+          if (cbstatus) cbstatus(this);
+          cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
         }
+      }
     }
 
-    p_setup2(refreshstatus) {
+    p_setup2(unusedRefreshstatus) {
         if (this.status === Transport.STATUS_FAILED) {
             debug("Stage 1 failed, skipping");
         }
@@ -288,7 +302,7 @@ class TransportIPFS extends Transport {
     }
 
     // noinspection JSCheckFunctionSignatures
-    async p_rawfetch(url, {timeoutMS=60000, relay=false}={}) {
+    async p_rawfetch(url, {timeoutMS=60000, unusedRelay=false}={}) {
         /*
         Fetch some bytes based on a url of the form ipfs:/ipfs/Qm..... or ipfs:/ipfs/z....  .
         No assumption is made about the data in terms of size or structure, nor can we know whether it was created with dag.put or ipfs add or http /api/v0/add/
@@ -374,6 +388,7 @@ class TransportIPFS extends Transport {
             // Building by hand becase of lack of support in js-ipfs-http-client
             const url = `${this.urlUrlstore}?arg=${encodeURIComponent(urlToFile)}`;
             // Have to be careful to avoid loops, the call to addIPFS should only be after file is retrieved and cached, and then addIPFS shouldnt be called if already cached
+            // noinspection JSIgnoredPromiseFromCall
             httptools.p_GET(url, {retries:0}, (err, res) => {
                 if (err) {
                     debug("IPFS.seed for %s failed in http: %s", urlToFile, err.message);
@@ -482,12 +497,12 @@ class TransportIPFS extends Transport {
             let urlqbf;
             const qbf = "The quick brown fox";
             const qbf_url = "ipfs:/ipfs/zdpuAscRnisRkYnEyJAp1LydQ3po25rCEDPPEDMymYRfN1yPK"; // Expected url
-            const testurl = "1114";  // Just a predictable number can work with
+            const unusedTesturl = "1114";  // Just a predictable number can work with
             const url = await transport.p_rawstore(qbf);
             console.log("rawstore returned", url);
             const newcid = TransportIPFS.cidFrom(url);  // Its a CID which has a buffer in it
             console.assert(url === qbf_url, "url should match url from rawstore");
-            const cidmultihash = url.split('/')[2];  // Store cid from first block in form of multihash
+            const unusedCidmultihash = url.split('/')[2];  // Store cid from first block in form of multihash
             const newurl = TransportIPFS.urlFrom(newcid);
             console.assert(url === newurl, "Should round trip");
             urlqbf = url;
