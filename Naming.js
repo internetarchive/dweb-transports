@@ -7,11 +7,12 @@ const archiveOrg = { // Mapping from archive.org URLs to dweb
     "examples": ["https://dweb.archive.org/archive/examples/"],
     "images": ["https://dweb.archive.org/archive/images/"],
     "serve": ["https://dweb.archive.org/download/"],
+    "archive": ["https://dweb.archive.org/archive"],  // Ensure this table is idempotent as seems to get run twice
     // See: https://github.com/internetarchive/dweb-transports/issues/26
     "services": {
-      "img": [ "https://dweb.archive.org/services/img/"]  // archive.org/services isnt CORS safe and cors.archive.org has some 403s
+      "img": [ "https://archive.org/services/img/"]
     },
-    "thumbnail": [ "https://dweb.archive.org/services/img/" ],  // archive.org/services isnt CORS safe and cors.archive.org has some 403s
+    "thumbnail": [ "https://archive.org/services/img/" ],
     "metadata": [
       "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
       "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
