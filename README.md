@@ -10,22 +10,21 @@ to support the decentralized web.
 decentralized transports. 
 * to support multiple URLs, on different transports, so that the (current) underlying unreliability
  is hidden. 
+* to allow Internet Archive content to be made available decentralized.
 
-### Node Installation
-* Clone this repo. 
-* Until this is in npm, add the line
-`"@internetarchive/dweb-transports.git": "latest",`
-to your package.json file in the dependencies section. 
-* `npm install @internetarchive/dweb-transports`  will install the dependencies including IPFS & WebTorrent
+### Installation for developers in node / yarn
 
-`const DwebTransports = require("@internetarchive/dweb-transports")` will add all Transports to a Javascript file.
-* TODO-API writeup how to require only some of the transports.
-* Then see usage API below
+In your app's package.json file, add
+```
+"@internetarchive/dweb-transports": "latest",
+```
+then
+`yarn install` 
 
-### Installation and usage in the Browser
-* Install npm & node
+### Installation for developers on browsers.
+* Install node and npm or yarn
 * Clone this repo and cd to it.
-* `npm run build` will create dist/dweb_transports_bundle.js
+* `webpack --mode producton` will create dist/dweb_transports_bundle.js
 * Add `<SCRIPT type="text/javascript" src="dweb_transports_bundle.js"></SCRIPT>` to your `<HEAD>`
 
 Then code like this should work. 
@@ -47,6 +46,15 @@ async function main(url) {
 }
 var searchparams = new URL(window.location.href).searchParams;
 ```
+### To develop on dweb-transports
+Clone this repo from [github](https://github.com/@internetarchive/dweb-transports). 
+`yarn install` 
+Should pick up the dependencies. 
+
+* See [WRITINGSHIMS.md](./WRITINGSHIMS.md) to add your transport to the library.
+* Or [ARCHIVEINTEGRATION.md](./ARCHIVEINTEGRATION.md) 
+  for allowing your transport to support Internet Archive content
+
 ## Notes on implemntation
 
 ### Implementation on HTTP (TransportHTTP.js)
