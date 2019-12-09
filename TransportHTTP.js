@@ -15,7 +15,7 @@ class TransportHTTP extends Transport {
   /* Subclass of Transport for handling HTTP - see API.md for docs
 
     options {
-        urlbase:    e.g. https://dweb.me    Where to go for URLS like /arc/...
+        urlbase:    e.g. https://dweb.me    Where to go for URLS like /info or table & list urls
         heartbeat: {
             delay       // Time in milliseconds between checks - 30000 might be appropriate - if missing it wont do a heartbeat
             statusCB    // Callback  cb(transport) when status changes
@@ -107,7 +107,7 @@ class TransportHTTP extends Transport {
     }
 
     validFor(url, func, opts) {
-        // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me
+        // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me or dweb.archive.org or localhost
         // in particular this allows urls like https://be-api.us.archive.org
         return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func, opts);
     }

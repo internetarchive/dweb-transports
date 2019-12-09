@@ -5,7 +5,7 @@ const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
 const map = require('async/map');
-const {p_namingcb, naming} = require('./Naming.js')
+const {p_namingcb, naming, archiveOrgMirroredUrls} = require('./Naming.js')
 
 class Transports {
     /*
@@ -121,11 +121,21 @@ class Transports {
         return Transports._connected().find((t) => t.name === "FLUENCE")
     }
 
+    static _resolvedUrlToGatewayUrl(url) {
+        const prefix = archiveOrgMirroredUrls.find(prefix => url.startsWith(prefix))
+        return prefix
+          ? this.mirror + url.slice(prefix.length)
+          : url;
+    }
+    // DEPRECATED TODO-DM242 replace where used with resolveNames
     static async p_resolveNames(urls) {
         /* Resolve urls that might be names, returning a modified array.
          */
         if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
-            return Array.isArray(urls) ? this.gatewayUrls(urls) : this.gatewayUrl(url);
+            const maybeUrls = (Array.isArray(urls) ? urls : [ urls ])
+            .map(url => this._resolvedUrlToGatewayUrl(url));
+            const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
+            return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
         } else if (this.namingcb) {
             return await this.namingcb(urls);  // Array of resolved urls
         } else {
@@ -133,8 +143,26 @@ class Transports {
         }
     }
 
+    /**
+     * Resolve urls that might be names, returning a modified array. (Replace asynchronous p_resolveNames
+     * @param urls
+     * @returns {url[]}
+     */
+    static resolveNames(urls) {
+        if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
+            const maybeUrls = (Array.isArray(urls) ? urls : [ urls ])
+              .map(url => this._resolvedUrlToGatewayUrl(url));
+            const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
+            return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
+        } else {
+            return this.naming(urls);  // Array of resolved urls
+        }
+    }
+    /**
+     * Set a callback for p_resolveNames
+     * @param cb(url) => Promise([url])
+     */
     static resolveNamesWith(cb) {
-        // Set a callback for p_resolveNames
         this.namingcb = cb;
     }
 
@@ -204,7 +232,7 @@ class Transports {
         throws:     CodingError if urls empty or [undefined ... ]
          */
         if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
-        let resolvedurls = await this.p_resolveNames(urls); // If naming is loaded then convert name to [urls]
+        let resolvedurls = this.resolveNames(urls); // If naming is loaded then convert name to [urls]
         if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
         let tt = this.validFor(resolvedurls, "fetch", {noCache: opts.noCache}); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
@@ -817,22 +845,22 @@ class Transports {
         return url;
     }
 
-    static async p_httpfetchurl(urls) {
-        /*
-        Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
-        this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.
-         */
-        //TODO this could be cleverer, it could ask each Transport for a http url and then use them in order of prefernece?
-        //TODO which would allow IPFS for example to return a gateway URL
-        //return Transports.http()._url(urls.find(u => (u.startsWith("contenthash") || u.startsWith("http") )), "content/rawfetch");
-        return urls.find(u => u.startsWith("http"));
+    static httpFetchUrl(urls) {
+      /*
+      Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
+      this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.
+       */
+      //TODO this could be cleverer, it could ask each Transport for a http url and then use them in order of prefernece?
+      //TODO which would allow IPFS for example to return a gateway URL
+      return urls.find(u => u.startsWith("http"));
     }
 
+    /* OBS though comment about canonicalUrl in dweb-archive/ReactSupport
     static canonicalName(url, options={}) {
-        /*
-        Utility function to convert a variety of missentered, or presumed names into a canonical result that can be resolved or passed to a transport
-        returns [ protocol e.g. arc or ipfs,  locally relevant address e.g. archive.org/metadata/foo or Q12345
-         */
+    /-*
+    Utility function to convert a variety of missentered, or presumed names into a canonical result that can be resolved or passed to a transport
+    returns [ protocol e.g. arc or ipfs,  locally relevant address e.g. archive.org/metadata/foo or Q12345
+     *-/
         if (typeof url !== "string") url = Url.parse(url).href;
         // In patterns below http or https; and  :/ or :// are treated the same
         const gateways = ["dweb.me", "ipfs.io"]; // Known gateways, may dynamically load this at some point
@@ -905,6 +933,7 @@ class Transports {
         return (oArc.length ? oArc : oProtoOk)    // Prefered if have them, else others
             .map(o=>this._o2url(o))
     }
+    END OF OBSOLETE */
 }
 Transports._transports = [];    // Array of transport instances connected
 Transports.naming = naming;

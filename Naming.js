@@ -1,25 +1,39 @@
 const debug = require('debug')('dweb-transports:naming');
 
 const archiveOrg = { // Mapping from archive.org URLs to dweb
-    ".": [ "https://archive.org/" ],  // Handles at least "/about"
-    "advancedsearch": ["https://dweb.archive.org/advancedsearch"], // TODO possibly move to archive.org or cors.archive.org
-    "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
-    "examples": ["https://dweb.archive.org/archive/examples/"],
-    "images": ["https://dweb.archive.org/archive/images/"],
-    "serve": ["https://dweb.archive.org/download/"],
-    "archive": ["https://dweb.archive.org/archive"],  // Ensure this table is idempotent as seems to get run twice
-    // See: https://github.com/internetarchive/dweb-transports/issues/26
-    "services": {
-      "img": [ "https://archive.org/services/img/"]
-    },
-    "thumbnail": [ "https://archive.org/services/img/" ],
-    "metadata": [
-      "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
-      "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
-      "https://www-dweb-metadata.dev.archive.org/metadata/"], // Obsoletes https://dweb.me/arc/archive.org/metadata/
-    "search.php": ["https://dweb.archive.org/archive/archive.html?query="],
-    "search": ["https://dweb.archive.org/archive/archive.html?query="]
+  ".": [ "https://archive.org/" ],  // Handles at least "/about and /bookreader"
+  "advancedsearch": ["https://dweb.archive.org/advancedsearch"], // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues
+  //"advancedsearch": ["https://dweb.archive.org/advancedsearch"], // TODO possibly move to archive.org or cors.archive.org
+  "contenthash": ["https://dweb.archive.org/contenthash"],  // TODO if need to support should move to static microservice
+  "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
+  "download": [ "https://cors.archive.org/download" ], // Need to go around cors check
+  "examples": ["https://dweb.archive.org/archive/examples/"],
+  "images": ["https://dweb.archive.org/archive/images/"],
+  "serve": ["https://cors.archive.org/download/"],
+  "archive": ["https://dweb.archive.org/archive"],  // Ensure this table is idempotent as seems to get run twice
+  // See: https://github.com/internetarchive/dweb-transports/issues/26
+  "services": {
+    "img": [ "https://archive.org/services/img/"]
+  },
+  "thumbnail": [ "https://archive.org/services/img/" ], // Deprecated way to get thumbnails when it looked like there might be a different way
+  "metadata": [
+    "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
+    "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
+    "https://www-dweb-metadata.dev.archive.org/metadata/"], // Obsoletes https://dweb.me/arc/archive.org/metadata/
+  "mds": [ 'https://be-api.us.archive.org/mds/' ], // Currently only '/mds/v1/get_related/all/IDENTIFIER'
+  "search.php": ["https://dweb.archive.org/archive/archive.html?query="],
+  "search": ["https://dweb.archive.org/archive/archive.html?query="]
 }
+// List of URLS mirrored by dweb-mirror
+// Any resolution above that starts with one of these will be replaced by 'mirror' if its passed as a config to Transports
+const archiveOrgMirroredUrls = [
+  "https://archive.org",
+  "https://dweb.archive.org",
+  "https://www-dweb-metadata.dev.archive.org",
+  "https://be-api.us.archive.org"
+]
+
+
 const domains = {
   'dweb:/': {
     arc: {"archive.org": archiveOrg},
@@ -27,7 +41,8 @@ const domains = {
   },
   "https://archive.org/": archiveOrg,
   "http://archive.org/": archiveOrg,
-  "https://dweb.archive.org/": archiveOrg
+  "https://dweb.archive.org/": archiveOrg,
+  "https://be-api.us.archive.org/": archiveOrg  // Just /mds/v1/related/all/IDENTIFIER
 };
 
 function _toUrl(partialUrl, remainder, query) {
@@ -67,7 +82,7 @@ function _recursive(parent, table, pathArr) {
  * @param parent
  * @param domain
  * @param pathAndQuery
- * @returns {any}
+ * @returns [url]
  */
 function resolveNameInDomain(parent, domain, pathAndQuery) {
   const [path, query] = pathAndQuery.split('?');
@@ -77,15 +92,35 @@ function resolveNameInDomain(parent, domain, pathAndQuery) {
       .filter(url =>  !!url)
     : [ _toUrl(foundStrOrArr, remainder, query) ];
 }
+
+/**
+ * Resold a URL into a URL or Array of URLs to pass to DwebTransports.Transports methods
+ * @param url
+ * @returns [url] or url
+ */
 function resolveName(url) {
+  // Find a domain object to resolve in
   const dom = Object.keys(domains).find( d => url.startsWith(d));
   return dom
     ? resolveNameInDomain(dom, domains[dom], url.slice(dom.length))
     : url;
 }
+
+/**
+ * Resolve an array of urls or names into another array of urls or names
+ *
+ * @param names
+ * @returns [url]
+ */
 function naming(names) {
     return [].concat(...names.map(n => resolveName(n)))
 }
+
+/**
+ * Asynchronous version of naming
+ * @param names
+ * @returns {Promise<[url]>}
+ */
 async function p_namingcb(names) {
   return new Promise((resolve, reject) => { try { const res = naming(names); resolve(res); } catch(err) {reject(err)}}); // Promisify pattern v2b (no CB)
 }
@@ -126,4 +161,4 @@ function test() {
 test();
 */
 
-exports = module.exports = {naming, p_namingcb};
+exports = module.exports = {naming, p_namingcb, archiveOrgMirroredUrls};

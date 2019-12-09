@@ -427,7 +427,7 @@ url:    Array of urls, or string representing url or representing array of urls
 return: Array of strings representing url
 ```
 
-##### static async p_httpfetchurl(url)
+##### static async httpFetchUrl(url)
 Return URLS suitable for caller to pass to fetch.
 ```
 url:    Array of urls, or string representing url or representing array of urls
