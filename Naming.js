@@ -4,13 +4,13 @@ const archiveOrg = { // Mapping from archive.org URLs to dweb
   ".": [ "https://archive.org/" ],  // Handles at least "/about and /bookreader"
   "advancedsearch": ["https://dweb.archive.org/advancedsearch"], // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues
   //"advancedsearch": ["https://dweb.archive.org/advancedsearch"], // TODO possibly move to archive.org or cors.archive.org
-  "contenthash": ["https://dweb.archive.org/contenthash"],  // TODO if need to support should move to static microservice
+  "contenthash": ["https://dweb.archive.org/contenthash/"],  // TODO if need to support should move to static microservice
   "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
-  "download": [ "https://cors.archive.org/download" ], // Need to go around cors check
+  "download": [ "https://cors.archive.org/download/" ], // Need to go around cors check
   "examples": ["https://dweb.archive.org/archive/examples/"],
   "images": ["https://dweb.archive.org/archive/images/"],
   "serve": ["https://cors.archive.org/download/"],
-  "archive": ["https://dweb.archive.org/archive"],  // Ensure this table is idempotent as seems to get run twice
+  "archive": ["https://dweb.archive.org/archive/"],  // Ensure this table is idempotent as seems to get run twice
   // See: https://github.com/internetarchive/dweb-transports/issues/26
   "services": {
     "img": [ "https://archive.org/services/img/"]

@@ -195,6 +195,7 @@ See [Dweb document index](./DOCUMENTINDEX.md) for a list of the repos that make 
 
 ### Release Notes
 
+* 0.2.12: Bug fixes in naming refactor
 * 0.2.11: Major naming refactor
 * 0.2.10: Naming debugging for dweb.archive.org
 * 0.2.9: Major naming refactor
