@@ -39,7 +39,7 @@ class TransportFLUENCE extends Transport {
             'keys', //          p_keys(url)                  – Return a list of keys in a table (suitable for iterating through)
         ];
         this.supportFeatures = [];
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     static setup0(options) {
@@ -54,32 +54,25 @@ class TransportFLUENCE extends Transport {
         return t;
     }
 
-    async p_setup1(cb) {
+    async p_setup1() {
         try {
-            this.status = Transport.STATUS_STARTING;
+            this.setStatus(Transport.STATUS_STARTING);
             debug('connecting...');
-
-            if (cb) cb(this);
-
             const rndString = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
             this.session = fluence.directConnect(this.options.nodeUrl, this.options.nodePort, this.options.appId, rndString);
-
             debug('connected.');
-
-            this.status = Transport.STATUS_CONNECTED;
+            this.setStatus(Transport.STATUS_CONNECTED);
         } catch (err) {
             console.error(this.name, 'failed to start', err);
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
         }
-
-        if (cb) cb(this);
         return this;
     }
 
 
     async p_status() {
         if (this.session !== null && this.session !== undefined) {
-            this.status = Transport.STATUS_CONNECTED;
+            this.setStatus(Transport.STATUS_CONNECTED);
         }
 
         return super.p_status();

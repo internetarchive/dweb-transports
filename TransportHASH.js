@@ -30,7 +30,6 @@ class TransportHASH extends Transport {
         urlbase:    e.g. https://dweb.me    Where to go for URLS like /contenthash
         heartbeat: {
             delay       // Time in milliseconds between checks - 30000 might be appropriate - if missing it wont do a heartbeat
-            statusCB    // Callback  cb(transport) when status changes
         }
     }
    */
@@ -49,7 +48,7 @@ class TransportHASH extends Transport {
     // noinspection JSUnusedGlobalSymbols
     this.supportFeatures = ['fetch.range', 'noCache'];
     this.name = "HASH";             // For console log etc
-    this.status = Transport.STATUS_LOADED;
+    this.setStatus(Transport.STATUS_LOADED);
   }
 
   static setup0(options) {
@@ -64,13 +63,11 @@ class TransportHASH extends Transport {
     }
   }
 
-  p_setup2(statusCB) { // Has to run after TransportHTTP
+  p_setup2() { // Has to run after TransportHTTP - note status passed back via eventListeners now
     this.http = Transports.http(); // Find an HTTP transport to use
     return new Promise((resolve, unusedReject) => {
-      this.status = Transport.STATUS_STARTING;
-      if (statusCB) statusCB(this);
+      this.setStatus(Transport.STATUS_STARTING);
       this.updateStatus((unusedErr, unusedRes) => {
-        if (statusCB) statusCB(this);
         this.startHeartbeat(this.options.heartbeat);
         resolve(this);  // Note always resolve even if error from p_status as have set status to failed
       });
@@ -87,23 +84,21 @@ class TransportHASH extends Transport {
     this.updateInfo((err, res) => {
       if (err) {
         debug("Error status call to info failed %s", err.message);
-        this.status = Transport.STATUS_FAILED;
+        this.setStatus(Transport.STATUS_FAILED);
         cb(null, this.status); // DOnt pass error up,  the status indicates the error
       } else {
         this.info = res;    // Save result
-        this.status = Transport.STATUS_CONNECTED;
+        this.setStatus(Transport.STATUS_CONNECTED);
         cb(null, this.status);
       }
     });
   }
 
-  startHeartbeat({delay=undefined, statusCB=undefined}) {
+  startHeartbeat({delay=undefined}) {
     if (delay) {
       debug("%s Starting Heartbeat", this.name)
       this.heartbeatTimer = setInterval(() => {
-        this.updateStatus((err, res)=>{ // Pings server and sets status
-          if (statusCB) statusCB(this); // repeatedly call callback if supplies
-        }, (unusedErr, unusedRes)=>{}); // Dont wait for status to complete
+        this.updateStatus( (unusedErr, unusedRes)=>{});
       }, delay);
     }
   }
@@ -112,10 +107,9 @@ class TransportHASH extends Transport {
       debug("stopping heartbeat");
       clearInterval(this.heartbeatTimer);}
   }
-  stop(refreshstatus, cb) {
+  stop(cb) {
     this.stopHeartbeat();
-    this.status = Transport.STATUS_FAILED;
-    if (refreshstatus) { refreshstatus(this); }
+    this.setStatus(Transport.STATUS_FAILED);
     cb(null, this);
   }
 

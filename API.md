@@ -68,20 +68,18 @@ Default options should be set in each transport, but can be overwritten,
 for example to overwrite the options for HTTP call it with  
 `options={ http: { urlbase: “https://dweb.me:443/” } }`
 
-##### async p_setup1 (, cb) 
+##### async p_setup1 () 
 Setup the resource and open any P2P connections etc required to be done just once. 
 Asynchronous and should leave `status=STATUS_STARTING` until it resolves, or `STATUS_FAILED` if fails.
 ```
-cb (t)=>void   If set, will be called back as status changes (so could be multiple times) 
 Resolves to    the Transport instance
 ```
 
-##### async p_setup2 (, cb) 
+##### async p_setup2 () 
 Works like p_setup1 but runs after p_setup1 has completed for all transports. 
 This allows for example YJS to wait for IPFS to be connected in TransportIPFS.setup1() 
 and then connect itself using the IPFS object. 
 ```
-cb (t)=>void   If set, will be called back as status changes (so could be multiple times) 
 Resolves to    the Transport instance
 ```
 
@@ -110,10 +108,9 @@ Code|Name|Means
 3|STATUS_LOADED|Code loaded but havent tried to connect
 4|STATUS_PAUSED|It was launched, probably connected, but now paused so will be ignored by validfor()
 
-##### async stop(refreshstatus, cb)
+##### async stop(cb)
 Stop the transport,
 ```
-refreshstatus (optional)    callback(transport instance) to the UI to update status on display
 cb(err, this)
 ```
 ### Transport: General storage and retrieval of objects
@@ -390,17 +387,12 @@ cb              Callback to be called each time status changes
 Returns:        Array of transport instances
 ```
 
-##### static async p_setup1(, cb)
+##### static async p_setup1(cb)
 Call p_setup1 on all transports that were created in setup0().  Completes when all setups are complete. 
 
-##### static async p_setup2(, cb)
+##### static async p_setup2(cb)
 Call p_setup2 on all transports that were created in setup0().  Completes when all setups are complete. 
 
-##### static async refreshstatus(t)
-Set the class of t.statuselement (if set) to transportstatus0..transportstatus4 depending on its status.
-```
-t   Instance of transport
-```
 
 ##### static connect({options}, cb) 
 ```
@@ -408,7 +400,6 @@ options {
     transports  Array of abbreviations of transports e.g. ["HTTP","IPFS"] as provided in URL
     defaulttransports   Array of abbreviations of transports to use if transports is unset
     paused          Array of abbreviations of transports that should be paused (not started)
-    statuselement   HTML element to build status display under
     ...             Entire options is passed to each setup0 and will include options for each Transport
     cb              If found called - no parameters else a promise is returned that resolves to undefined
 ```    

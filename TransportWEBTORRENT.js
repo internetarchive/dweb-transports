@@ -37,7 +37,7 @@ class TransportWEBTORRENT extends Transport {
         this.supportURLs = ['magnet'];
         this.supportFunctions = ['fetch', 'createReadStream', "seed"];
         this.supportFeatures = ['noCache']; // Note doesnt actually support noCache, but immutable is same
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     loadIntoNode() {
@@ -90,24 +90,21 @@ class TransportWEBTORRENT extends Transport {
         return t;
     }
 
-    async p_setup1(cb) {
+    async p_setup1() {
         try {
-            this.status = Transport.STATUS_STARTING;
-            if (cb) cb(this);
+            this.setStatus(Transport.STATUS_STARTING);
             await this.p_webtorrentstart();
             await this.p_status();
         } catch(err) {
             console.error(this.name, "failed to connect", err.message);
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
         }
-        if (cb) cb(this);
         return this;
     }
 
-    stop(refreshstatus, cb) {
+    stop(cb) {
         this.webtorrent.destroy((err) => {
-            this.status = Transport.STATUS_FAILED;
-            if (refreshstatus) refreshstatus(this);
+            this.setStatus(Transport.STATUS_FAILED);
             if (err) {
                 debug("Webtorrent error during stopping %o", err);
             } else {
@@ -122,11 +119,11 @@ class TransportWEBTORRENT extends Transport {
         Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
          */
         if (this.webtorrent && this.webtorrent.ready) {
-            this.status = Transport.STATUS_CONNECTED;
+            this.setStatus(Transport.STATUS_CONNECTED);
         } else if (this.webtorrent) {
-            this.status = Transport.STATUS_STARTING;
+            this.setStatus(Transport.STATUS_STARTING);
         } else {
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
         }
         return super.p_status();
     }

@@ -11,6 +11,21 @@ defaulthttpoptions = {
     heartbeat: { delay: 30000 } // By default check twice a minute
 };
 
+function ObjectDeepEquals(o1, o2) {
+  if (Array.isArray(o1)) {
+    return (Array.isArray(o2) && (o1.length === o2.length) && o1.every((v, i) => ObjectDeepEquals(v, o2[i])))
+  } else if (typeof o1 === "object") {
+    if (typeof o2 !== "object") {
+      return false;
+    } else {
+      const k1 = Object.keys(o1);
+      const k2 = Object.keys(o2);
+      return ((k1.length === k2.length) && k1.every((k,i) => k2[i] === k && ObjectDeepEquals(o1[k], o2[k])));
+    }
+  } else {
+    return (o1 === o2);
+  }
+}
 class TransportHTTP extends Transport {
   /* Subclass of Transport for handling HTTP - see API.md for docs
 
@@ -18,7 +33,6 @@ class TransportHTTP extends Transport {
         urlbase:    e.g. https://dweb.me    Where to go for URLS like /info or table & list urls
         heartbeat: {
             delay       // Time in milliseconds between checks - 30000 might be appropriate - if missing it wont do a heartbeat
-            statusCB    // Callback  cb(transport) when status changes
         }
     }
    */
@@ -37,7 +51,7 @@ class TransportHTTP extends Transport {
         // noinspection JSUnusedGlobalSymbols
         this.supportFeatures = ['fetch.range', 'noCache'];
         this.name = "HTTP";             // For console log etc
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     static setup0(options) {
@@ -52,12 +66,10 @@ class TransportHTTP extends Transport {
         }
     }
 
-    p_setup1(statusCB) {
+    p_setup1() {
         return new Promise((resolve, unusedReject) => {
-            this.status = Transport.STATUS_STARTING;
-            if (statusCB) statusCB(this);
+            this.setStatus(Transport.STATUS_STARTING);
             this.updateStatus((unusedErr, unusedRes) => {
-                if (statusCB) statusCB(this);
                 this.startHeartbeat(this.options.heartbeat);
                 resolve(this);  // Note always resolve even if error from p_status as have set status to failed
             });
@@ -74,23 +86,22 @@ class TransportHTTP extends Transport {
     this.updateInfo({silentFinalError: true}, (err, res) => {
       if (err) {
         debug("Error status call to info failed %s", err.message);
-        this.status = Transport.STATUS_FAILED;
+        this.setStatus(Transport.STATUS_FAILED);
         cb(null, this.status); // DOnt pass error up,  the status indicates the error
       } else {
+        const infoChanged = !ObjectDeepEquals(this.info, res);
         this.info = res;    // Save result
-        this.status = Transport.STATUS_CONNECTED;
+        this.setStatus(Transport.STATUS_CONNECTED, {forceSendEvent: infoChanged});
         cb(null, this.status);
       }
     });
   }
 
-    startHeartbeat({delay=undefined, statusCB=undefined}) {
+    startHeartbeat({delay=undefined}) {
         if (delay) {
             debug("%s Starting Heartbeat", this.name)
             this.heartbeatTimer = setInterval(() => {
-                this.updateStatus((err, res)=>{ // Pings server and sets status
-                    if (statusCB) statusCB(this); // repeatedly call callback if supplies
-                }, (unusedErr, unusedRes)=>{}); // Dont wait for status to complete
+                this.updateStatus((unusedErr, unusedRes)=>{});
             }, delay);
         }
     }
@@ -99,10 +110,9 @@ class TransportHTTP extends Transport {
             debug("stopping heartbeat");
             clearInterval(this.heartbeatTimer);}
     }
-    stop(refreshstatus, cb) {
+    stop(cb) {
         this.stopHeartbeat();
-        this.status = Transport.STATUS_FAILED;
-        if (refreshstatus) { refreshstatus(this); }
+        this.setStatus(Transport.STATUS_FAILED);
         cb(null, this);
     }
 

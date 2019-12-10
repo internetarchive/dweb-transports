@@ -1,6 +1,6 @@
 const Url = require('url');
 const errors = require('./Errors'); // Standard Dweb Errors
-
+const Transports = require('./Transports');
 function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 
@@ -12,8 +12,6 @@ class Transport {
         Superclass should merge with default options, call super
 
         Fields:
-        statuselement:  If set is an HTML Element that should be adjusted to indicate status (this is managed by Transports, just stored on Transport)
-        statuscb: Callback when status changes
         name:   Short name of element e.g. HTTP IPFS WEBTORRENT GUN
         */
     }
@@ -51,20 +49,17 @@ class Transport {
         throw new errors.IntentionallyUnimplementedError("Intentionally undefined function Transport.setup0 should have been subclassed");
         }
 
-    p_setup1(cb) {
+    p_setup1() {
         /*
         Setup the resource and open any P2P connections etc required to be done just once. Asynchronous and should leave status=STATUS_STARTING until it resolves, or STATUS_FAILED if fails.
 
-        cb (t)=>void   If set, will be called back as status changes (so could be multiple times)
         Resolves to    the Transport instance
         */
         return this;
     }
-    p_setup2(cb) {
+    p_setup2() {
         /*
         Works like p_setup1 but runs after p_setup1 has completed for all transports. This allows for example YJS to wait for IPFS to be connected in TransportIPFS.setup1() and then connect itself using the IPFS object.
-
-        cb (t)=>void   If set, will be called back as status changes (so could be multiple times)
         Resolves to    the Transport instance
         */
         return this;
@@ -74,15 +69,13 @@ class Transport {
         A deprecated utility to simply setup0 then p_setup1 then p_setup2 to allow a transport to be started in one step, normally Transports.p_setup should be called instead.
         */
         let t = await this.setup0(options) // Sync version that doesnt connect
-            .p_setup1(cb); // And connect
+            .p_setup1(); // And connect
 
-        return t.p_setup2(cb);     // And connect
+        return t.p_setup2();     // And connect
     }
     /* Disconnect from the transport service - there is no guarrantee that a restart will be successfull so this is usually only for when exiting */
-    stop(refreshstatus, cb) {
-        // refreshstatus(Transport instance) => optional callback to the UI to update the status on the display
-        this.status = Transport.STATUS_FAILED;
-        if (refreshstatus) refreshstatus(this);
+    stop(cb) {
+        this.setStatus(Transport.STATUS_FAILED);
         cb(null, this);
     }
     togglePaused(cb) {
@@ -94,13 +87,13 @@ class Transport {
          */
         switch (this.status) {
             case Transport.STATUS_CONNECTED:
-                this.status = Transport.STATUS_PAUSED;
+                this.setStatus(Transport.STATUS_PAUSED);
                 break;
             case Transport.STATUS_PAUSED:
-                this.status = Transport.STATUS_CONNECTED;   // Superclass might change to STATUS_STARTING if needs to stop/restart
+                this.setStatus(Transport.STATUS_CONNECTED);   // Superclass might change to STATUS_STARTING if needs to stop/restart
                 break;
             case Transport.STATUS_LOADED:
-                this.p_setup1(cb).then((t)=>t.p_setup2(cb)); // Allows for updating status progressively as attempts to connect
+                this.p_setup1().then((t)=>t.p_setup2()); // Allows for updating status progressively as attempts to connect
         }
         if (cb) cb(this);
     }
@@ -331,6 +324,15 @@ class Transport {
     }
     // ------ UTILITY FUNCTIONS, NOT REQD TO BE SUBCLASSED ----
 
+    /**
+     * Set the status variable and trigger any event listeners
+     * @param level
+     */
+    setStatus(level, {forceSendEvent= false} = {}) {
+        const hasChanged = level !== this.status;
+        this.status = level;
+        if (hasChanged || forceSendEvent) Transports.statusChanged();
+    }
     static mergeoptions(a) {
         /*
         Deep merge options dictionaries, careful since searchparameters from URL passed in as null

@@ -53,7 +53,7 @@ class TransportYJS extends Transport {
         this.supportFunctions = ['fetch', 'add', 'list', 'listmonitor', 'newlisturls',
             'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor'];   // Only does list functions, Does not support reverse,
         this.supportFeatures = []; // Doesnt support noCache and is mutable
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     async p__y(url, opts) {
@@ -118,16 +118,14 @@ class TransportYJS extends Transport {
         Throws: Error("websocket error") if WiFi off, probably other errors if fails to connect
         */
         try {
-            this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
-            if (cb) cb(this);
+            this.setStatus(Transport.STATUS_STARTING);   // Should display, but probably not refreshed in most case
             this.options.connector.ipfs = Transports.ipfs().ipfs; // Find an IPFS to use (IPFS's should be starting in p_setup1)
             this.yarrays = {};
             await this.p_status();
         } catch(err) {
             console.error(this.name,"failed to start",err);
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
         }
-        if (cb) cb(this);
         return this;
     }
 
@@ -136,7 +134,7 @@ class TransportYJS extends Transport {
         Return a string for the status of a transport. No particular format, but keep it short as it will probably be in a small area of the screen.
         For YJS, its online if IPFS is.
          */
-        this.status =  (await this.options.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
+        this.setStatus((await this.options.connector.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED);
         return super.p_status();
     }
 

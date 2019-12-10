@@ -32,7 +32,7 @@ class TransportWOLK extends Transport {
       this.supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
       this.supportFeatures = []; // Doesnt support noCache and is mutable
 
-      this.status = Transport.STATUS_LOADED;
+      this.setStatus(Transport.STATUS_LOADED);
     }
 
     connection(url) {
@@ -60,7 +60,7 @@ class TransportWOLK extends Transport {
     }
 
     //make the connection
-    async p_setup1(cb) {
+    async p_setup1() {
       await this.wolk.init()
       .then( async () => { //TODO-WOLK check - I'm just not familiar with this construct - an async function inside a .then
         if( this.wolk.ecdsaKey == undefined || this.wolk.ecdsaKey == null ) {
@@ -80,13 +80,11 @@ class TransportWOLK extends Transport {
       });
 
       try {
-        this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
-        if (cb) cb(this);
+        this.setStatus(Transport.STATUS_STARTING);   // Should display, but probably not refreshed in most case
         await this.p_status();
       } catch(err) {
-        this.status = Transport.STATUS_FAILED;
+        this.setStatus(Transport.STATUS_FAILED);
       }
-      if (cb) cb(this);
       return this;
     }
 
@@ -96,10 +94,10 @@ class TransportWOLK extends Transport {
         .then( (bn) => {
           if (bn >= 0) {
             debug("STATUS: connected? [1] = BN: %s", bn)
-            this.status = Transport.STATUS_CONNECTED;
+            this.setStatus(Transport.STATUS_CONNECTED);
           } else {
             debug("STATUS: connected? [0] = BN: %s", bn)
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
           }
           return this.status;
         })

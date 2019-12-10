@@ -80,7 +80,7 @@ class TransportGUN extends Transport {
                                  'connection', 'get', 'set', 'getall', 'keys', 'newdatabase', 'newtable', 'monitor',
                                  'add', 'list', 'listmonitor', 'newlisturls'];
         this.supportFeatures = []; // Doesnt support noCache and is mutable
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     connection(url) {
@@ -113,21 +113,19 @@ class TransportGUN extends Transport {
         return t;
     }
 
-    async p_setup1(cb) {
+    async p_setup1() {
         /*
         This sets up for GUN.
         Throws: TODO-GUN-DOC document possible error behavior
         */
         try {
-            this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
-            if (cb) cb(this);
+            this.setStatus(Transport.STATUS_STARTING);   // Should display, but probably not refreshed in most case
             //TODO-GUN-TEST - try connect and retrieve info then look at ._.opt.peers
             await this.p_status();
         } catch(err) {
             console.error(this.name,"failed to start",err);
-            this.status = Transport.STATUS_FAILED;
+            this.setStatus(Transport.STATUS_FAILED);
         }
-        if (cb) cb(this);
         return this;
     }
 
@@ -136,7 +134,7 @@ class TransportGUN extends Transport {
         Return an integer for the status of a transport see Transport
          */
         //TODO-GUN-TEST - try connect and retrieve info then look at ._.opt.peers
-        this.status = Transport.STATUS_CONNECTED;  //TODO-GUN how do I know if/when I'm connected (see comment on p_setup1 as well)
+        this.setStatus(Transport.STATUS_CONNECTED);  //TODO-GUN how do I know if/when I'm connected (see comment on p_setup1 as well)
         return this.status;
     }
     // ===== DATA ======
@@ -368,8 +366,8 @@ class TransportGUN extends Transport {
         debuggun("p_test");
         try {
             let t = this.setup0({});   //TODO-GUN when works with peers commented out, try passing peers: []
-            await t.p_setup1(); // Not passing cb yet
-            await t.p_setup2(); // Not passing cb yet - this one does nothing on GUN
+            await t.p_setup1();
+            await t.p_setup2(); // - this one does nothing on GUN
             // noinspection JSIgnoredPromiseFromCall
             t.p_test_kvt("gun:/gun/NACL");
             //t.p_test_list("gun:/gun/NACL"); //TODO test_list needs fixing to not create a dependency on Signature

@@ -5,7 +5,8 @@ const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
 const map = require('async/map');
-const {p_namingcb, naming, archiveOrgMirroredUrls} = require('./Naming.js')
+const {p_namingcb, naming, archiveOrgMirroredUrls} = require('./Naming.js');
+const EventTarget = require("./eventHandling.js");
 
 class Transports {
     /*
@@ -698,18 +699,18 @@ class Transports {
             }
         }).filter(f => !!f); // Trim out any undefined
     }
-    static p_setup1(refreshstatus, cb) {
+    static p_setup1(cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
         const prom = Promise.all(this._transports
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
                 debug("Connection stage 1 to %s", t.name);
-                return t.p_setup1(refreshstatus);
+                return t.p_setup1();
             }))
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
-    static p_setup2(refreshstatus, cb) {
+    static p_setup2(cb) {
         /* Second stage of setup, connect if possible */
         // Does all setup1a before setup1b since 1b can rely on ones with 1a, e.g. YJS relies on IPFS
 
@@ -717,11 +718,11 @@ class Transports {
             .filter((t) => (! this._optionspaused.includes(t.name)))
             .map((t) => {
                 debug("Connection stage 2 to %s", t.name);
-                return t.p_setup2(refreshstatus);
+                return t.p_setup2();
             }));
         if (cb) { prom.catch((err) => cb(err)).then((res)=>cb(null,res)); } else { return prom; } // This should be a standard unpromisify pattern
     }
-    static p_stop(refreshstatus, cb) { //TODO-API cb
+    static p_stop(cb) { //TODO-API cb
         if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
         /* Disconnect from all services, may not be able to reconnect */
         //TODO rewrite with async/map
@@ -729,22 +730,9 @@ class Transports {
             map(this._connected(),
               (t, cb2) => {
                   debug("Stopping %s", t.name);
-                  t.stop(refreshstatus, cb2);
+                  t.stop(cb2);
               },
               cb);
-        }
-    }
-
-    static async refreshstatus(t) {
-        //Note "this' undefined as called as callback
-        let statusclasses = ["transportstatus0","transportstatus1","transportstatus2","transportstatus3","transportstatus4"];
-        let el = t.statuselement;
-        if (el) {
-            el.classList.remove(...statusclasses);
-            el.classList.add(statusclasses[t.status]);
-        }
-        if (Transports.statuscb) {
-            Transports.statuscb(t);
         }
     }
 
@@ -797,30 +785,16 @@ class Transports {
         /*
             This is a standardish starting process, feel free to subclass or replace !
             It will connect to a set of standard transports and is intended to work inside a browser.
-            options = { defaulttransports: ["IPFS"], statuselement: el, http: {}, ipfs: {}; paused: ["IPFS"] }
+            options = { defaulttransports: ["IPFS"],  http: {}, ipfs: {}; paused: ["IPFS"] }
          */
         try {
             options = options || {};
             this._optionspaused = (options.paused || []).map(n => n.toUpperCase());       // Array of transports paused - defaults to none, upper cased
             let transports = this.setup0(this._tabbrevs(options), options); // synchronous
-            ["statuscb", "mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
-            //TODO move this to function and then call this from consumer
-            if (!!options.statuselement) {
-                let statuselement = options.statuselement;
-                while (statuselement.lastChild) {statuselement.removeChild(statuselement.lastChild); }   // Remove any exist status
-                statuselement.appendChild(
-                    utils.createElement("UL", {}, transports.map(t => {
-                        let el = utils.createElement("LI",
-                            {onclick: "this.source.togglePaused(DwebTransports.refreshstatus);", source: t, name: t.name}, //TODO-SW figure out how t osend this back
-                            t.name);
-                        t.statuselement = el;   // Save status element on transport
-                        return el;
-                    }))
-                );
-            }
+            ["mirror"].forEach(k => { if (options[k]) this[k] = options[k];} )
             //TODO-SPLIT-UPNEXT invert this, use a waterfall here, and then wrap in promise for p_setup, then put load's here
-            await this.p_setup1(this.refreshstatus);
-            await this.p_setup2(this.refreshstatus);
+            await this.p_setup1();
+            await this.p_setup2();
             debug("Connection completed to %o", this._connected().map(t=>t.name))
         } catch(err) {
             console.error("ERROR in p_connect:",err.message);
@@ -934,10 +908,18 @@ class Transports {
             .map(o=>this._o2url(o))
     }
     END OF OBSOLETE */
+
+  static statusChanged() {
+    this.dispatchEvent({type: "statuschanged"}); // Cant use "new Event" as not defined in node
+  }
+
 }
 Transports._transports = [];    // Array of transport instances connected
 Transports.naming = naming;
 Transports.namingcb = p_namingcb;    // Will be defined by the naming component (turns URLs for names into URLs for transport)
 Transports._transportclasses = {};  // Pointers to classes whose code is loaded.
 Transports.httptools = httptools;   // Static http tools
+EventTarget.call(Transports);      // Note creates static methods: addEventListener, removeEventListern, dispatchEvent on Transports
+Transports._listeners = [];
+
 exports = module.exports = Transports;

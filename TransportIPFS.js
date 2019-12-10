@@ -68,7 +68,7 @@ class TransportIPFS extends Transport {
         this.supportURLs = ['ipfs'];
         this.supportFunctions = ['fetch', 'store', 'seed', 'createReadStream'];   // Does not support reverse
         this.supportFeatures = ['noCache']; // Note doesnt actually support noCache, but immutable is same
-        this.status = Transport.STATUS_LOADED;
+        this.setStatus(Transport.STATUS_LOADED);
     }
 
     _ipfsversion(ipfs, s, cb) {
@@ -155,58 +155,52 @@ class TransportIPFS extends Transport {
         return t;
     }
 
-    p_setup1(cbstatus, cb) {
+    p_setup1(cb) {
       /* Start IPFS connection
-          cbstatus    function(this), for updating status, it must be ale to be called multiple times.
           returns     this via cb(err,res) or promise
-          errors      This should never "fail" as it will break the Promise.all, it should return "this" but set this.status = Transport.STATUS_FAILED
+          errors      This should never "fail" as it will break the Promise.all, it should return "this" but set this.setStatus(Transport.STATUS_FAILED)
        */
 
       if (cb) { try { f.call(this, cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { f.call(this, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2
       function f(cb) {
         try {
           // Logged by Transports
-          this.status = Transport.STATUS_STARTING;   // Should display, but probably not refreshed in most case
-          if (cbstatus) cbstatus(this);
+          this.setStatus(Transport.STATUS_STARTING);   // Should display, but probably not refreshed in most case
           this.IPFSAutoConnect((err, ipfs) => {  // Various errors possible inc websocket
             if (err) {
               debug("Failed to connect %s", err.message);
-              this.status = Transport.STATUS_FAILED;
+              this.setStatus(Transport.STATUS_FAILED);
             } else {
               this.ipfs = ipfs;
-              this.status = Transport.STATUS_CONNECTED;
+              this.setStatus(Transport.STATUS_CONNECTED);
             }
-            if (cbstatus) cbstatus(this);
             cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
           })
         } catch(err) {
           // Catch errors as IPFS is a notorious bit-rotter (previously working code fails due to changes in its API
           debug("Exception in IPFS.setup1 %o", err);
-          this.status = Transport.STATUS_FAILED;
-          if (cbstatus) cbstatus(this);
+          this.setStatus(Transport.STATUS_FAILED);
           cb(null, this); // Don't fail, report the error and set statust to Transport.STATUS_FAILED
         }
       }
     }
 
-    p_setup2(unusedRefreshstatus) {
+    p_setup2() {
         if (this.status === Transport.STATUS_FAILED) {
             debug("Stage 1 failed, skipping");
         }
         return this;
     }
 
-    stop(refreshstatus, cb) { //TODO-API p_stop > stop
+    stop(cb) { //TODO-API p_stop > stop
         if (this.ipfstype === "client") {
             this.ipfs.stop((err, res) => {
-                this.status = Transport.STATUS_FAILED;
-                if (refreshstatus) refreshstatus(this);
+                this.setStatus(Transport.STATUS_FAILED);
                 cb(err, res);
             });
         } else {
             // We didn't start it, don't try and stop it
-            this.status = Transport.STATUS_FAILED;
-            if (refreshstatus) refreshstatus(this);
+            this.setStatus(Transport.STATUS_FAILED);
             cb(miull, this);
         }
     }
@@ -215,7 +209,7 @@ class TransportIPFS extends Transport {
             Return a numeric code for the status of a transport.
             TODO - this no longer works if using the http api
          */
-        this.status =  (await this.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED;
+        this.setStatus((await this.ipfs.isOnline()) ? Transport.STATUS_CONNECTED : Transport.STATUS_FAILED);
         return super.p_status();
     }
 

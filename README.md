@@ -34,7 +34,6 @@ async function main(url) {
     try {
         // and if not found will use the defaulttransports specified here.
         await DwebTransports.p_connect({
-            statuselement: document.getElementById("statuselement"),    // Where to build status indicator
             defaulttransports: ["HTTP","IPFS"],                         // Default transports if not specified
             transports: searchparams.getAll("transport")    // Allow override default from URL parameters
         });
