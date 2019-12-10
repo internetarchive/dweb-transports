@@ -129,17 +129,17 @@ class Transports {
     }
     // DEPRECATED TODO-DM242 replace where used with resolveNames
     static async p_resolveNames(urls) {
-        /* Resolve urls that might be names, returning a modified array.
-         */
+      /* Resolve urls that might be names, returning a modified array.
+       */
+      const urlsArr = Array.isArray(urls) ? urls : [ urls ]; // Make sure its an array
         if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
-            const maybeUrls = (Array.isArray(urls) ? urls : [ urls ])
-            .map(url => this._resolvedUrlToGatewayUrl(url));
-            const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
-            return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
+          const maybeUrls = urlsArr.map(url => this._resolvedUrlToGatewayUrl(url));
+          const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
+          return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
         } else if (this.namingcb) {
-            return await this.namingcb(urls);  // Array of resolved urls
+            return await this.namingcb(urlsArr);  // Array of resolved urls
         } else {
-            return urls;
+            return urlsArr;
         }
     }
 
@@ -149,13 +149,13 @@ class Transports {
      * @returns {url[]}
      */
     static resolveNames(urls) {
-        if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
-            const maybeUrls = (Array.isArray(urls) ? urls : [ urls ])
-              .map(url => this._resolvedUrlToGatewayUrl(url));
+      const urlsArr = Array.isArray(urls) ? urls : [ urls ]; // Make sure its an array
+      if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
+            const maybeUrls = urlsArr.map(url => this._resolvedUrlToGatewayUrl(url));
             const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
             return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
         } else {
-            return this.naming(urls);  // Array of resolved urls
+            return this.naming(urlsArr);  // Array of resolved urls
         }
     }
     /**

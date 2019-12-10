@@ -2,13 +2,20 @@ const debug = require('debug')('dweb-transports:naming');
 
 const archiveOrg = { // Mapping from archive.org URLs to dweb
   ".": [ "https://archive.org/" ],  // Handles at least "/about and /bookreader"
-  "advancedsearch": ["https://dweb.archive.org/advancedsearch"], // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues
-  //"advancedsearch": ["https://dweb.archive.org/advancedsearch"], // TODO possibly move to archive.org or cors.archive.org
+
+  // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues fails on e.g. http://localhost:4244/details?query=bananas&mirror=&transport=HTTP
+  "advancedsearch": ["https://dweb.archive.org/advancedsearch"],
+  //"advancedsearch": ["https://cors.archive.org/advancedsearch.php"],
+
   "contenthash": ["https://dweb.archive.org/contenthash/"],  // TODO if need to support should move to static microservice
   "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
   "download": [ "https://cors.archive.org/download/" ], // Need to go around cors check
   "examples": ["https://dweb.archive.org/archive/examples/"],
+
+  // CORS issues requested in slack with Tracey 2019-nov-27
   "images": ["https://dweb.archive.org/archive/images/"],
+  // "images": ["https://cors.archive.org/archive/images/"],
+
   "serve": ["https://cors.archive.org/download/"],
   "archive": ["https://dweb.archive.org/archive/"],  // Ensure this table is idempotent as seems to get run twice
   // See: https://github.com/internetarchive/dweb-transports/issues/26
