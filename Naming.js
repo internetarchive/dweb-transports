@@ -1,33 +1,49 @@
 const debug = require('debug')('dweb-transports:naming');
 
-const archiveOrg = { // Mapping from archive.org URLs to dweb
-  ".": [ "https://archive.org/" ],  // Handles at least "/about and /bookreader"
+/*
+ * Mapping from archive.org URLs to dweb
+ *
+ * Note this table looks messy because cors handling at the archive is messy,
+ * and also because dweb.me aka dweb.archive.orgs python gateway is being transitioned out.
+ */
+const archiveOrg = {
+  ".": [ "https://www-dev-cors.dev.archive.org/" ],  // Handles at least "/about and /bookreader" catch al to go thru cors to archive.org
 
   // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues fails on e.g. http://localhost:4244/details?query=bananas&mirror=&transport=HTTP
-  "advancedsearch": ["https://dweb.archive.org/advancedsearch"],
-  //"advancedsearch": ["https://cors.archive.org/advancedsearch.php"],
+  "advancedsearch": ["https://www-dev-cors.dev.archive.org/advancedsearch"],  // Works but dependent on dweb.me
+  //"advancedsearch": ["https://dweb.archive.org/advancedsearch"],  // Works but dependent on dweb.me
+  //"advancedsearch": ["https://cors.archive.org/advancedsearch.php"],  // Fails
 
-  "contenthash": ["https://dweb.archive.org/contenthash/"],  // TODO if need to support should move to static microservice
-  "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
-  "download": [ "https://cors.archive.org/download/" ], // Need to go around cors check
-  "examples": ["https://dweb.archive.org/archive/examples/"],
+  "contenthash": ["https://dweb.archive.org/contenthash/"],  // TODO Legacy, if need to support should move to static microservice
+
+  // This group are essentially the same thing
+  "download": [ "https://archive.org/cors/" ], // Does not support HEAD but efficient since hits web nodes
+  //"download": [ "https://www-dev-cors.dev.archive.org/download" ], // Works but direct /cors/ is quicker
+  "serve": ["https://archive.org/cors/"], // Treat same as 'download'
+
+  "examples": ["https://dweb.archive.org/archive/examples/"], // Only used for demos
 
   // CORS issues requested in slack with Tracey 2019-nov-27
-  "images": ["https://dweb.archive.org/archive/images/"],
-  // "images": ["https://cors.archive.org/archive/images/"],
+  "images": ["https://www-dev-cors.dev.archive.org/images/"],
+  //"images": ["https://cors.archive.org/images/"], // Fails
 
-  "serve": ["https://cors.archive.org/download/"],
-  "archive": ["https://dweb.archive.org/archive/"],  // Ensure this table is idempotent as seems to get run twice
+  "archive": ["https://dweb.archive.org/archive/"],  // Ensure this table is idempotent as seems to get run twice x->d.a.o/archive/x -> d.a.o/archive/archive/x
   // See: https://github.com/internetarchive/dweb-transports/issues/26
+
   "services": {
-    "img": [ "https://archive.org/services/img/"]
+    "img": [ "https://archive.org/services/img/"]   // Main URL does cors
   },
   "thumbnail": [ "https://archive.org/services/img/" ], // Deprecated way to get thumbnails when it looked like there might be a different way
+
   "metadata": [
     "wolk://dweb.archive.org/metadata/",  // TODO-TORRENT move wolk hijacker to use dweb-metadata
     "gun:/gun/arc/archive.org/metadata/", // TODO-TORRENT move gunDB hijacker to use dweb-metadata
-    "https://www-dweb-metadata.dev.archive.org/metadata/"], // Obsoletes https://dweb.me/arc/archive.org/metadata/
+    "https://www-dweb-metadata.dev.archive.org/metadata/"], // Appends magnet link
+
   "mds": [ 'https://be-api.us.archive.org/mds/' ], // Currently only '/mds/v1/get_related/all/IDENTIFIER'
+
+  //Redirects to archive.html form standard archive.org urls
+  "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
   "search.php": ["https://dweb.archive.org/archive/archive.html?query="],
   "search": ["https://dweb.archive.org/archive/archive.html?query="]
 }
