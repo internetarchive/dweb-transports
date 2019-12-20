@@ -5,12 +5,14 @@ const debug = require('debug')('dweb-transports:naming');
  *
  * Note this table looks messy because cors handling at the archive is messy,
  * and also because dweb.me aka dweb.archive.orgs python gateway is being transitioned out.
+ * TODO-DM242 should handle archive.org/download/IDENTIFIER/IDENTIFIER_archive.torrent -> www-dweb-torrent.dev.archive.org
  */
 const archiveOrg = {
-  ".": [ "https://www-dev-cors.dev.archive.org/" ],  // Handles at least "/about and /bookreader" catch al to go thru cors to archive.org
+  ".": [ "https://www-dweb-cors.dev.archive.org/" ],  // Handles at least "/about and /bookreader /embed" catch al to go thru cors to archive.org
 
   // see https://github.com/internetarchive/dweb-mirror/issues/288 re cors issues fails on e.g. http://localhost:4244/details?query=bananas&mirror=&transport=HTTP
-  "advancedsearch": ["https://www-dev-cors.dev.archive.org/advancedsearch"],  // Works but dependent on dweb.me
+  "advancedsearch": ["https://www-dweb-cors.dev.archive.org/advancedsearch.php"],  // Works
+  "advancedsearch.php": ["https://www-dweb-cors.dev.archive.org/advancedsearch.php"],  // Works
   //"advancedsearch": ["https://dweb.archive.org/advancedsearch"],  // Works but dependent on dweb.me
   //"advancedsearch": ["https://cors.archive.org/advancedsearch.php"],  // Fails
 
@@ -18,17 +20,16 @@ const archiveOrg = {
 
   // This group are essentially the same thing
   "download": [ "https://archive.org/cors/" ], // Does not support HEAD but efficient since hits web nodes
-  //"download": [ "https://www-dev-cors.dev.archive.org/download" ], // Works but direct /cors/ is quicker
+  //"download": [ "https://www-dweb-cors.dev.archive.org/download" ], // Works but direct /cors/ is quicker
   "serve": ["https://archive.org/cors/"], // Treat same as 'download'
 
   "examples": ["https://dweb.archive.org/archive/examples/"], // Only used for demos
 
   // CORS issues requested in slack with Tracey 2019-nov-27
-  "images": ["https://www-dev-cors.dev.archive.org/images/"],
+  "images": ["https://www-dweb-cors.dev.archive.org/images/"],
   //"images": ["https://cors.archive.org/images/"], // Fails
 
-  "archive": ["https://dweb.archive.org/archive/"],  // Ensure this table is idempotent as seems to get run twice x->d.a.o/archive/x -> d.a.o/archive/archive/x
-  // See: https://github.com/internetarchive/dweb-transports/issues/26
+  "archive": ["https://www-dweb-cors.deb.archive.org/"], // Legacy
 
   "services": {
     "img": [ "https://archive.org/services/img/"]   // Main URL does cors
@@ -42,10 +43,10 @@ const archiveOrg = {
 
   "mds": [ 'https://be-api.us.archive.org/mds/' ], // Currently only '/mds/v1/get_related/all/IDENTIFIER'
 
-  //Redirects to archive.html form standard archive.org urls
-  "details": ["https://dweb.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
-  "search.php": ["https://dweb.archive.org/archive/archive.html?query="],
-  "search": ["https://dweb.archive.org/archive/archive.html?query="]
+  //Redirects to archive.html from standard archive.org urls
+  "details": ["https://www-dweb.dev.archive.org/archive/archive.html?item="], // TODO possibly move to static files microservice
+  "search.php": ["https://www-dweb.dev.archive.org/archive/archive.html?query="],
+  "search": ["https://www-dweb.dev.archive.org/archive/archive.html?query="]
 }
 // List of URLS mirrored by dweb-mirror
 // Any resolution above that starts with one of these will be replaced by 'mirror' if its passed as a config to Transports
@@ -53,6 +54,7 @@ const archiveOrgMirroredUrls = [
   "https://archive.org",
   "https://dweb.archive.org",
   "https://www-dweb-metadata.dev.archive.org",
+  "https://www-dweb.dev.archive.org",
   "https://be-api.us.archive.org"
 ]
 
