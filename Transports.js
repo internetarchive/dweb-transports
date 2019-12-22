@@ -5,7 +5,6 @@ const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
 const map = require('async/map');
-const {p_namingcb, naming, archiveOrgMirroredUrls} = require('./Naming.js');
 const EventTarget = require("./eventHandling.js");
 
 class Transports {
@@ -14,7 +13,6 @@ class Transports {
 
     Fields:
     _transports         List of transports loaded (internal)
-    namingcb            If set will be called cb(urls) => urls  to convert to urls from names.
     _transportclasses   All classes whose code is loaded e.g. {HTTP: TransportHTTP, IPFS: TransportIPFS}
     _optionspaused       Saves paused option for setup
     */
@@ -85,8 +83,7 @@ class Transports {
                             .map((t) => [url, t]))); // [[ u, t1], [u, t2]]
         }
     }
-    static async p_urlsValidFor(urls, func, opts) {
-        // Need a async version of this for serviceworker and TransportsProxy
+    static urlsValidFor(urls, func, opts) {
         return this.validFor(urls, func, opts).map((ut) => ut[0]);
     }
 
@@ -127,44 +124,6 @@ class Transports {
         return prefix
           ? this.mirror + url.slice(prefix.length)
           : url;
-    }
-    // DEPRECATED TODO-DM242 replace where used with resolveNames
-    static async p_resolveNames(urls) {
-      /* Resolve urls that might be names, returning a modified array.
-       */
-      const urlsArr = Array.isArray(urls) ? urls : [ urls ]; // Make sure its an array
-        if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
-          const maybeUrls = urlsArr.map(url => this._resolvedUrlToGatewayUrl(url));
-          const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
-          return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
-        } else if (this.namingcb) {
-            return await this.namingcb(urlsArr);  // Array of resolved urls
-        } else {
-            return urlsArr;
-        }
-    }
-
-    /**
-     * Resolve urls that might be names, returning a modified array. (Replace asynchronous p_resolveNames
-     * @param urls
-     * @returns {url[]}
-     */
-    static resolveNames(urls) {
-      const urlsArr = Array.isArray(urls) ? urls : [ urls ]; // Make sure its an array
-      if (this.mirror) { // Dont do using dweb-mirror as our gateway, as always want to send URLs there.
-            const maybeUrls = urlsArr.map(url => this._resolvedUrlToGatewayUrl(url));
-            const mirrorUrl = maybeUrls.find(url => url.startsWith(this.mirror));
-            return mirrorUrl ? [ mirrorUrl ] : maybeUrls;
-        } else {
-            return this.naming(urlsArr);  // Array of resolved urls
-        }
-    }
-    /**
-     * Set a callback for p_resolveNames
-     * @param cb(url) => Promise([url])
-     */
-    static resolveNamesWith(cb) {
-        this.namingcb = cb;
     }
 
     static togglePaused(name, cb) {
@@ -233,11 +192,9 @@ class Transports {
         throws:     CodingError if urls empty or [undefined ... ]
          */
         if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
-        let resolvedurls = this.resolveNames(urls); // If naming is loaded then convert name to [urls]
-        if (!resolvedurls.length)  throw new errors.TransportError("Transports.p_rawfetch none of the urls resolved: " + urls);
-        let tt = this.validFor(resolvedurls, "fetch", {noCache: opts.noCache}); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
+        let tt = this.validFor(urls, "fetch", {noCache: opts.noCache}); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
-            throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + resolvedurls);
+            throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -304,7 +261,6 @@ class Transports {
     // List handling ===========================================
 
     static async p_rawlist(urls) {
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
         if (!tt.length) {
             throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
@@ -340,7 +296,6 @@ class Transports {
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
          */
         //TODO-MULTI-GATEWAY might be smarter about not waiting but Promise.race is inappropriate as returns after a failure as well.
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
         if (!tt.length) {
             debug("Adding to %o failed: no transports available", urls);
@@ -496,7 +451,6 @@ class Transports {
          value: if kv is a string, this is the value to set
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
         */
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let debug1 =  typeof keyvalues === "object" ? `${keyvalues.length} keys` : keyvalues; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
@@ -528,7 +482,6 @@ class Transports {
          value: if kv is a string, this is the value to set
         throws: TransportError with message being concatenated messages of transports if NONE of them succeed.
         */
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
@@ -561,7 +514,6 @@ class Transports {
         returns:	string - arbitrary bytes retrieved or dict of key: value
         throws:     TransportError with concatenated error messages if none succeed.
          */
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "keys"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Getting all keys on %o failed: no transports available", urls);
@@ -593,7 +545,6 @@ class Transports {
         returns:	array of strings returned for the keys. //TODO consider issues around return a data type rather than array of strings
         throws:     TransportError with concatenated error messages if none succeed.
          */
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         let tt = this.validFor(urls, "getall"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Getting all values on %o failed: no transports available", urls);
@@ -643,7 +594,6 @@ class Transports {
         /*
         Do any asynchronous connection opening work prior to potentially synchronous methods (like monitor)
          */
-        urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         await Promise.all(
             this.validFor(urls, "connection")
                 .map(([u, t]) => t.p_connection(u)));
@@ -656,7 +606,6 @@ class Transports {
         cb:         function({type, key, value})
         current:    If true then then send all current entries as well
          */
-        //Can't its async. urls = await this.p_resolveNames(urls); // If naming is loaded then convert to a name
         this.validFor(urls, "monitor")
             .map(([u, t]) => {
                     debug("Monitoring table %s via %s", u, t.name);
@@ -819,104 +768,12 @@ class Transports {
         return url;
     }
 
-    static httpFetchUrl(urls) {
-      /*
-      Utility to take a array of Transport urls, convert back to a single url that can be used for a fetch, typically
-      this is done when cant handle a stream, so want to give the url to the <VIDEO> tag.
-       */
-      //TODO this could be cleverer, it could ask each Transport for a http url and then use them in order of prefernece?
-      //TODO which would allow IPFS for example to return a gateway URL
-      return urls.find(u => u.startsWith("http"));
-    }
-
-    /* OBS though comment about canonicalUrl in dweb-archive/ReactSupport
-    static canonicalName(url, options={}) {
-    /-*
-    Utility function to convert a variety of missentered, or presumed names into a canonical result that can be resolved or passed to a transport
-    returns [ protocol e.g. arc or ipfs,  locally relevant address e.g. archive.org/metadata/foo or Q12345
-     *-/
-        if (typeof url !== "string") url = Url.parse(url).href;
-        // In patterns below http or https; and  :/ or :// are treated the same
-        const gateways = ["dweb.me", "ipfs.io"]; // Known gateways, may dynamically load this at some point
-        // SEE-OTHER-ADDTRANSPORT
-        const protocols = ["ipfs","gun","magnet","yjs","wolk","arc", "contenthash", "http", "https", "fluence"];
-        const protocolsWantingDomains = ["arc", "http", "https"];
-        const gatewaypatts = [ // Must be before patts because gateway names often start with a valid proto
-            /^http[s]?:[/]+([^/]+)[/](\w+)[/](.*)/i,   // https://(gateway)/proto/(internal)  + gateway in list (IPFS gateways. dweb.me)
-        ]
-        const patts = [ // No overlap between patts & arcpatts, so order unimportant
-            /^dweb:[/]+(\w+)[/]+(.*)/i,                         // dweb://(proto)/(internal)
-            /^\w+:[/]+(\w+)[/](.*)/i,                           // proto1://proto2//(internal) - maybe only match if proto1=proto2 (must be before proto:/internal)
-            /^(\w+):[/]*(.*)/i,                                 // (proto)://(internal) # must be after proto1://proto2
-            /^[/]*(\w+)[/](.*)/i,                               // /(proto)//(internal) - maybe only match if proto1=proto2
-            /^[/]*dweb[/]*(\w+)[/](.*)/i,                       // /dweb/(proto)//(internal)
-        ]
-        const arcpatts = [ // No overlap between patts & arcpatts, so order unimportant
-            /^http[s]?:[/]+[^/]+[/](archive).(org)[/]*(.*)/i,   // https://localhost;123/(archive.org)/(internal)
-            /^http[s]?:[/]+[^/]+[/]arc[/](archive).(org)[/]*(.*)/i,   // https://localhost:123/arc/(archive.org)/(internal)
-            /^http[s]?:[/]+dweb.(\w+)[.]([^/]+)[/]*(.*)/i,      // https://dweb.(proto).(dom.ain)/(internal) # Before dweb.dom.ain
-            // /^http[s]?:[/]+dweb.([^/]+[.][^/]+[/]*.*)/i,     // https://dweb.(dom.ain)/internal) or https://dweb.(domain) Handled by coe on recognizing above
-            /^(http[s])?:[/]+([^/]+)[/]+(.*)/i,                 // https://dom.ain/int/er/nal
-        ]
-
-        for (let patt of gatewaypatts)  {
-            let rr = url.match(patt);
-            if (rr && gateways.includes(rr[1]) && protocols.includes(rr[2]))
-                return {proto: rr[2], internal: rr[3]};
-        }
-        for (let patt of arcpatts)  {
-            let rr = url.match(patt);
-            if (rr) {
-                if (protocols.includes(rr[1])) {
-                    // arc (and possibly others) want the domain as part of the internal
-                    return {proto: rr[1], internal: (protocolsWantingDomains.includes(rr[1]) ? [rr[2], rr[3]].join('/') : rr[3])};
-                } else {
-                    return {proto: "arc", internal: [[rr[1], rr[2]].join('.'), rr[3]].join('/')};
-                }
-            }
-        };
-        for (let patt of patts)  {
-            let rr = url.match(patt);
-            if (rr && protocols.includes(rr[1]))
-                return {proto: rr[1], internal: rr[2]};
-        };
-        return undefined;
-    }
-    static canonicalUrl(url, options={}) {
-        let o = this.canonicalName(url, options);
-        return o.protocol + ":/" + o.internal;
-    }
-    static _o2url(o) { 
-        //TODO-GATEWAY this is obsolete, while mirror will handle /arc/archive.org/foo it prefers /foo as does dweb.archive.org
-        return ["http","https"].includes(o.proto)   ? [o.proto, o.internal].join('://') // Shouldnt be relative
-                :  o.proto                            ? [this.mirror, o.proto, o.internal].join('/')
-                                                    : o.internal; // Uncanonicalizable
-    }
-    static gatewayUrl(url) {
-        // Convert url to gateway url, if not canonicalizable then just pass the url along
-        let o = Transports.canonicalName(url);
-        return !o ? url : this._o2url(o)
-    }
-    static gatewayUrls(urls) { //TODO-API
-        // Convert urls to gateway urls,
-        // Easier to work on single form [ { proto, internal } ]
-        // TODO-GATEWAY trap calls here in browser and see what is happening. 
-        const oo = urls.map(url => Transports.canonicalName(url) || { proto: undefined, internal: url });  //if not canonicalizable then just pass the url along
-        const oArc = oo.filter(o => ["arc"].includes(o.proto)); // Prefered
-        const oProtoOk = oo.filter(o => ["http","https"].includes(o.proto)); // TODO Temporary to fix see https://github.com/internetarchive/dweb-mirror/issues/272
-        return (oArc.length ? oArc : oProtoOk)    // Prefered if have them, else others
-            .map(o=>this._o2url(o))
-    }
-    END OF OBSOLETE */
-
   static statusChanged() {
     this.dispatchEvent({type: "statuschanged"}); // Cant use "new Event" as not defined in node
   }
 
 }
 Transports._transports = [];    // Array of transport instances connected
-Transports.naming = naming;
-Transports.namingcb = p_namingcb;    // Will be defined by the naming component (turns URLs for names into URLs for transport)
 Transports._transportclasses = {};  // Pointers to classes whose code is loaded.
 Transports.httptools = httptools;   // Static http tools
 EventTarget.call(Transports);      // Note creates static methods: addEventListener, removeEventListern, dispatchEvent on Transports

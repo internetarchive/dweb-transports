@@ -294,7 +294,6 @@ The Transports Class manages multiple transports
 ##### Properties
 ```
 _transports         List of transports loaded (internal)
-namingcb            If set will be called cb(urls) => urls  to convert to urls from names. 
 _transportclasses   All classes whose code is loaded e.g. {HTTP: TransportHTTP, IPFS: TransportIPFS}
 _optionspaused      Saves paused option for setup
 
@@ -329,8 +328,8 @@ options     checks supportFeatures
 Returns:    Array of pairs of url & transport instance [ [ u1, t1], [u1, t2], [u2, t1]]
 ```
 
-##### static async p_urlsValidFor(urls, func, options) {
-Async version of validFor for serviceworker and TransportsProxy
+##### static urlsValidFor(urls, func, options) {
+Live validFor but just return array urls
 
 
 ##### static http()
@@ -353,19 +352,6 @@ returns instance of TransportWEBTORRENT if connected
 returns instance of TransportGUN if connected
 ```
 
-##### static async p_resolveNames(urls)
-See Naming below
-```
-urls    mix of urls and names
-names   if namingcb is set, will convert any names to URLS (this requires higher level libraries)
-```
-
-##### static async resolveNamesWith(cb)
-Called by higher level libraries that provide name resolution function. 
-See Naming below
-```
-cb(urls) => urls    Provide callback function 
-```
 #### togglePaused(name, cb)
 Switch the state of a named transport between STATUS_CONNECTED and STATUS_PAUSED, 
 in the paused state it will not be used for transport but, in some cases, will still do background tasks like serving files. 
@@ -413,13 +399,6 @@ options - see connect() above
 
 ##### static async p_urlsFrom(url)
 Utility to convert to urls form wanted for Transports functions, e.g. from user input
-```
-url:    Array of urls, or string representing url or representing array of urls
-return: Array of strings representing url
-```
-
-##### static async httpFetchUrl(url)
-Return URLS suitable for caller to pass to fetch.
 ```
 url:    Array of urls, or string representing url or representing array of urls
 return: Array of strings representing url
@@ -588,15 +567,3 @@ A subclass of Transport for handling the WOLK transport layer (decentralized, bl
 supportURLs = ['wolk'];
 
 supportFunctions = [ 'fetch',  'connection', 'get', 'set',  ]; // 'store' - requires chunkdata; 'createReadStream' not implemented
-
-## Naming
-Independently from the transport, the Transport library can map names or urls if provided an appropriate callback. 
-See p_resolveNames(urls) and resolveNamesWith(cb)
-
-In practice this means that an application should do.
-```
-require('@internetarchive/dweb-transports)
-```
-When setup this way, then calls to most functions that take an array of urls will first try and expand names.
-
-By default it maps names (now obsolete) like dweb:/arc/archive.org/metadata/foo and urls like https://archive.org/metadata/foo .

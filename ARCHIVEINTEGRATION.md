@@ -90,10 +90,10 @@ and `[gun_https_archive.js](https://github.com/internetarchive/dweb-transport/bl
 
 This will also work if the address of the table is a hash for example `xyz:/xyz/Q1234567/commute` 
 where `Q1234567` would be `xyz`'s address for the metadata table. 
-The mapping to that table's address can be hard-coded in code, or included in the dweb-transports/Naming.js resolution.
+The mapping to that table's address can be hard-coded in code, or included in the dweb-archive-controller repo in Routing.js.
 
 The dweb-archive code needs to know the reverse mapping (e.g. from Archive URLs to GUN addresses) 
-and this is configured in [./Naming.js] in this repo.
+and this is configured in the dweb-archivecontoller repo in Routing.js.
 
 You should map three Archive address forms at least:
 * https://archive.org/metadata/foo to fetch the metadata

@@ -34,8 +34,7 @@ This doc will gradually replace the myriad, mostly out of date, links sections i
 * [Dweb - Libraries](https://docs.google.com/document/d/1LU-mbD87jzJGeIGBrxI4XNpczzvsV00kLC64xVXuwZ8/edit#): Overview of Libraries (maybe out of date)
 * [Dweb - lists](https://docs.google.com/document/d/1vm-Lze_Gu6gEQUPvh-yRCayCnT82SyECOrd8co3EPfo/edit#): List management library Sep2017
 * [Dweb - Authentication: Authentication Library](https://docs.google.com/document/d/1bdcNtfJQ04Twlbef1VZAjQYLmZgpdCFDapQBoef_CGs/edit)
-* [Dweb - Naming](https://docs.google.com/document/d/1PwU725r3Kuyu1ALoqOgmFUMlbM2Y8-IIFgMglN59XBM/edit): naming (Domain and Leaf) Library.
-* [Dweb - Key Value Pair](https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#heading=h.mkrw566urzdo) (Jan 2018).
+ [Dweb - Key Value Pair](https://docs.google.com/document/d/1yfmLRqKPxKwB939wIy9sSaa7GKOzM5PrCZ4W1jRGW6M/edit#heading=h.mkrw566urzdo) (Jan 2018).
 * [Dweb - Internet Archive support](https://docs.google.com/document/d/1kLqZqd_hWDW4sGE_9BLs9FLNon1IubeJTLmxYTdv6GA/edit#)
 * [Dweb - Roadmap](https://docs.google.com/document/d/1gz7rzjOpcrhyQjEFzQ5KnVz2hAlzQ_I0mq-zDdTjj4A/edit#) - rough outline of things we need to build, and where we are at. (out of date)
 * Old mitra42/dweb repo has [docs](https://github.com/mitra42/dweb/tree/master/docs) which are all out of date

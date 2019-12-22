@@ -91,7 +91,7 @@ There are issues with IPFS swarms that we haven’t been able to figure out abou
 
 Naming hasn’t been implemented in IPFS yet, partly because IPNS is not available in the JS-IPFS, and partly because IPNS has serious problems: 
 (requirement to rebroadcast every 24 hours so not persistent; merkle tree so change at leaf changes top level; doesnt work in JS-IPFS;) 
-We implemented naming outside of IPFS (in Naming.js) to get it to work. 
+We implemented naming outside of IPFS (in dweb-archivecontoller.Routing.js) to get it to work. 
 
 To install IPFS for Node (and this needs testing)
 ```
