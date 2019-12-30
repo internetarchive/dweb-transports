@@ -1,9 +1,11 @@
+/* eslint-disable indent, quotes */
 const Url = require('url');
 const errors = require('./Errors');
-const utils = require('./utils');
+// const utils = require('./utils');
 const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
 const each = require('async/each');
+const detectSeries = require('async/detectSeries');
 const map = require('async/map');
 const EventTarget = require("./eventHandling.js");
 
@@ -384,33 +386,60 @@ class Transports {
         debug("Opening stream from %o failed on all transports", urls);
         throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
-    static createReadStream(urls, opts, cb) {
-        /*
-            Different interface, more suitable when just want a stream, now.
-            urls:   Url or [urls] of the stream
-            opts{
-                start, end:   First and last byte wanted (default to 0...last)
-                preferredTransports: preferred order to select stream transports (usually determined by application)
-            }
-            cb(err, stream): Called with open readable stream from the net.
-            Returns promise if no cb
-         */
-        if (typeof opts === "function") { cb = opts; opts = {start: 0}; } // Allow skipping opts
-        DwebTransports.p_f_createReadStream(urls, {preferredTransports: (opts.preferredTransports || [])})
-            .then(f => {
-                let s = f(opts);
-                if (cb) { cb(null, s); } else { return(s); }; // Callback or resolve stream
-            })
-            .catch(err => {
-                if (err instanceof errors.TransportError) {
-                    console.warn("Transports.createReadStream caught", err.message);
-                } else {
-                    console.error("Transports.createReadStream caught", err);
-                }
-                if (cb) { cb(err); } else { reject(err)}
-            });
-    };
 
+  /**
+   *
+   * @param urls Url or [urls] of the stream
+   * @param opts {start, end, preferredTransports}
+   * @returns {Promise<undefined|(function(*=): *)|(function(*=): PassThrough)|*|(function(*=): void)>}
+   */
+  static createReadStream(urls, opts= {}, cb) {
+
+    // Find all the transports that CAN support this request
+    const tt = this.validFor(urls, "createReadStream", {}); // [ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
+    if (!tt.length) {
+      debug("Opening stream from %o failed: no transports available", urls);
+      throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
+    }
+    // With multiple transports, it should return when the first one returns something.
+    const errs = [];
+
+    // Select first from preferredTransports in the order presented, then the rest at random
+    tt.sort((a, b) => ((opts.preferredTransports.indexOf(a[1].name) + 1) || 999 + Math.random())  - ((opts.preferredTransports.indexOf(b[1].name) + 1) || 999 + Math.random()));
+
+    let stream;
+    detectSeries(
+      tt,
+      (urlT, cb1) => {
+        const url = urlT[0];
+        const t = urlT[1];
+        debug("Opening stream from %s via %s", url.href, t.name);
+        t.createReadStream(url, opts, (err, s) => {
+          if (err) {
+            debug("Opening stream from %s via %s failed: %s", url.href, t.name, err.message);
+            errs.push(err);
+            cb1(null, false);
+          } else {
+            if (!["IPFS", "HTTP"].includes(t.name)) { // some transports always succeed to open stream (even when it fails) so meaningless
+              debug("Opening stream from %s via %s succeeded", url.href, t.name);
+            }
+            stream = s; // To pass back
+            cb1(null, true);
+          }
+        });
+      },
+      (err, urlT) => { // Res is [url,t] that succeeded
+        if (urlT) {
+          cb(null, stream);
+        } else {
+          // None succeeded
+          debug("Opening stream from %o failed on all transports", urls);
+          cb(new errors.TransportError(errs.map((e) => e.message).join(', ')));  // Throw err with combined messages if none succeed
+        }
+      }
+    );
+    // TODO-MULTI-GATEWAY potentially copy from success to failed URLs.
+  }
 
 // KeyValue support ===========================================
 

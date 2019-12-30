@@ -157,7 +157,7 @@ class TransportHTTP extends Transport {
             if (wanturl) {
                 return url;
             } else {
-                return function (opts) { return self.createReadStream(url, opts); };
+                return function (opts) { return self.sync_createReadStream(url, opts); };
             }
         } catch(err) {
             //Logged by Transports
@@ -166,7 +166,12 @@ class TransportHTTP extends Transport {
         }
     }
 
-    createReadStream(url, opts) {
+    createReadStream(url, opts, cb) {
+      // Note - this was using an odd nested Object.assign with no comments, took it out 2019-12-29 if replace then document why :-)
+      httptools.p_GET(url, Object.assign({wantstream: true}, opts ), cb);
+    }
+
+    sync_createReadStream(url, opts) {
         /*
         The function, encapsulated and inside another function by p_f_createReadStream (see docs)
         NOTE THIS DOESNT WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway - reports stream.on an filestream.pipe aren't functions
@@ -177,25 +182,29 @@ class TransportHTTP extends Transport {
          */
         // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
         // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
-        debug("createreadstream %s %o", Url.parse(url).href, opts);
+        debug("sync_createreadstream %s %o", Url.parse(url).href, opts);
         let through;
         through = new stream.PassThrough();
-        httptools.p_GET(url, Object.assign({wantstream: true}, Object.assign({}, opts, {silentFinalError: true})))
-            .then(s => {
-              s.pipe(through);
-            })
-            // Note any .catch is happening AFTER through returned
-            .catch(err => {
-                if (!opts.silentFinalError) {
-                    debug("ERROR: %s createReadStream caught error", this.name, err.message);
-                }
-                if (typeof through.destroy === 'function') {
-                    through.destroy(err); // Will emit error & close and free up resources
-                    // caller MUST impliment through.on('error', err=>) or will generate uncaught error message
-                } else {
-                    through.emit('error', err);
-                }
-            });
+        through.name = "XXX THROUGH " +  Url.parse(url).href;
+        // TODO - debug this and figure out why using nested Object.assign
+        createReadStream(url, Object.assign({}, opts, { silentFinalError: true } ), (err, s) => {
+          if (err) {
+            debug("XXX Emitting error on through stream"); // Tracking down obscure timing error where barfs if error emitted before through's consumer sets up its own error handler
+            if (!opts.silentFinalError) {
+              debug("ERROR: %s sync_createReadStream caught error %s", this.name, err.message);
+            }
+            if (typeof through.destroy === 'function') {
+              // TODO-STREAMS Seem to have a problem here, if through doesn't have any error handlers. and unclear if its lack of error on "s" or on "through"
+              through.destroy(err); // Will emit error & close and free up resources
+              // caller MUST impliment through.on('error', err=>) or will generate uncaught error message
+            } else {
+              through.emit('error', err);
+            }
+          } else {
+            s.name = "XXX TransportHTTP.createReadStream result: " +  Url.parse(url).href;
+            s.pipe(through);
+          }
+        });
         return through; // Returns "through" synchronously, before the pipe is setup
     }
 
@@ -208,7 +217,7 @@ class TransportHTTP extends Transport {
         :param opts: { start: byte to start from; end: optional end byte }
         :resolves to stream: The readable stream.
          */
-        debug("createreadstream %s %o", Url.parse(url).href, opts);
+        debug("p_createreadstream %s %o", Url.parse(url).href, opts);
         try {
             return await httptools.p_GET(url, Object.assign({wantstream: true}, opts));
         } catch(err) {
