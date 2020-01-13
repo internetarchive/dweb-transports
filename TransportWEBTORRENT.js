@@ -11,7 +11,6 @@ Y Lists have listeners and generate events - see docs at ...
 
 // Require in consumer;
 // const WebTorrent = require('webtorrent');
-const stream = require('readable-stream');
 // const Url = require('url');
 const path = require('path');
 const debug = require('debug')('dweb-transports:webtorrent');
@@ -33,7 +32,7 @@ class TransportWEBTORRENT extends Transport {
      */
 
     constructor(options) {
-        super(options);
+        super();
         this.webtorrent = undefined;    // Undefined till start WebTorrent
         this.options = options;         // Dictionary of options
         this.name = 'WEBTORRENT';       // For console log etc
@@ -148,12 +147,19 @@ class TransportWEBTORRENT extends Transport {
         }
 
         const torrentId = urlstring.slice(0, index);
-        const urlpath = urlstring.slice(index + 1);
+        const pathInTorrent = urlstring.slice(index + 1);
 
-        return { torrentId, urlpath };
+        return { torrentId, pathInTorrent };
     }
 
+    /**
+     *
+     * @param torrentId     btih ? of the torrent.
+     * @param opts          ??
+     * @returns {Promise<torrent>}
+     */
     async p_webtorrentadd(torrentId, opts) {
+      /* TODO Could refactor to take a cb as no async in it, sets up event to call cb but consumers want promises */
         return new Promise((resolve, reject) => {
             // Check if this torrentId is already added to the webtorrent client
             let torrent = this.webtorrent.get(torrentId);
@@ -198,38 +204,38 @@ class TransportWEBTORRENT extends Transport {
         return file;
     }
 
-    p_rawfetch(url, unusedOpts = {}) {
-        /*
-        Fetch some bytes based on a url of the form:
+  p_rawfetch(url, unusedOpts = {}) {
+    /*
+    Fetch some bytes based on a url of the form:
 
-            magnet:xyzabc/path/to/file
+    magnet:xyzabc/path/to/file
 
-        (Where xyzabc is the typical magnet uri contents)
+    (Where xyzabc is the typical magnet uri contents)
 
-        No assumption is made about the data in terms of size or structure.         Returns a new Promise that resolves to a buffer.
+    No assumption is made about the data in terms of size or structure.         Returns a new Promise that resolves to a buffer.
 
-        :param string url: URL of object being retrieved
-        :resolve buffer: Return the object being fetched.
-        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
-         */
-        return new Promise((resolve, reject) => {
-            // Logged by Transports
-            const { torrentId, pathInTorrent } = this.webtorrentparseurl(url);
-            this.p_webtorrentadd(torrentId)
-                .then((torrent) => {
-                    torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
-                    const file = this.webtorrentfindfile(torrent, pathInTorrent);
-                    file.getBuffer((err, buffer) => {
-                        if (err) {
-                          reject(new errors.TransportError('Torrent encountered a fatal error ' + err.message + ' (' + torrent.name + ')'));
-                        } else {
-                          resolve(buffer);
-                        }
-                    });
-                })
-                .catch((err) => reject(err));
+    :param string url: URL of object being retrieved
+    :resolve buffer: Return the object being fetched.
+    :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
+    */
+
+    return new Promise((resolve, reject) => {
+      // Logged by Transports
+      const { torrentId, pathInTorrent } = this.webtorrentparseurl(url);
+      webtorrentAddFile(torrentId, pathInTorrent)
+      .then( (res) => {
+        const {torrent, file} = res;
+        file.getBuffer((err, buffer) => {
+          if (err) {
+            reject(new errors.TransportError('Torrent encountered a fatal error ' + err.message + ' (' + torrent.name + ')'));
+          } else {
+            resolve(buffer);
+          }
         });
-    }
+      })
+      .catch((err) => reject(err));
+    });
+  }
 
     seed({ fileRelativePath, directoryPath, torrentRelativePath }, cb) {
         /* Add a file to webTorrent - this will be called each time a file is cached and adds the torrent to WT handling so its seeding this (and other) files in directory */
@@ -249,17 +255,31 @@ class TransportWEBTORRENT extends Transport {
         }
     }
 
+    /**
+     * Open a torrent, only fetch the specific file, and return torrent and file.
+     *
+     * @param torrentId         btih (?) of torrent
+     * @param pathInTorrent     path within the torrent to the file (? starts with / or not ?)
+     * @returns {Promise<{torrent, file}>}
+     */
+    async webtorrentAddFile(torrentId, pathInTorrent) {
+        const torrent = await this.p_webtorrentadd(torrentId);
+        torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
+        const file = this.webtorrentfindfile(torrent, pathInTorrent);
+        return {torrent, file};
+    }
+
     async _p_fileTorrentFromUrl(url) {
         /*
-        Then open a webtorrent for the file specified in the path part of the url
+        Open a webtorrent for the file specified in the path part of the url
         url:    of form magnet:... or magnet/:...
         return: Web Torrent file
+
+        Could refactor to take cb since p_webtorrentadd refactorable
          */
         try {
             const { torrentId, pathInTorrent } = this.webtorrentparseurl(url);
-            const torrent = await this.p_webtorrentadd(torrentId);
-            torrent.deselect(0, torrent.pieces.length - 1, false); // Dont download entire torrent as will pull just the file we want (warning - may give problems if multiple reads from same webtorrent)
-            const file = this.webtorrentfindfile(torrent, pathInTorrent);
+            const { torrent, file} = await webtorrentAddFile(torrentId, pathInTorrent);
             if (typeof window !== 'undefined') {   // Check running in browser
                 window.WEBTORRENT_TORRENT = torrent;
                 window.WEBTORRENT_FILE = file;
@@ -275,8 +295,13 @@ class TransportWEBTORRENT extends Transport {
         }
     }
 
+    /** Used to seed a file, especially when dont have the entire contents of the torrent.
+     *
+     * @param torrentFilePath file system path to the torrent file
+     * @param filesPath file system path to the file to start seeding
+     * @returns {Promise<void>}
+     */
     async p_addTorrentFromTorrentFile(torrentFilePath, filesPath) {
-        // TODO-API: doc
         try {
             const opts = { path: filesPath };
             const oldTorrent = this.webtorrent.get(torrentFilePath);
@@ -292,84 +317,25 @@ class TransportWEBTORRENT extends Transport {
         }
     }
 
-    async p_f_createReadStream(url, { wanturl = false } = {}) {
-        /*
-        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
-        No assumption is made about the data in terms of size or structure.
-
-        This is the initialisation step, which returns a function suitable for <VIDEO>
-
-        Returns a new Promise that resolves to function for a node.js readable stream.
-
-        Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
-
-        :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
-        :param boolean wanturl True if want the URL of the stream (for service workers)
-        :resolves to: f({start, end}) => stream (The readable stream.)
-        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
-         */
-        // Logged by Transports
-        try {
-            const filet = await this._p_fileTorrentFromUrl(url);
-            const self = this;
-            if (wanturl) {
-                return url;
-            } else {
-                return function crs(opts) { return self.sync_createReadStream(filet, opts); };
-            }
-        } catch (err) {
-            // Logged by Transports
-            throw (err);
-        }
-    }
-
-    sync_createReadStream(file, opts) {
-        /*
-        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
-
-        :param file:    Webtorrent 'file' as returned by webtorrentfindfile
-        :param opts: { start: byte to start from; end: optional end byte }
-        :returns stream: The readable stream.
-         */
-        debug('reading from stream %s %o', file.name, opts);
-        const through = new stream.PassThrough();
-        try {
-            const fileStream = file.createReadStream(opts);
-            fileStream.pipe(through);
-        } catch (err) {
-            debug('sync_createReadStream error %s', err);
-            if (typeof through.destroy === 'function') {
-              through.destroy(err);
-            } else {
-              through.emit('error', err);
-            }
-        }
-        return through;
-    }
-
-  // Note we dont have a test case for this - video playing is using p_f_createReadStream and dweb-mirror isn't using Webtorrent
-  // In particular sync_createReadStream pipes it through a PassThrough stream, its unclear why/if that's needed
-  // While this returns errors via normal callback
-  createReadStream(url, opts, cb) {
+  // ======= Stream supprot
+  // createReadStreamFunction(url, opts, cb) - Transport superclass fine
+  // p_f_createReadStream(url, opts, cb) - Transport superclass fine
+  // createReadStreamSync(id, opts) - Transport superclass fine
+  // createReadStream(url, opts, cb) - Transport superclass fine
+  createReadStreamID(url, cb) {
+    // TODO unpromisify from here down
     this._p_fileTorrentFromUrl(url)
-      .then(filet => {
-        let s;
-        try {
-          s = filet.createReadStream(opts);
-        } catch (err) {
-          debug('Caught error in webtorrent createReadStream for %s: %s', url, err.message);
-          cb(err);
-          return;
-        }
-        cb(null, s);
-      })
-      .catch(err => {
-        debug('Caught error in createReadStream in p_fileTorrentFromUrl for %s: %s', url, err.message);
-        cb(err);
-      });
+      .then(filet => cb(null, filet))
+      .catch(err => cb(err));
   }
 
-  async p_createReadableStream(url, opts) {
+  createReadStreamFetch(filet, opts, cb) {
+    cb(null, filet.createReadStream(opts));
+  }
+
+
+/* OBS not supporting Service Workers, but leave as model
+    async p_createReadableStream(url, opts) {
         // Return a readable stream (suitable for a HTTP response) from a node type stream from webtorrent.
         // This is used by dweb-serviceworker for WebTorrent only
         const filet = await this._p_fileTorrentFromUrl(url);
@@ -387,7 +353,7 @@ class TransportWEBTORRENT extends Transport {
             }
         });
     }
-
+END OF OBS */
 
     static async p_test(opts) {
       function assertData(data) {

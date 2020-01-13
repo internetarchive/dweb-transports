@@ -1,6 +1,6 @@
 # Writing Shims to the dweb-transports library
 
-Third version: Mitra 23 Nov 2019
+Fourth version: Mitra 13th Jan 2020
 
 Our intention with the dweb-transports and dweb-archive libraries is to be available for integrating with any decentralized platform (what we call a transport), 
 and this guide is intended to help the process.
@@ -30,11 +30,12 @@ though it will work smoother with collaboration with Mitra.
 The main code sits in a file named something like TransportXYZ.js. 
 
 In this file are implementations of:
-* Chunks - storing and retrieving opaque data as a chunk or via a stream.
+* Chunks - storing and retrieving opaque data as a chunk 
+* Streams - opening streams to a URL.
 * KeyValues - setting and getting the value of a key in a table. 
 * Lists - append only logs.
 
-To make Archive content available, only the Chunk reading and writing is required,
+To make Archive content available, only the Chunk reading and writing is required, though streams is highly recommended.
 though GUN uses KeyValues for storing/retrieving metadata json. 
 
 See [API.md](./API.md) and the existing code examples for detailed function by function documentation. 
@@ -45,7 +46,7 @@ We handle this by falling back from one platform to another,
 e.g. if IPFS fails we can try WEBTORRENT or HTTP. 
 But this only works if the Transports.js layer can detect when a failure has occurred. 
 This means it is really important to return an error (via a throw, promise rejection, or callback) if the retrieval
-is going to fail, IPFS doesn't currently do this which makes it an unreliable transport.
+is going to fail, IPFS doesn't currently do this which makes it an unreliable transport in this context.
 
 ### Promises or callbacks
 We've tried to suport both promises and callbacks, though this isn't complete yet.  
@@ -90,6 +91,33 @@ When used by node, it will do a dynamic "require" to fetch from one of the CDNs.
 
 DO NOT require your libraries at the top of the shim, as this makes everyone dependent on your library.
 
+### Streams
+Chunked streams may be the easiest, or hardest part to implement, depending on your complexity! 
+
+In theory it can be as simple as implementing `createReadStreamFetch(url, {start, end}, cb)` 
+because the Transport.js class has a reasonable set of default methods to piece together the externally facing 
+methods from this. See TransportHTTP.js for an example. 
+
+At the next level of complexity, on many platforms a stream is opened, and can then be randomly retrieved from,
+in which case you implement `createReadStreamID(url, cb)` to start the stream fetching, and return a pointer and
+`createReadStreamFetch(id, {start, end}, cb)` to use this pointer for retrieving specific chunks. 
+See TransportWEBTORRENT.js for an example
+
+Most transports open a stream asynchronously, but IPFS has a synchronousreturn, 
+in which case implement `createReadStreamID`, and `createReadStreamSync(id, opts, cb)` 
+and override `createReadStreamFetch` to use `createReadStreamSync`.  See TransportIPFS.js for an example.
+
+But ... it can get complicated, for example TransportIPFS overrides `createReadStreamFunction` 
+to destroy previous streams for the same file. 
+
+Note that there are multiple consumer APIs to streams 
+```
+function({start, end}, cb(err, stream)) # Read a previously setup stream as required by <VIDEO> and <AUDIO>
+createReadStreamFunction(url,cb) # Return the function above for a given url 
+p_f_createReadStream(url, opts) # Return a promise that returns the function
+createReadStream(url, opts, cb) # Asynchronously open a stream 
+createReadStreamSync(url, opts, cb) # Syncronously (wraps async with a through stream returned immediately)
+```
 ### Partial implementation.
 
 Its perfectly legitimate to only implement the parts of the API that the underlying platform implements, 

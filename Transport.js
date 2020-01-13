@@ -1,11 +1,15 @@
+/* eslint-disable camelcase, indent */
+const waterfall = require('async/waterfall');
 const Url = require('url');
+const stream = require('readable-stream');
+const debug = require('debug')('dweb-transports:transport');
 const errors = require('./Errors'); // Standard Dweb Errors
 const Transports = require('./Transports');
-function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
+function delay(ms, val) { return new Promise(resolve => { setTimeout(() => { resolve(val); }, ms); }); }
 
 class Transport {
-
+  /*
     constructor(options) {
         /*
         Doesnt do anything, its all done by SuperClasses,
@@ -13,8 +17,8 @@ class Transport {
 
         Fields:
         name:   Short name of element e.g. HTTP IPFS WEBTORRENT GUN
-        */
     }
+  */
 
     /**
      * Load the code for the transport,
@@ -29,16 +33,19 @@ class Transport {
         const requires = this.requires;
         if (Array.isArray(requires)) {
             requires.map(r => {
-                debug("Requiring %s %s", t, s);
+                debug('Requiring %s', r);
+                /* eslint-disable-next-line import/no-dynamic-require, global-require */
                 require(r);
             });
         } else if (typeof requires === "object") {
             Object.entries(requires).map(kv => {
                 debug("Requiring %s %s", t, s);
+                /* eslint-disable-next-line import/no-dynamic-require, global-require */
                 global[kv[0]] = require(kv[1]);
             })
         } else if (typeof requires === "string") {
-            return require(requires);
+          /* eslint-disable-next-line import/no-dynamic-require, global-require */
+          require(requires);
         }
     }
 
@@ -313,15 +320,104 @@ class Transport {
          */
         throw new errors.ToBeImplementedError("Undefined function Transport.p_keys");
     }
-    static async p_f_createReadStream(url, {wanturl=false}) {
-        /*
-        Provide a function of the form needed by tag and renderMedia library etc
 
-        url    Urls of stream
-        wanturl True if want the URL of the stream (for service workers)
-        returns f(opts) => stream returning bytes from opts.start || start of file to opts.end-1 || end of file
-        */
+
+    // Transport
+    /*
+     * The createReadStream family of methods implement two different interfaces to reading streams
+     *
+     * For AudioVideo playing there is a function p_f_createReadStream to get a function that is called repeatedly by the AV element
+     *
+     * For fetching, responding to HTTP queries etc, createReadStream() asynchronously returns a stream.
+     *
+     * The functions to implement are:
+     * createReadStreamID(url) - return an id that can be passed to createReadStreamSync, it can also do things like opening a P2P process etc
+     * createReadStreamFetch(id, opts, cb(err, s)) - Inner function that returns a stream that will return a range of bytes
+     * createReadStreamFunction(url, opts, cb) - uses createReadStreamID and returns a dynamically created function (below) via promise or callback
+     * p_f_createReadStream(url, opts, cb) - promisified version of createReadStreamFunction
+     * <anon>(opts) - retrieve bytes (using createReadStreamSync) synchronously
+     * createReadStreamSync(id, opts) - synchronously return a pass-through stream, then pipe stream from createReadStreamFetch into it
+     * createReadStream(url, opts, cb) - returns a stream to retrieve a range of bytes (via createStreamID & createStreamFetch)
+     */
+
+    // Convert a url into an ID
+    // By default (e.g. in HTTP) the url is the id, in IPFS its the multihash, in WEBTORRENT its an internal file structure
+    createReadStreamID(url, cb) {
+        cb(null, url);
     }
+
+    createReadStreamFunction(url, {wanturl=false}={}, cb) {
+        /*
+        :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+        :param boolean wanturl True if want the URL of the stream (for service workers)
+        :resolves to: f({start, end}) => stream (The readable stream.)
+        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
+         */
+        //Logged by Transports
+        //debug("p_f_createreadstream %s", Url.parse(url).href);
+        this.createReadStreamID(url, (err, id) => {
+            if (err) {
+                cb(err);
+            } else {
+                let self = this;
+                cb(null, function (opts) { return self.createReadStreamSync(id, opts); });
+            }
+        });
+    }
+
+  async p_f_createReadStream(url, { wanturl = false } = {}) {
+      return new Promise((resolve, reject) => { try { this.createReadStreamFunction.call(this, url, { wanturl }, (err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}}) // Promisify pattern v2b
+  }
+
+    createReadStreamFetch(id, opts, cb) {
+        throw(new Error("createReadStreamFetch not defined for "+this.name));
+    }
+
+    /**
+     * Asynchronously open a stream by url
+     * @param url
+     * @param opts {start, end}
+     * @param cb(err, stream)
+     */
+    createReadStream(url, opts, cb) {
+        waterfall([
+            cb1 => this.createReadStreamID(url, cb1),
+            (id, cb1) => this.createReadStreamFetch(id, opts, cb1) // cb(err, stream)
+        ], cb); //
+    }
+
+    createReadStreamSync(id, opts) {
+        /*   The function, encapsulated and inside another function by p_f_createReadStream (see docs) */
+        debug("createreadstreamSync %o", opts);
+        if (!opts.name) opts.name = ""; // For debugging
+        let through;
+        through = new stream.PassThrough();
+        through.name = "XXX THROUGH " +  opts.name;
+        // TODO - debug this and figure out why using nested Object.assign
+        this.createReadStreamFetch(id, Object.assign({}, opts, { silentFinalError: true } ), (err, s) => {
+            if (err) {
+                debug("XXX Emitting error on through stream %s", opts.name); // Tracking down obscure timing error where barfs if error emitted before through's consumer sets up its own error handler
+                if (!opts.silentFinalError) {
+                    debug("ERROR: %s of %s sync_createReadStream caught error %s", this.name, opts.name, err.message);
+                }
+                if (typeof through.destroy === 'function') {
+                    // TODO-STREAMS Seem to have a problem here, if through doesn't have any error handlers. and unclear if its lack of error on "s" or on "through"
+                    through.destroy(err); // Will emit error & close and free up resources
+                    // caller MUST impliment through.on('error', err=>) or will generate uncaught error message
+                } else {
+                    through.emit('error', err);
+                }
+            } else {
+                s.name = "XXX TransportHTTP.createReadStream result: " +  opts.name;
+                s.pipe(through);
+            }
+        });
+        return through; // Returns "through" synchronously, before the pipe is setup
+    }
+
+
+
+
     // ------ UTILITY FUNCTIONS, NOT REQD TO BE SUBCLASSED ----
 
     /**

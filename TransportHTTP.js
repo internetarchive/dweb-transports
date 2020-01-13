@@ -132,99 +132,19 @@ class TransportHTTP extends Transport {
         return await httptools.p_GET(url, opts);
     }
 
-    // ============================== Stream support
+  // ============================== Stream support
+  //createReadStreamID: Transport superclass is good
+  // createReadStreamFunction: Transport superclass is good
+  // p_f_createReadStreamFunction: Transport superclass is good
+  // createReadStream: Transport superclass is good
 
-    async p_f_createReadStream(url, {wanturl=false}={}) {
-        /*
-        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
-        No assumption is made about the data in terms of size or structure.
+  // id is a url (obj or string)
+  createReadStreamFetch(id, opts, cb) {
+    httptools.p_GET(id, Object.assign({wantstream: true}, opts), cb);
+  }
 
-        This is the initialisation step, which returns a function suitable for <VIDEO>
-
-        Returns a new Promise that resolves to function for a node.js readable stream.
-
-        Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
-
-        :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
-        :param boolean wanturl True if want the URL of the stream (for service workers)
-        :resolves to: f({start, end}) => stream (The readable stream.)
-        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
-         */
-        //Logged by Transports
-        //debug("p_f_createreadstream %s", Url.parse(url).href);
-        try {
-            let self = this;
-            if (wanturl) {
-                return url;
-            } else {
-                return function (opts) { return self.sync_createReadStream(url, opts); };
-            }
-        } catch(err) {
-            //Logged by Transports
-            //console.warn(`p_f_createReadStream failed on ${Url.parse(url).href} ${err.message}`);
-            throw(err);
-        }
-    }
-
-    createReadStream(url, opts, cb) {
-      // Note - this was using an odd nested Object.assign with no comments, took it out 2019-12-29 if replace then document why :-)
-      httptools.p_GET(url, Object.assign({wantstream: true}, opts ), cb);
-    }
-
-    sync_createReadStream(url, opts) {
-        /*
-        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
-        NOTE THIS DOESNT WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway - reports stream.on an filestream.pipe aren't functions
-
-        :param file:    Webtorrent "file" as returned by webtorrentfindfile
-        :param opts: { start: byte to start from; end: optional end byte; silentFinalError: optional true to supress final error  }
-        :returns stream: The readable stream - it is returned immediately, though won't be sending data until the http completes
-         */
-        // This breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
-        // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
-        debug("sync_createreadstream %s %o", Url.parse(url).href, opts);
-        let through;
-        through = new stream.PassThrough();
-        through.name = "XXX THROUGH " +  Url.parse(url).href;
-        // TODO - debug this and figure out why using nested Object.assign
-        createReadStream(url, Object.assign({}, opts, { silentFinalError: true } ), (err, s) => {
-          if (err) {
-            debug("XXX Emitting error on through stream"); // Tracking down obscure timing error where barfs if error emitted before through's consumer sets up its own error handler
-            if (!opts.silentFinalError) {
-              debug("ERROR: %s sync_createReadStream caught error %s", this.name, err.message);
-            }
-            if (typeof through.destroy === 'function') {
-              // TODO-STREAMS Seem to have a problem here, if through doesn't have any error handlers. and unclear if its lack of error on "s" or on "through"
-              through.destroy(err); // Will emit error & close and free up resources
-              // caller MUST impliment through.on('error', err=>) or will generate uncaught error message
-            } else {
-              through.emit('error', err);
-            }
-          } else {
-            s.name = "XXX TransportHTTP.createReadStream result: " +  Url.parse(url).href;
-            s.pipe(through);
-          }
-        });
-        return through; // Returns "through" synchronously, before the pipe is setup
-    }
-
-    async p_createReadStream(url, opts) {
-        /*
-        The function, encapsulated and inside another function by p_f_createReadStream (see docs)
-        NOTE THIS PROBABLY WONT WORK FOR <VIDEO> tags, but shouldnt be using it there anyway
-
-        :param file:    Webtorrent "file" as returned by webtorrentfindfile
-        :param opts: { start: byte to start from; end: optional end byte }
-        :resolves to stream: The readable stream.
-         */
-        debug("p_createreadstream %s %o", Url.parse(url).href, opts);
-        try {
-            return await httptools.p_GET(url, Object.assign({wantstream: true}, opts));
-        } catch(err) {
-            console.warn(this.name, "caught error", err);
-            throw err;
-        }
-    }
+  // createReadStream breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
+  // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
 
     async p_info() { //TODO-API
         /*

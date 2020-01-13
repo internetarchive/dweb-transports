@@ -379,61 +379,16 @@ class TransportIPFS extends Transport {
         }
     }
 
-    multihashFromUrl(url) {
-      const multihash = url.pathname.split('/ipfs/')[1];
-      if (multihash.includes('/')) {
-        throw new Error("Should not be seeing URLS with a path here:" + url);
-      }
-    }
-    async p_f_createReadStream(url, {wanturl=false}={}) {
-        /*
-        Fetch bytes progressively, using a node.js readable stream, based on a url of the form:
-        No assumption is made about the data in terms of size or structure.
+  // ==== STREAM SUPPORT ===
+  // async p_f_createReadStream(url, {wanturl=false}={}) - Transport superclass ok
+  // createReadStreamFunction - Transport superclass ok
 
-        This is the initialisation step, which returns a function suitable for <VIDEO>
+  createReadStreamID(url, cb) {
+    cb(null, multihashFrom(url));
+  }
 
-        Returns a new Promise that resolves to function for a node.js readable stream.
-
-        Node.js readable stream docs: https://nodejs.org/api/stream.html#stream_readable_streams
-
-        :param string url: URL of object being retrieved of form:
-            magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
-            ipfs:/ipfs/Q123
-        :param boolean wanturl True if want the URL of the stream (for service workers)
-        :resolves to: f({start, end}) => stream (The readable stream.)
-        :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
-         */
-        // Logged by Transports;
-        // debug("p_f_createreadstream %o", url);
-        try {
-          const multihash = this.mutihashFromUrl(url);
-            if (wanturl) { // In ServiceWorker
-                return url;
-            } else {
-                let stream;
-                const self = this;
-                return function crs(opts) {
-                    // If we've streamed before, clean up the existing stream
-                    if (stream && stream.destroy) {
-                        stream.destroy();
-                    }
-                    stream = self.sync_createReadStream(multihash, opts);
-                };
-            }
-        } catch (err) {
-            // Error logged by Transports
-            // console.log(`p_f_createReadStream failed on ${url} ${err.message}`);
-            throw (err);
-        }
-    }
-
-  sync_createReadStream(multihash, opts) {
-    /*
-       The function, encapsulated and inside another function by p_f_createReadStream (see docs)
-       :param opts: { start: byte to start from; end: optional end byte }
-       :returns stream: The readable stream.
-       FOR IPFS this is copied and adapted from git repo js-ipfs/examples/browser-readablestream/index.js
-    */
+  // On IPFS catReadableStream returns stream synchronously so flip createReadStreamFetch and createReadStreamSync around from superclass
+  createReadStreamSync(multihash, opts, cb) {
     debug("reading from stream %o %o", multihash, opts || "" );
     const start = opts ? opts.start : 0;
     // The videostream library does not always pass an end byte but when
@@ -452,13 +407,41 @@ class TransportIPFS extends Transport {
     });
     // Log error messages
     stream.on('error', (err) => debug("IPFS stream error %s", err.message));
-    return stream;
+    return stream
   }
 
-  createReadStream(url, opts, cb) {
-    const multihash = this.mutihashFromUrl(url);
-    cb(null, sync_createReadStream(multihash, opts)); // Errors should occur on the stream
+  createReadStreamFetch(multihash, opts, cb) {
+    cb(null, createReadStreamSync(multihash, opts));
   }
+
+  createReadStreamFunction(url, {wanturl=false}={}, cb) {
+    /*
+    This builds on superclass as has to destroy any previous stream for this file.
+
+    :param string url: URL of object being retrieved of form  magnet:xyzabc/path/to/file  (Where xyzabc is the typical magnet uri contents)
+    :param boolean wanturl True if want the URL of the stream (for service workers)
+    :resolves to: f({start, end}) => stream (The readable stream.)
+    :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
+     */
+    //Logged by Transports
+    //debug("p_f_createreadstream %s", Url.parse(url).href);
+    this.createReadStreamID(url, (err, multihash) => {
+      if (err) {
+        cb(err);
+      } else {
+        let stream;
+        const self = this;
+        return function crs(opts) {
+          // If we've streamed before, clean up the existing stream
+          if (stream && stream.destroy) {
+            stream.destroy();
+          }
+          cb(null, self.createReadStreamSync(multihash, opts));
+        };
+      }
+    });
+  }
+
     static async p_test(opts) {
         console.log("TransportIPFS.test");
         try {

@@ -359,7 +359,7 @@ class Transports {
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
             debug("Opening stream from %o failed: no transports available", urls);
-            throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
+            throw new errors.TransportError("Transports.p_f_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -399,7 +399,7 @@ class Transports {
     const tt = this.validFor(urls, "createReadStream", {}); // [ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
     if (!tt.length) {
       debug("Opening stream from %o failed: no transports available", urls);
-      throw new errors.TransportError("Transports.p_createReadStream cant find any transport for urls: " + urls);
+      throw new errors.TransportError("Transports.createReadStream cant find any transport for urls: " + urls);
     }
     // With multiple transports, it should return when the first one returns something.
     const errs = [];
