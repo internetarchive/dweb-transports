@@ -6,7 +6,7 @@ const debug = require('debug')('dweb-transports:hash');
 const canonicaljson = require('@stratumn/canonicaljson');
 
 defaultHashOptions = {
-  urlbase: 'https://dweb.me',
+  urlbase: 'https://dweb.me', // Note this was running dweb-gateway, but wont be much longer, this will need reimplementing if going to be used
   //heartbeat: { delay: 30000 } // Uncomment to check once a minute, but not needed since piggybacking on HTTP
 };
 

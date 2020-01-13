@@ -365,7 +365,7 @@ t:        Add a Transport instance to _transports
 ```
 
 ##### static setup0(transports, options, cb)
-Calls setup0 for each transport based on its short name. Specially handles ‘LOCAL’ as a transport pointing at a local http server (for testing).
+Calls setup0 for each transport based on its short name. 
 ```
 transports      Array of short names of transports e.g. [‘IPFS’,’HTTP’,’GUN’]
 options         Passed to setup0 on each transport

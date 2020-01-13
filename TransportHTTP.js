@@ -119,7 +119,7 @@ class TransportHTTP extends Transport {
     validFor(url, func, opts) {
         // Overrides Transport.prototype.validFor because HTTP's connection test is only really for dweb.me or dweb.archive.org or localhost
         // in particular this allows urls like https://be-api.us.archive.org
-        return (this.connected() || (url.protocol.startsWith("http") && ! url.href.startsWith(this.urlbase))) && this.supports(url, func, opts);
+        return (this.connected() || url.protocol.startsWith("http")) && this.supports(url, func, opts);
     }
     async p_rawfetch(url, opts={}) {
         /*

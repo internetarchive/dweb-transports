@@ -657,23 +657,19 @@ class Transports {
     static setup0(tabbrevs, options, cb) {
         /*
         Setup Transports for a range of classes
-        tabbrevs is abbreviation HTTP, IPFS, LOCAL or list of them e.g. "HTTP,IPFS"
+        tabbrevs is abbreviation HTTP, IPFS or list of them e.g. "HTTP,IPFS"
         cb is callback for when status changes, but there are no status changes here so its not called.
-        Handles "LOCAL" specially, turning into a HTTP to a local server (for debugging)
-
         returns array of transport instances
          */
-        // "IPFS" or "IPFS,LOCAL,HTTP"
-        let localoptions = {http: {urlbase: "http://localhost:4244"}}; //TODO-MIRROR "localoptions" may not be needed any more
+        // "IPFS" or "IPFS,HTTP"
         return tabbrevs.map((tabbrev) => {
-            //TODO-SPLIT-UPNEXT remove LOCAL - not used any more
-            let transportclass = this._transportclasses[ (tabbrev === "LOCAL") ? "HTTP" : tabbrev ];
+            const transportclass = this._transportclasses[tabbrev];
             if (!transportclass) {
                 debug("Connection to %s unavailable", tabbrev);
                 return undefined;
             } else {
                 debug("Setting up connection to %s with options %o", tabbrev, options);
-                return transportclass.setup0(tabbrev === "LOCAL" ? localoptions : options);
+                return transportclass.setup0(options);
             }
         }).filter(f => !!f); // Trim out any undefined
     }
