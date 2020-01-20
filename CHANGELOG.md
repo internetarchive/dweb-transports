@@ -1,5 +1,6 @@
 # Change log for dweb-transports
 
+* 0.2.15: Webtorrent bug
 * 0.2.14: Refactor streaming
 * 0.2.14: Factor out LOCAL
 * 0.2.13: Move naming to dweb-archivecontroller.routing; add event handler for status
