@@ -222,7 +222,7 @@ class TransportWEBTORRENT extends Transport {
     return new Promise((resolve, reject) => {
       // Logged by Transports
       const { torrentId, pathInTorrent } = this.webtorrentparseurl(url);
-      webtorrentAddFile(torrentId, pathInTorrent)
+      this.webtorrentAddFile(torrentId, pathInTorrent)
       .then( (res) => {
         const {torrent, file} = res;
         file.getBuffer((err, buffer) => {
@@ -279,7 +279,7 @@ class TransportWEBTORRENT extends Transport {
          */
         try {
             const { torrentId, pathInTorrent } = this.webtorrentparseurl(url);
-            const { torrent, file} = await webtorrentAddFile(torrentId, pathInTorrent);
+            const { torrent, file} = await this.webtorrentAddFile(torrentId, pathInTorrent);
             if (typeof window !== 'undefined') {   // Check running in browser
                 window.WEBTORRENT_TORRENT = torrent;
                 window.WEBTORRENT_FILE = file;
