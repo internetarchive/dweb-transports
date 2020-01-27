@@ -1,4 +1,4 @@
-const errors = require('./Errors');
+const { CodingError, TimeoutError } = require('./Errors');
 
 utils = {}; //utility functions
 
@@ -18,7 +18,7 @@ utils.stringfrom = function(foo, hints={}) {
             return foo;
         return foo.toString();  // Last chance try and convert to a string based on a method of the object (could check for its existence)
     } catch (err) {
-        throw new errors.CodingError(`Unable to turn ${foo} into a string ${err.message}`)
+        throw new CodingError(`Unable to turn ${foo} into a string ${err.message}`)
     }
 };
 
@@ -33,7 +33,7 @@ utils.p_timeout = function(promise, ms, errorstr) {
 
     return Promise.race([
         new Promise((resolve, reject) => {
-            timer = setTimeout(reject, ms, new errors.TimeoutError(errorstr || `Timed out in ${ms}ms`));
+            timer = setTimeout(reject, ms, new TimeoutError(errorstr || `Timed out in ${ms}ms`));
         }),
         promise.then((value) => {
             clearTimeout(timer);

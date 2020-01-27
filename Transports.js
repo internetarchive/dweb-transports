@@ -1,6 +1,6 @@
 /* eslint-disable indent, quotes */
 const Url = require('url');
-const errors = require('./Errors');
+const { TransportError } = require('./Errors');
 // const utils = require('./utils');
 const debug = require('debug')('dweb-transports');
 const httptools = require('./httptools');
@@ -161,7 +161,7 @@ class Transports {
         rr = rr.filter((r) => !!r); // Trim any that had errors
         if (!rr.length) {
             debug("Storing %d bytes failed on all transports", data.length);
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+            throw new TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         return rr;
 
@@ -175,7 +175,7 @@ class Transports {
         let tt = this.validFor(undefined, "store").map(([u, t]) => t); // Valid connected transports that support "store"
         if (!tt.length) {
             debug("Storing %d bytes failed: no transports available", data.length);
-            throw new errors.TransportError('Transports.p_rawstore: Cant find transport for store');
+            throw new TransportError('Transports.p_rawstore: Cant find transport for store');
         }
         return this._p_rawstore(tt, data);
     }
@@ -193,10 +193,10 @@ class Transports {
         throws:     TransportError with concatenated error messages if none succeed.
         throws:     CodingError if urls empty or [undefined ... ]
          */
-        if (!urls.length)  throw new errors.TransportError("Transports.p_rawfetch given an empty list of urls");
+        if (!urls.length)  throw new TransportError("Transports.p_rawfetch given an empty list of urls");
         let tt = this.validFor(urls, "fetch", {noCache: opts.noCache}); //[ [Url,t],[Url,t]] throws CodingError on empty /undefined urls
         if (!tt.length) {
-            throw new errors.TransportError("Transports.p_rawfetch cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_rawfetch cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -224,7 +224,7 @@ class Transports {
         if (!opts.silentFinalError) {
             debug("Fetching %o failed on all transports", urls);
         }
-        throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+        throw new TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static fetch(urls, opts={}, cb) {
         if (typeof opts === "function") { cb = opts; opts={}; }
@@ -265,7 +265,7 @@ class Transports {
     static async p_rawlist(urls) {
         let tt = this.validFor(urls, "list"); // Valid connected transports that support "store"
         if (!tt.length) {
-            throw new errors.TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
+            throw new TransportError('Transports.p_rawlist: Cant find transport to "list" urls:'+urls.join(','));
         }
         let errs = [];
         let ttlines = await Promise.all(tt.map(async function([url, t]) {
@@ -283,7 +283,7 @@ class Transports {
         if (errs.length >= tt.length) {
             // All Transports failed (maybe only 1)
             debug("Listing %o failed on all transports", urls);
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+            throw new TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         let uniques = {}; // Used to filter duplicates
         return [].concat(...ttlines)
@@ -301,7 +301,7 @@ class Transports {
         let tt = this.validFor(urls, "add"); // Valid connected transports that support "store"
         if (!tt.length) {
             debug("Adding to %o failed: no transports available", urls);
-            throw new errors.TransportError('Transports.p_rawstore: Cant find transport for urls:'+urls.join(','));
+            throw new TransportError('Transports.p_rawstore: Cant find transport for urls:'+urls.join(','));
         }
         let errs = [];
         await Promise.all(tt.map(async function([u, t]) {
@@ -319,7 +319,7 @@ class Transports {
         if (errs.length >= tt.length) {
             debug("Adding to %o failed on all transports", urls);
             // All Transports failed (maybe only 1)
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+            throw new TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
         return undefined;
 
@@ -359,7 +359,7 @@ class Transports {
         let tt = this.validFor(urls, "createReadStream", {}); //[ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
         if (!tt.length) {
             debug("Opening stream from %o failed: no transports available", urls);
-            throw new errors.TransportError("Transports.p_f_createReadStream cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_f_createReadStream cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -384,7 +384,7 @@ class Transports {
             }
         }
         debug("Opening stream from %o failed on all transports", urls);
-        throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+        throw new TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
   /**
@@ -399,7 +399,7 @@ class Transports {
     const tt = this.validFor(urls, "createReadStream", {}); // [ [Url,t],[Url,t]]  // Can pass options TODO-STREAM support options in validFor
     if (!tt.length) {
       debug("Opening stream from %o failed: no transports available", urls);
-      throw new errors.TransportError("Transports.createReadStream cant find any transport for urls: " + urls);
+      throw new TransportError("Transports.createReadStream cant find any transport for urls: " + urls);
     }
     // With multiple transports, it should return when the first one returns something.
     const errs = [];
@@ -434,7 +434,7 @@ class Transports {
         } else {
           // None succeeded
           debug("Opening stream from %o failed on all transports", urls);
-          cb(new errors.TransportError(errs.map((e) => e.message).join(', ')));  // Throw err with combined messages if none succeed
+          cb(new TransportError(errs.map((e) => e.message).join(', ')));  // Throw err with combined messages if none succeed
         }
       }
     );
@@ -455,7 +455,7 @@ class Transports {
         let debug1 =  Array.isArray(keys) ? `${keys.length} keys` : keys; // "1 keys" or "foo"
         if (!tt.length) {
             debug("Getting %s from %o failed: no transports available", debug1, urls);
-            throw new errors.TransportError("Transports.p_get cant find any transport to get keys from urls: " + urls);
+            throw new TransportError("Transports.p_get cant find any transport to get keys from urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -472,7 +472,7 @@ class Transports {
             }
         }
         debug("Getting %s from %o failed on all transports", debug1, urls);
-        throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+        throw new TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
     static async p_set(urls, keyvalues, value) {
         /* Set a series of key/values or a single value
@@ -484,7 +484,7 @@ class Transports {
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Setting %s on %o failed: no transports available", debug1, urls);
-            throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
@@ -501,7 +501,7 @@ class Transports {
         }));
         if (!success) {
             debug("Setting %s on %o failed on all transports", debug1, urls);
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+            throw new TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
 
@@ -515,7 +515,7 @@ class Transports {
         let tt = this.validFor(urls, "set"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Deleting %s on %o failed: no transports available", debug1, urls);
-            throw new errors.TransportError("Transports.p_set cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_set cant find any transport for urls: " + urls);
         }
         let errs = [];
         let success = false;
@@ -532,7 +532,7 @@ class Transports {
         }));
         if (!success) {
             debug("Deleting %s on %o failed on all transports", debug1, urls);
-            throw new errors.TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
+            throw new TransportError(errs.map((err)=>err.message).join(', ')); // New error with concatenated messages
         }
     }
     static async p_keys(urls) {
@@ -546,7 +546,7 @@ class Transports {
         let tt = this.validFor(urls, "keys"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Getting all keys on %o failed: no transports available", urls);
-            throw new errors.TransportError("Transports.p_keys cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_keys cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something. TODO make it return the aggregate
         let errs = [];
@@ -563,7 +563,7 @@ class Transports {
             }
         }
         debug("Getting all keys on %o failed on all transports", urls);
-        throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+        throw new TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
     static async p_getall(urls) {
@@ -577,7 +577,7 @@ class Transports {
         let tt = this.validFor(urls, "getall"); //[ [Url,t],[Url,t]]
         if (!tt.length) {
             debug("Getting all values on %o failed: no transports available", urls);
-            throw new errors.TransportError("Transports.p_getall cant find any transport for urls: " + urls);
+            throw new TransportError("Transports.p_getall cant find any transport for urls: " + urls);
         }
         //With multiple transports, it should return when the first one returns something.
         let errs = [];
@@ -594,7 +594,7 @@ class Transports {
             }
         }
         debug("Getting all keys on %o failed on all transports", urls);
-        throw new errors.TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
+        throw new TransportError(errs.map((err)=>err.message).join(', '));  //Throw err with combined messages if none succeed
     }
 
     static async p_newdatabase(pubkey) {

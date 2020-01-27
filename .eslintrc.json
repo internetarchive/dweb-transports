@@ -14,6 +14,7 @@
     "rules": {
         "arrow-parens": 0,
         "babel/semi": 2,
+        "camelcase": 1,
         "class-methods-use-this": 0,
         "comma-dangle": 0,
         "import/no-extraneous-dependencies": [
@@ -25,18 +26,20 @@
         ],
         "jsx-a11y/label-has-for": 0,
         "jsx-a11y/label-has-associated-control": 2,
-        "max-len": 0,
+        "max-len": 1,
         "no-else-return": 0,
         "no-multi-assign": 0,
         "no-multi-spaces": 0,
-        "no-nested-ternary": 0,
-        "no-param-reassign": 0,
-        "no-return-assign": 0,
-        "no-underscore-dangle": 0,
+        "no-nested-ternary": 1,
+        "no-param-reassign": 1,
+        "no-return-assign": 1,
+        "no-plusplus": 0,
+        "no-underscore-dangle": 1,
+        "object-property-newline": 1,
         "prefer-destructuring": 0,
         "prefer-object-spread": 0,
         "prefer-template": 0,
-        "quote-props": 0,
+        "quote-props": 1,
         "react/jsx-filename-extension": [
             1, {
                 "extensions": [".js", ".jsx"]

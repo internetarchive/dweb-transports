@@ -13,7 +13,7 @@ const canonicaljson = require('@stratumn/canonicaljson');
 const debug = require('debug')('dweb-transports:wolk');
 
 // Other Dweb modules
-const errors = require('./Errors'); // Standard Dweb Errors
+const { TransportError, ToBeImplementedError } = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 
@@ -118,7 +118,7 @@ class TransportWOLK extends Transport {
       /* TODO:
       const rawRes = this.wolk.setChunk(chunk);
       if (rawRes.err) {
-          throw new errors.TransportError("Error encountered storing chunk: " + rawRes.err);
+          throw new TransportError("Error encountered storing chunk: " + rawRes.err);
       }
       return "wolk://wolk/" + rawRes.h;
       */
@@ -127,7 +127,7 @@ class TransportWOLK extends Transport {
     parseWolkUrl(url) {
       var url = Url.parse(url);
       if(url.protocol != "wolk:") {
-        throw new errors.TransportError("WOLK Error encountered retrieving val: url (" + url.href + ") is not a valid WOLK url | protocol = " + url.protocol);
+        throw new TransportError("WOLK Error encountered retrieving val: url (" + url.href + ") is not a valid WOLK url | protocol = " + url.protocol);
       }
       let wolkowner = url.host
       var urlParts = url.path.split("/");
@@ -230,7 +230,7 @@ class TransportWOLK extends Transport {
       console.log("WOLK urltype: " + wolkurl.urltype);
 */
       if (Array.isArray(keys)) {
-        throw new errors.ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys");
+        throw new ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys");
         /*
         return keys.reduce(function(previous, key) {
             let val = table.get(key);
@@ -242,7 +242,7 @@ class TransportWOLK extends Transport {
         return this.wolk.getKey(wolkurl.owner, wolkurl.bucket, keys, "latest")
           .then( (value) => { return value; })
           .catch( (err) => {
-            throw new errors.TransportError("Error encountered getting keyvalues: " + err);
+            throw new TransportError("Error encountered getting keyvalues: " + err);
           })
       }
     }
@@ -253,7 +253,7 @@ class TransportWOLK extends Transport {
       if ( typeof keys === "string") {
         return this.wolk.deleteKey(wolkurl.owner, wolkurl.bucket, keys)
           .then( (res) => { return res; })
-          .catch( (err) => { throw new errors.TransportError("Error deleting key(s): " + err)})
+          .catch( (err) => { throw new TransportError("Error deleting key(s): " + err)})
       } else {
         keys.map( (key) => {
           this.wolk.deleteKey(wolkurl.owner, wolkurl.bucket, key)

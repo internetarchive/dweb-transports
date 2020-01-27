@@ -3,7 +3,7 @@ const waterfall = require('async/waterfall');
 const Url = require('url');
 const stream = require('readable-stream');
 const debug = require('debug')('dweb-transports:transport');
-const errors = require('./Errors'); // Standard Dweb Errors
+const { IntentionallyUnimplementedError, ToBeImplementedError } = require('./Errors'); // Standard Dweb Errors
 const Transports = require('./Transports');
 
 function delay(ms, val) { return new Promise(resolve => { setTimeout(() => { resolve(val); }, ms); }); }
@@ -53,7 +53,7 @@ class Transport {
         /*
         First part of setup, create obj, add to Transports but dont attempt to connect, typically called instead of p_setup if want to parallelize connections.
         */
-        throw new errors.IntentionallyUnimplementedError("Intentionally undefined function Transport.setup0 should have been subclassed");
+        throw new IntentionallyUnimplementedError("Intentionally undefined function Transport.setup0 should have been subclassed");
         }
 
     p_setup1() {
@@ -154,7 +154,7 @@ class Transport {
         :param string|Buffer data: Data to store - no assumptions made to size or content
         :resolve string: url of data stored
          */
-        throw new errors.ToBeImplementedError("Intentionally undefined function Transport.p_rawstore should have been subclassed");
+        throw new ToBeImplementedError("Intentionally undefined function Transport.p_rawstore should have been subclassed");
     }
 
     async p_rawstoreCaught(data) {
@@ -165,7 +165,7 @@ class Transport {
         }
     }
     p_store() {
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_store - may define higher level semantics here (see Python)");
+        throw new ToBeImplementedError("Undefined function Transport.p_store - may define higher level semantics here (see Python)");
     }
 
     //noinspection JSUnusedLocalSymbols
@@ -190,7 +190,7 @@ class Transport {
     }
 
     p_fetch() {
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_fetch - may define higher level semantics here (see Python)");
+        throw new ToBeImplementedError("Undefined function Transport.p_fetch - may define higher level semantics here (see Python)");
     }
 
     p_rawadd(url, sig) {
@@ -203,7 +203,7 @@ class Transport {
         :param Signature sig: A signature data structure.
         :resolve undefined:
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_rawadd");
+        throw new ToBeImplementedError("Undefined function Transport.p_rawadd");
     }
 
     p_rawlist(url) {
@@ -217,7 +217,7 @@ class Transport {
         :param string url: String with the url that identifies the list.
         :resolve array: An array of objects as stored on the list.
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_rawlist");
+        throw new ToBeImplementedError("Undefined function Transport.p_rawlist");
     }
 
     p_list() {
@@ -241,7 +241,7 @@ class Transport {
         :param string url: String with the url that identifies the object put on a list.
         :resolve array: An array of objects as stored on the list.
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_rawreverse");
+        throw new ToBeImplementedError("Undefined function Transport.p_rawreverse");
     }
 
     listmonitor(url, callback, {current=false}={}) {
@@ -266,7 +266,7 @@ class Transport {
          pubkey:    Something that is, or has a pubkey, by default support Dweb.PublicPrivate, KeyPair or an array of strings as in the output of keypair.publicexport()
          returns: {publicurl, privateurl} which may be the same if there is no write authentication
           */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_newdatabase");
+        throw new ToBeImplementedError("Undefined function Transport.p_newdatabase");
     }
     //TODO maybe change the listmonitor / monitor code for to use "on" and the structure of PP.events
     //TODO but note https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy about Proxy which might be suitable, prob not as doesnt map well to lists
@@ -277,7 +277,7 @@ class Transport {
         table:  String representing the table - unique to the database
         returns:    {privateurl, publicurl} which may be the same if there is no write authentication
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_newtable");
+        throw new ToBeImplementedError("Undefined function Transport.p_newtable");
     }
 
     async p_set(url, keyvalues, value) {  // url = yjs:/yjs/database/table/key
@@ -287,7 +287,7 @@ class Transport {
         keyvalues:  String representing a single key OR dictionary of keys
         value:  String or other object to be stored (its not defined yet what objects should be supported, e.g. any object ?
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_set");
+        throw new ToBeImplementedError("Undefined function Transport.p_set");
     }
     async p_get(url, keys) {
         /* Get one or more keys from a table
@@ -295,7 +295,7 @@ class Transport {
         keys:   Array of keys
         returns:    Dictionary of values found (undefined if not found)
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_get");
+        throw new ToBeImplementedError("Undefined function Transport.p_get");
     }
 
     async p_delete(url, keys) {
@@ -303,7 +303,7 @@ class Transport {
         url:    URL of the table
         keys:   Array of keys
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_delete");
+        throw new ToBeImplementedError("Undefined function Transport.p_delete");
     }
 
     async p_keys(url) {
@@ -311,14 +311,14 @@ class Transport {
         url:    URL of the table
         returns:    Array of strings
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_keys");
+        throw new ToBeImplementedError("Undefined function Transport.p_keys");
     }
     async p_getall(url) {
         /* Return a dictionary representing the table
         url:    URL of the table
         returns:    Dictionary of Key:Value pairs, note take care if this could be large.
          */
-        throw new errors.ToBeImplementedError("Undefined function Transport.p_keys");
+        throw new ToBeImplementedError("Undefined function Transport.p_keys");
     }
 
 

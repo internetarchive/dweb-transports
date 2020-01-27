@@ -3,6 +3,7 @@ const IPFS = require('ipfs');
 const canonicaljson = require('@stratumn/canonicaljson');
 var ipfs;
 const unixFs = require('ipfs-unixfs');
+const { CodingError } = require('./Errors.js');
 const multihashes = require('multihashes');
 let tryexpectedfailures = true; // Set to false if want to check the things we expect to fail.
 const ipfsAPI = require('ipfs-http-client')
@@ -38,7 +39,7 @@ function ipfsFrom(url) {
     if (url.indexOf('/ipfs/')) {
         return url.slice(url.indexOf('/ipfs/'));
     }
-    throw new errors.CodingError(`ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
+    throw new CodingError(`ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
 }
 function multihashFrom(url) {
     if (url instanceof ipfs.CID)
@@ -51,7 +52,7 @@ function multihashFrom(url) {
             return url.slice(idx+6);
         }
     }
-    throw new errors.CodingError(`Cant turn ${url} into a multihash`);
+    throw new CodingError(`Cant turn ${url} into a multihash`);
 }
 
 function p_ipfsstart() {

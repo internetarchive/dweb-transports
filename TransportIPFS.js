@@ -25,7 +25,7 @@ let IPFS; // TODO-SPLIT move this line lower when fix structure
 
 
 // Other Dweb modules
-const errors = require('./Errors'); // Standard Dweb Errors
+const { CodingError, TransportError } = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const utils = require('./utils'); // Utility functions
@@ -205,7 +205,7 @@ class TransportIPFS extends Transport {
             return "ipfs:/ipfs/" + unknown.hash;
         if (typeof unknown === "string")    // Not used currently
             return "ipfs:/ipfs/" + unknown;
-        throw new errors.CodingError("TransportIPFS.urlFrom: Cant convert to url from", unknown);
+        throw new CodingError("TransportIPFS.urlFrom: Cant convert to url from", unknown);
     }
 
     static cidFrom(url) {
@@ -220,12 +220,12 @@ class TransportIPFS extends Transport {
         if (url && url.pathname) { // On browser "instanceof Url" isn't valid)
             const patharr = url.pathname.split('/');
             if ((!["ipfs:","dweb:"].includes(url.protocol)) || (patharr[1] !== 'ipfs') || (patharr.length < 3))
-                throw new errors.TransportError("TransportIPFS.cidFrom bad format for url should be dweb: or ipfs:/ipfs/...: " + url.href);
+                throw new TransportError("TransportIPFS.cidFrom bad format for url should be dweb: or ipfs:/ipfs/...: " + url.href);
             if (patharr.length > 3)
-                throw new errors.TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be dweb: or ipfs:/ipfs/...: " + url.href);
+                throw new TransportError("TransportIPFS.cidFrom not supporting paths in url yet, should be dweb: or ipfs:/ipfs/...: " + url.href);
             return new IPFS.CID(patharr[2]);
         } else {
-            throw new errors.CodingError("TransportIPFS.cidFrom: Cant convert url", url);
+            throw new CodingError("TransportIPFS.cidFrom: Cant convert url", url);
         }
     }
 
@@ -248,7 +248,7 @@ class TransportIPFS extends Transport {
         if (url.indexOf('/ipfs/') > -1) {
             return url.slice(url.indexOf('/ipfs/'));
         }
-        throw new errors.CodingError(`TransportIPFS.ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
+        throw new CodingError(`TransportIPFS.ipfsFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
 
     ipfsGatewayFrom(url) {
@@ -260,7 +260,7 @@ class TransportIPFS extends Transport {
         if (url.indexOf('/ipfs/') > -1) {
             return this.httpIPFSgateway + url.slice(url.indexOf('/ipfs/'));
         }
-        throw new errors.CodingError(`TransportIPFS.ipfsGatewayFrom: Cant convert url ${url} into a path starting /ipfs/`);
+        throw new CodingError(`TransportIPFS.ipfsGatewayFrom: Cant convert url ${url} into a path starting /ipfs/`);
     }
 
     static multihashFrom(url) {
@@ -274,7 +274,7 @@ class TransportIPFS extends Transport {
                 return url.slice(idx+6);
             }
         }
-        throw new errors.CodingError(`Cant turn ${url} into a multihash`);
+        throw new CodingError(`Cant turn ${url} into a multihash`);
     }
 
     // noinspection JSCheckFunctionSignatures
@@ -292,7 +292,7 @@ class TransportIPFS extends Transport {
         :throws:        TransportError if url invalid - note this happens immediately, not as a catch in the promise
          */
         // Attempt logged by Transports
-        if (!url) throw new errors.CodingError("TransportIPFS.p_rawfetch: requires url");
+        if (!url) throw new CodingError("TransportIPFS.p_rawfetch: requires url");
         const cid = TransportIPFS.cidFrom(url);  // Throws TransportError if url bad
         const ipfspath = TransportIPFS.ipfsFrom(url); // Need because dag.get has different requirement than file.cat
 
@@ -301,7 +301,7 @@ class TransportIPFS extends Transport {
             // noinspection Annotator
             if (res.remainderPath.length)
             { // noinspection ExceptionCaughtLocallyJS
-                throw new errors.TransportError("Not yet supporting paths in p_rawfetch");
+                throw new TransportError("Not yet supporting paths in p_rawfetch");
             }
             let buff;
             if (res.value.constructor.name === "DAGNode") { // Kludge to replace above, as its not matching the type against the "require" above.

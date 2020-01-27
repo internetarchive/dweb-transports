@@ -29,7 +29,7 @@ const debuggun = require('debug')('dweb-transports:gun');
 const canonicaljson = require('@stratumn/canonicaljson');
 
 // Other Dweb modules
-const errors = require('./Errors'); // Standard Dweb Errors
+const { TransportError, CodingError, ToBeImplementedError } = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const utils = require('./utils'); // Utility functions
@@ -145,11 +145,11 @@ class TransportGUN extends Transport {
         let val = await this._p_once(g);
         //g.on((data)=>debuggun("Got late result of: %o", data)); // Checking for bug in GUN issue#586 - ignoring result
         if (!val)
-            throw new errors.TransportError("GUN unable to retrieve: "+url.href);  // WORKAROUND-GUN-ERRORS - gun doesnt throw errors when it cant find something
+            throw new TransportError("GUN unable to retrieve: "+url.href);  // WORKAROUND-GUN-ERRORS - gun doesnt throw errors when it cant find something
         let o = typeof val === "string" ? JSON.parse(val) : val;  // This looks like it is sync (see same code on p_get and p_rawfetch)
         //TODO-GUN this is a hack because the metadata such as metadata/audio is getting cached in GUN and in this case is wrong.
         if (o.metadata && o.metadata.thumbnaillinks && o.metadata.thumbnaillinks.find(t => t.includes('ipfs/zb2'))) {
-            throw new errors.TransportError("GUN retrieving legacy data at: "+url.href)
+            throw new TransportError("GUN retrieving legacy data at: "+url.href)
         }
         return o;
     }
@@ -265,7 +265,7 @@ class TransportGUN extends Transport {
 
         returns: {publicurl: "gun:/gun/<publickey>/<table>", privateurl:  "gun:/gun/<publickey>/<table>">
         */
-        if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
+        if (!pubkey) throw new CodingError("p_newtable currently requires a pubkey");
         let database = await this.p_newdatabase(pubkey);
         // If have use cases without a database, then call p_newdatabase first
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
@@ -294,7 +294,7 @@ class TransportGUN extends Transport {
     async p_get(url, keys) {
         let table = this.connection(url);
         if (Array.isArray(keys)) {
-            throw new errors.ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys or use getall and filter");
+            throw new ToBeImplementedError("p_get(url, [keys]) isn't supported - because of ambiguity better to explicitly loop on set of keys or use getall and filter");
             /*
             return keys.reduce(function(previous, key) {
                 let val = table.get(key);

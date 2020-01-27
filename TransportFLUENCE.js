@@ -1,7 +1,7 @@
 const Url = require('url');
 const Transport = require('./Transport'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
-const errors = require('./Errors'); // Standard Dweb Errors
+const { TransportError, CodingError } = require('./Errors'); // Standard Dweb Errors
 const canonicaljson = require('@stratumn/canonicaljson');
 //const fluence = require('fluence');
 
@@ -81,7 +81,7 @@ class TransportFLUENCE extends Transport {
     parseUrl(url) {
         const parsedUrl = Url.parse(url);
         if (parsedUrl.protocol !== 'fluence:') {
-            throw new errors.TransportError(`TransportFLUENCE Error encountered retrieving val: url (${parsedUrl.href}) is not a valid FLUENCE url | protocol = ${parsedUrl.protocol}`);
+            throw new TransportError(`TransportFLUENCE Error encountered retrieving val: url (${parsedUrl.href}) is not a valid FLUENCE url | protocol = ${parsedUrl.protocol}`);
         }
 
         debug('retrieve url', parsedUrl.href);
@@ -147,7 +147,7 @@ class TransportFLUENCE extends Transport {
                     };
                 }
                 default: {
-                    throw new errors.TransportError(`TransportFLUENCE Error unsupprted Redis response type: ${type}, response: ${result}`);
+                    throw new TransportError(`TransportFLUENCE Error unsupprted Redis response type: ${type}, response: ${result}`);
                 }
             }
         }
@@ -165,7 +165,7 @@ class TransportFLUENCE extends Transport {
         const data = this.parseRedisResponse(result.asString());
 
         if (!data) {
-            throw new errors.TransportError(`TransportFLUENCE unable to retrieve: ${url.href}`);
+            throw new TransportError(`TransportFLUENCE unable to retrieve: ${url.href}`);
         }
 
         return typeof data === 'string' ? JSON.parse(data) : data;
@@ -181,7 +181,7 @@ class TransportFLUENCE extends Transport {
         const data = this.parseRedisResponse(result.asString());
 
         if (!data) {
-            throw new errors.TransportError(`TransportFLUENCE unable to retrieve list: ${url.href}`);
+            throw new TransportError(`TransportFLUENCE unable to retrieve list: ${url.href}`);
         }
 
         return data.map(listItem => typeof listItem === 'string' ? JSON.parse(listItem) : listItem);
@@ -222,7 +222,7 @@ class TransportFLUENCE extends Transport {
             returns: {publicurl: "fluence:/fluence/<publickey>/<table>", privateurl:  "fluence:/fluence/<publickey>/<table>">
         */
         if (!pubkey) {
-            throw new errors.CodingError("p_newtable currently requires a pubkey");
+            throw new CodingError("p_newtable currently requires a pubkey");
         }
 
         const { publicurl, privateurl } = await this.p_newdatabase(pubkey);

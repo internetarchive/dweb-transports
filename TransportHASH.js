@@ -1,6 +1,7 @@
 const Transport = require('./Transport'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const httptools = require('./httptools'); // Expose some of the httptools so that IPFS can use it as a backup
+const { CodingError, ToBeImplementedError } = require('./Errors');
 const Url = require('url');
 const debug = require('debug')('dweb-transports:hash');
 const canonicaljson = require('@stratumn/canonicaljson');
@@ -117,7 +118,7 @@ class TransportHASH extends Transport {
     return  `${this.urlbase}/${command}`
   }
   _url(url, command, parmstr) {
-    if (!url) throw new errors.CodingError(`${command}: requires url`);
+    if (!url) throw new CodingError(`${command}: requires url`);
     if (typeof url !== "string") { url = url.href }
     url = url.replace('contenthash:/contenthash', this._cmdurl(command)) ;
     url = url.replace('getall/table', command);
@@ -144,10 +145,10 @@ class TransportHASH extends Transport {
   p_rawlist(url) {
     // obj being loaded
     // Locate and return a block, based on its url
-    if (!url) throw new errors.CodingError("TransportHASH.p_rawlist: requires url");
+    if (!url) throw new CodingError("TransportHASH.p_rawlist: requires url");
     return this.http.p_rawfetch(this._url(url, servercommands.rawlist));
   }
-  rawreverse() { throw new errors.ToBeImplementedError("Undefined function TransportHASH.rawreverse"); }
+  rawreverse() { throw new ToBeImplementedError("Undefined function TransportHASH.rawreverse"); }
 
   async p_rawstore(data) {
     /*
@@ -166,7 +167,7 @@ class TransportHASH extends Transport {
 
   p_rawadd(url, sig) {
     // Logged by Transports
-    if (!url || !sig) throw new errors.CodingError("TransportHASH.p_rawadd: invalid parms", url, sig);
+    if (!url || !sig) throw new CodingError("TransportHASH.p_rawadd: invalid parms", url, sig);
     const data = canonicaljson.stringify(sig.preflight(Object.assign({},sig)))+"\n";
     return httptools.p_POST(this._url(url, servercommands.rawadd), {data, contenttype: "application/json"}); // Returns immediately
   }
@@ -215,7 +216,7 @@ class TransportHASH extends Transport {
 
 
   async p_newtable(pubkey, table) {
-    if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
+    if (!pubkey) throw new CodingError("p_newtable currently requires a pubkey");
     let database = await this.p_newdatabase(pubkey);
     // If have use cases without a database, then call p_newdatabase first
     return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
@@ -223,7 +224,7 @@ class TransportHASH extends Transport {
 
   //TODO-KEYVALUE needs signing with private key of list
   async p_set(url, keyvalues, value) {  // url = yjs:/yjs/database/table/key
-    if (!url || !keyvalues) throw new errors.CodingError("TransportHASH.p_set: invalid parms", url, keyvalyes);
+    if (!url || !keyvalues) throw new CodingError("TransportHASH.p_set: invalid parms", url, keyvalyes);
     // Logged by Transports
     //debug("p_set %o %o %o", url, keyvalues, value);
     if (typeof keyvalues === "string") {
@@ -239,24 +240,24 @@ class TransportHASH extends Transport {
     return `key=${encodeURIComponent(key)}`
   }
   async p_get(url, keys) {
-    if (!url && keys) throw new errors.CodingError("TransportHASH.p_get: requires url and at least one key");
+    if (!url && keys) throw new CodingError("TransportHASH.p_get: requires url and at least one key");
     let parmstr =Array.isArray(keys)  ?  keys.map(k => this._keyparm(k)).join('&') : this._keyparm(keys);
     const res = await httptools.p_GET(this._url(url, servercommands.get, parmstr));
     return Array.isArray(keys) ? res : res[keys]
   }
 
   async p_delete(url, keys) {
-    if (!url && keys) throw new errors.CodingError("TransportHASH.p_get: requires url and at least one key");
+    if (!url && keys) throw new CodingError("TransportHASH.p_get: requires url and at least one key");
     let parmstr =  keys.map(k => this._keyparm(k)).join('&');
     await httptools.p_GET(this._url(url, servercommands.delete, parmstr));
   }
 
   async p_keys(url) {
-    if (!url && keys) throw new errors.CodingError("TransportHASH.p_get: requires url and at least one key");
+    if (!url && keys) throw new CodingError("TransportHASH.p_get: requires url and at least one key");
     return await httptools.p_GET(this._url(url, servercommands.keys));
   }
   async p_getall(url) {
-    if (!url && keys) throw new errors.CodingError("TransportHASH.p_get: requires url and at least one key");
+    if (!url && keys) throw new CodingError("TransportHASH.p_get: requires url and at least one key");
     return await httptools.p_GET(this._url(url, servercommands.getall));
   }
   /* Make sure doesnt shadow regular p_rawfetch

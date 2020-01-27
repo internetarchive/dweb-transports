@@ -23,7 +23,7 @@ require('y-indexeddb')(Y);
 function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 // Other Dweb modules
-const errors = require('./Errors'); // Standard Dweb Errors
+const { CodingError, ToBeImplementedError } = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 const utils = require('./utils'); // Utility functions
@@ -198,7 +198,7 @@ class TransportYJS extends Transport {
         :resolve array: An array of objects as stored on the list.
          */
         //TODO-REVERSE this needs implementing once list structure on IPFS more certain
-        throw new errors.ToBeImplementedError("Undefined function TransportYJS.rawreverse"); }
+        throw new ToBeImplementedError("Undefined function TransportYJS.rawreverse"); }
 
     async p_rawadd(url, sig) {
         /*
@@ -248,7 +248,7 @@ class TransportYJS extends Transport {
     //TODO maybe change the listmonitor / monitor code for to use "on" and the structure of PP.events
     //TODO but note https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy about Proxy which might be suitable, prob not as doesnt map well to lists
     async p_newtable(pubkey, table) {
-        if (!pubkey) throw new errors.CodingError("p_newtable currently requires a pubkey");
+        if (!pubkey) throw new CodingError("p_newtable currently requires a pubkey");
         let database = await this.p_newdatabase(pubkey);
         // If have use cases without a database, then call p_newdatabase first
         return { privateurl: `${database.privateurl}/${table}`,  publicurl: `${database.publicurl}/${table}`}  // No action required to create it
@@ -320,7 +320,7 @@ class TransportYJS extends Transport {
         url = typeof url === "string" ? url : url.href;
         let y = this.yarrays[url];
         if (!y) {
-            throw new errors.CodingError("Should always exist before calling monitor - async call p__yarray(url) to create");
+            throw new CodingError("Should always exist before calling monitor - async call p__yarray(url) to create");
         }
         if (current) {
             // Iterate over existing items with callback

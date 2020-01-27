@@ -16,7 +16,7 @@ const path = require('path');
 const debug = require('debug')('dweb-transports:webtorrent');
 
 // Other Dweb modules
-const errors = require('./Errors'); // Standard Dweb Errors
+const { CodingError, TransportError } = require('./Errors'); // Standard Dweb Errors
 const Transport = require('./Transport.js'); // Base class for TransportXyz
 const Transports = require('./Transports'); // Manage all Transports that are loaded
 
@@ -136,14 +136,14 @@ class TransportWEBTORRENT extends Transport {
         returns:    torrentid, path
          */
         if (!url) {
-            throw new errors.CodingError('TransportWEBTORRENT.p_rawfetch: requires url');
+            throw new CodingError('TransportWEBTORRENT.p_rawfetch: requires url');
         }
 
         const urlstring = (typeof url === 'string' ? url : url.href);
         const index = urlstring.indexOf('/');
 
         if (index === -1) {
-            throw new errors.CodingError('TransportWEBTORRENT.p_rawfetch: invalid url - missing path component. Should look like magnet:xyzabc/path/to/file');
+            throw new CodingError('TransportWEBTORRENT.p_rawfetch: invalid url - missing path component. Should look like magnet:xyzabc/path/to/file');
         }
 
         const torrentId = urlstring.slice(0, index);
@@ -173,7 +173,7 @@ class TransportWEBTORRENT extends Transport {
                 torrent = this.webtorrent.add(torrentId, opts);
 
                 torrent.once('error', (err) => {
-                    reject(new errors.TransportError('Torrent encountered a fatal error ' + err.message));
+                    reject(new TransportError('Torrent encountered a fatal error ' + err.message));
                 });
 
                 torrent.on('warning', (err) => {
@@ -199,7 +199,7 @@ class TransportWEBTORRENT extends Transport {
         const file = torrent.files.find(f => f.path === filePath);
         if (!file) {
             // debugger;
-            throw new errors.TransportError('Requested file (' + pathInTorrent + ') not found within torrent ');
+            throw new TransportError('Requested file (' + pathInTorrent + ') not found within torrent ');
         }
         return file;
     }
@@ -227,7 +227,7 @@ class TransportWEBTORRENT extends Transport {
         const {torrent, file} = res;
         file.getBuffer((err, buffer) => {
           if (err) {
-            reject(new errors.TransportError('Torrent encountered a fatal error ' + err.message + ' (' + torrent.name + ')'));
+            reject(new TransportError('Torrent encountered a fatal error ' + err.message + ' (' + torrent.name + ')'));
           } else {
             resolve(buffer);
           }
@@ -349,7 +349,7 @@ class TransportWEBTORRENT extends Transport {
                 filestream.on('end', () => controller.close());
             },
             cancel(reason) {
-                throw new errors.TransportError(`cancelled ${url}, ${opts} ${reason}`);
+                throw new TransportError(`cancelled ${url}, ${opts} ${reason}`);
             }
         });
     }
