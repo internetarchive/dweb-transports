@@ -1,5 +1,6 @@
 # Change log for dweb-transports
 
+* 0.2.16: Pass error status codes back
 * 0.2.15: Webtorrent bug
 * 0.2.14: Refactor streaming
 * 0.2.14: Factor out LOCAL
