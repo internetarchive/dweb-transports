@@ -158,7 +158,7 @@ httptools.p_httpfetch = async function(httpurl, init, {wantstream=false, retries
             }
         }
         // noinspection ExceptionCaughtLocallyJS
-        throw new TransportError(`Transport Error ${httpurl} ${response.status}: ${response.statusText}`);
+        throw new TransportError(`Transport Error ${httpurl} ${response.status}: ${response.statusText}`, {response: response});
     } catch (err) {
         // Error here is particularly unhelpful - if rejected during the COrs process it throws a TypeError
         if (!silentFinalError) {
@@ -211,7 +211,7 @@ httptools.p_GET = function(httpurl, opts={}, cb) {
         keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
     };
     const prom = httptools.p_httpfetch(httpurl, init, {retries, wantstream: opts.wantstream, silentFinalError: opts.silentFinalError}); // This s a real http url
-    if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("p_GET Uncaught error %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
+    if (cb) { prom.then((res)=>{ try { cb(null,res)} catch(err) { debug("p_GET Uncaught error in callaback %O",err)}}).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
 }
 httptools.p_POST = function(httpurl, opts={}, cb) {
     /* Locate and return a block, based on its url

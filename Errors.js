@@ -19,9 +19,10 @@ class ToBeImplementedError extends Error {
 errors.ToBeImplementedError = ToBeImplementedError;
 
 class TransportError extends Error {
-    constructor(message) {
+    constructor(message, opts={}) {
         super(message || "Transport failure");
         this.name = "TransportError"
+        Object.assign(this, opts); // Allow passing back esp status
     }
 }
 errors.TransportError = TransportError;
