@@ -35,5 +35,4 @@ class IntentionallyUnimplementedError extends Error {
     this.name = 'IntentionallyUnimplementedError';
   }
 }
-}
 exports = module.exports = { CodingError, ToBeImplementedError, TransportError, TimeoutError, IntentionallyUnimplementedError };
