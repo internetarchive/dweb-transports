@@ -87,9 +87,35 @@ class TransportIPFS extends Transport {
         });
     }
 
+  /**
+   * Attempt to connect to IPFS via a local API
+   * Note that this ipfs http API has been subject to frequent bit-rot, so encapsulating with error catch
+   * @param cb
+   * @constructor
+   */
+    IPFSAPIConnect(cb) {
+      cb(new Error("Bit rot in IPFS HTTP API - uncaught promise exception - so skipping"));
+      return;
+    /*
+    const ipfsAPI = global.IpfsHttpClient || window.IpfsHttpClient;
+    const ipfs0 = ipfsAPI('http://localhost:5001'); // leaving out the arguments will default to these values
+      try {
+        ipfs0.version((err, unusedData) => {
+          if (err) {
+            cb(err)
+          } else {
+            cb(ipfs0);
+          }
+        });
+      } catch(err) {
+        cb(err);
+      }
+
+     */
+    }
+
     IPFSAutoConnect(cb) {
       IPFS = global.Ipfs || window.Ipfs;  // Loaded by <script etc but still need a create
-      const ipfsAPI = global.IpfsHttpClient || window.IpfsHttpClient;
       // TODO-SPLIT I think next few lines are wrong, dont think I've seen global.ipfs or window.ipfs but
       // TODO-SPLIT https://github.com/ipfs/js-ipfs implies global.Ipfs but needs a "create" or "new"
       if (global.ipfs) {
@@ -100,8 +126,8 @@ class TransportIPFS extends Transport {
         try { // Wrap IPFS API - notorious for bit-rot (Changing API's causing crashes)
           // noinspection ES6ConvertVarToLetConst
           // eslint-disable-next-line vars-on-top, no-var
-          var ipfs = ipfsAPI('http://localhost:5001'); // leaving out the arguments will default to these values
-          ipfs.version((err, unusedData) => {
+          var ipfs;
+          this.IPFSAPIConnect((err, ipfs0) => {
             if (err) {
               debug("IPFS via API failed %s, trying running own IPFS client", err.message);
               ipfs = new IPFS(this.options);
@@ -113,6 +139,7 @@ class TransportIPFS extends Transport {
                 cb(err1);
               }); // This only works in the client version, not on API
             } else {
+              ipfs = ipfs0;
               this._ipfsversion(ipfs, "API", cb); // Note wastes an extra ipfs.version call but that's cheap
             }
           });
