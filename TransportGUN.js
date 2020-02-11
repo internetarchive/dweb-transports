@@ -35,10 +35,11 @@ const Transports = require('./Transports'); // Manage all Transports that are lo
 const utils = require('./utils'); // Utility functions
 
 // Utility packages (ours) And one-liners
-//unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
+// unused currently: function delay(ms, val) { return new Promise(resolve => {setTimeout(() => { resolve(val); },ms)})}
 
 let defaultoptions = {
     peers: [ "https://dweb.me:4246/gun" ],
+    peers: [ "https://www-dweb-gun.dev.archive.org/gun" ],
     localStorage: false                         // Need to be false to turn localStorage off on browser (do this if include radix/radisk)
 };
 //To run a superpeer - cd wherever; node install gun; cd node_modules/gun; npm start - starts server by default on port 8080, or set an "env" - see http.js
