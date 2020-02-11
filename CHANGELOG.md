@@ -1,5 +1,6 @@
 # Change log for dweb-transports
 
+* 0.2.19: Move gun to www-dweb-gun.dev.archive.org by default
 * 0.2.18: Wrap and then comment out IPFS HTTP API till bit rot fixed
 * 0.2.17: Pass error status codes back
 * 0.2.15: Webtorrent bug
