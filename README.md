@@ -57,12 +57,11 @@ Should pick up the dependencies.
 ## Notes on implemntation
 
 ### Implementation on HTTP (TransportHTTP.js)
-The HTTP interface is pretty simple, a standard extensible gateway (dweb-gateway) we wrote is used. 
+The HTTP interface is pretty simple.
 
-fetch is a straightforward HTTP GET to a URL that includes the multihash
-store is a POST to the same URL 
+fetch or streams are straightforward HTTP GETs to a URL 
 
-Lists are implemented via append-only files on the HTTP server using URLs that contain the same hashes. 
+Lists and Tables are implemented via append-only files on the HTTP server using URLs that contain hashes. 
 “Add” appends to this file, “list” retrieves the file. 
 
 Listmonitor isn’t supported, and can’t really be as there is no open channel to the client. 
@@ -85,7 +84,8 @@ For lists and tables - see YJS which uses IPFS.
 
 #### Issues with IPFS
 
-Error feedback is a little fuzzy.
+Error feedback is a little fuzzy, generally you'll get a success code and then no data. 
+So fallback to http fails.
 
 There are issues with IPFS swarms that we haven’t been able to figure out about how to ensure that “put”ting to IPFS creates an object that can be read at all other browsers, and persists. See DT issue#2
 
