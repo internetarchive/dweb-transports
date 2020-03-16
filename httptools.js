@@ -185,7 +185,7 @@ async function p_httpfetch(httpurl, init, { wantstream = false, retries = undefi
  * @param cb f(err, res)    // See p_httpfetch for result
  * @returns {Promise<*>}    // If no cb.
  */
-function p_GET(httpurl, opts = {}, cb) {
+function _GET(httpurl, opts = {}, cb) {
   /*  Locate and return a block, based on its url
       Throws TransportError if fails
       opts {
@@ -211,10 +211,29 @@ function p_GET(httpurl, opts = {}, cb) {
     redirect: 'follow',  // Chrome defaults to manual
     keepalive: true    // Keep alive - mostly we'll be going back to same places a lot
   };
-  const prom = p_httpfetch(httpurl, init, { retries, wantstream: opts.wantstream, silentFinalError: opts.silentFinalError }); // This s a real http url
-  if (cb) { prom.then((res) => { try { cb(null, res); } catch (err) { debug('p_GET Uncaught error in callback %O', err); } }).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v5
+  // Returns a promise
+  return p_httpfetch(httpurl, init, { retries, wantstream: opts.wantstream, silentFinalError: opts.silentFinalError }); // This s a real http url
+}
+function GET(httpurl, opts = {}, cb) {
+  _GET(httpurl, opts)
+    .then((res) => {
+      try {
+        cb(null, res);
+      }
+      catch (err) {
+        debug('p_GET Uncaught error in callback %O', err);
+      }
+    })
+    .catch((err) => cb(err));
 }
 
+function p_GET(httpurl, opts = {}, cb) {
+  if (cb) {
+    GET(httpurl, opts, cb);
+  } else {
+    return _GET(httpurl, opts);
+  }
+}
 function p_POST(httpurl, opts = {}, cb) {
   /* Locate and return a block, based on its url
   opts = { data, contenttype, retries }
@@ -245,4 +264,4 @@ function p_POST(httpurl, opts = {}, cb) {
   if (cb) { prom.then((res) => cb(null, res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
 }
 
-exports = module.exports = { p_httpfetch, p_GET, p_POST };
+exports = module.exports = { p_httpfetch, p_GET, GET, p_POST };
