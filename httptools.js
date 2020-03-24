@@ -83,40 +83,6 @@ function queuedFetch(req, ms, count, what) {
   });
 }
 
-/* OBSOLETE - replaced by queuedFetch
-async function loopfetch(req, ms, count, what) {
-  /-*
-  A workaround for a nasty Chrome issue which fails if there is a (cross-origin?) fetch of more than 6 files.  See other WORKAROUND-CHROME-CROSSORIGINFETCH
-  Loops at longer and longer intervals trying
-  req:        Request
-  ms:         Initial wait between polls
-  count:      Max number of times to try (0 means just once)
-  what:       Name of what retrieving for log (usually file name or URL)
-  returns Response:
-   *-/
-  let lasterr;
-  const loopguard = (typeof window !== 'undefined') && window.loopguard; // Optional global parameter, will cancel any loops if changes
-  count = count || 1; // count of 0 actually means 1
-  while (count-- && (loopguard === ((typeof window !== 'undefined') && window.loopguard))) {
-    try {
-      return await fetch(req);
-    } catch (err) {
-      lasterr = err;
-      debug('Delaying %s by %d ms because %s', what, ms, err.message);
-      await new Promise(resolve => { setTimeout(() => { resolve(); }, ms); });
-      ms = Math.floor(ms * (1 + Math.random())); // Spread out delays in case all requesting same time
-    }
-  }
-  console.warn('loopfetch of', what, 'failed');
-  if (loopguard !== ((typeof window !== 'undefined') && window.loopguard)) {
-    debug('Looping exited because of page change %s', what);
-    throw new Error('Looping exited because of page change ' + what);
-  } else {
-    throw (lasterr);
-  }
-}
-*/
-
 /**
  * Fetch a url
  *
@@ -138,10 +104,8 @@ async function p_httpfetch(httpurl, init, { wantstream = false, retries = undefi
 
     // EITHER Use queuedFetch if have async/queue
     const response = await queuedFetch(req, 500, retries, httpurl);
-    // OR Use loopfetch if dont have async/queue and hitting browser Insufficient resources
-    // let response = await loopfetch(req, 500, retries, httpurl);
     // OR use fetch for simplicity
-    // let response = await fetch(req);
+    // const response = await fetch(req);
 
     // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
     // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
@@ -185,7 +149,7 @@ async function p_httpfetch(httpurl, init, { wantstream = false, retries = undefi
  * @param cb f(err, res)    // See p_httpfetch for result
  * @returns {Promise<*>}    // If no cb.
  */
-function _GET(httpurl, opts = {}, cb) {
+function _GET(httpurl, opts = {}) {
   /*  Locate and return a block, based on its url
       Throws TransportError if fails
       opts {
@@ -221,7 +185,7 @@ function GET(httpurl, opts = {}, cb) {
         cb(null, res);
       }
       catch (err) {
-        debug('p_GET Uncaught error in callback %O', err);
+        debug('GET Uncaught error in callback %O', err);
       }
     })
     .catch((err) => cb(err));
@@ -234,16 +198,19 @@ function p_GET(httpurl, opts = {}, cb) {
     return _GET(httpurl, opts);
   }
 }
-function p_POST(httpurl, opts = {}, cb) {
+function _POST(httpurl, opts = {}) {
   /* Locate and return a block, based on its url
-  opts = { data, contenttype, retries }
+  opts = { data, contenttype, headers, retries }
   returns result via promise or cb(err, result)
    */
   // Throws TransportError if fails
   // let headers = new window.Headers();
   // headers.set('content-type',type); Doesn't work, it ignores it
   /* eslint-disable-next-line no-param-reassign */ /* Standard pattern to allow opts to be omitted */
-  if (typeof opts  === 'function') { cb = opts; opts = {}; }
+  if (typeof opts === 'function') {
+    cb = opts;
+    opts = {};
+  }
   /* eslint-disable-next-line no-param-reassign */ /* Standard pattern to allow it to handle URL as string or Obj */
   if (typeof httpurl !== 'string') httpurl = httpurl.href;    // Assume its a URL as no way to use "instanceof" on URL across node/browser
   const retries = typeof opts.retries === 'undefined' ? 0 : opts.retries;
@@ -251,7 +218,7 @@ function p_POST(httpurl, opts = {}, cb) {
     // https://developer.mozilla.org/en-US/docs/Web/API/WindowOrWorkerGlobalScope/fetch
     // https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name for headers tat cant be set
     method: 'POST',
-    headers: {}, // headers,
+    headers: opts.headers || {}, // headers,
     // body: new Buffer(data),
     body: opts.data,
     mode: 'cors',
@@ -260,8 +227,25 @@ function p_POST(httpurl, opts = {}, cb) {
     keepalive: false    // Keep alive - mostly we'll be going back to same places a lot
   };
   if (opts.contenttype) init.headers['Content-Type'] = opts.contenttype;
-  const prom = p_httpfetch(httpurl, init, { retries });
-  if (cb) { prom.then((res) => cb(null, res)).catch((err) => cb(err)); } else { return prom; } // Unpromisify pattern v3
+  return prom = p_httpfetch(httpurl, init, {retries});
+}
+function POST(httpurl, opts = {}, cb) {
+  _POST(httpurl, opts)
+    .then((res) => {
+      try {
+        cb(null, res);
+      } catch (err) {
+        debug('POST Uncaught error in callback %O', err);
+      }
+    })
+    .catch((err) => cb(err));
+}
+function p_POST(httpurl, opts = {}, cb) {
+  if (cb) {
+    POST(httpurl, opts, cb);
+  } else {
+    return _POST(httpurl, opts);
+  }
 }
 
-exports = module.exports = { p_httpfetch, p_GET, GET, p_POST };
+exports = module.exports = { p_httpfetch, p_GET, GET, p_POST, p_POST, POST };
