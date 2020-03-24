@@ -1,6 +1,7 @@
 # Change log for dweb-transports
 
-* 0.2.20: Seperate p_GET from GET in httptools	b32b8ed	Mitra Ardron <mitra@mitra.biz>	16Mar2020 at 9:06 PM
+* 0.2.21: Separate p_POST from POST in httptools
+* 0.2.20: Separate p_GET from GET in httptools
 * 0.2.19: Move gun to www-dweb-gun.dev.archive.org by default
 * 0.2.18: Wrap and then comment out IPFS HTTP API till bit rot fixed
 * 0.2.17: Pass error status codes back
