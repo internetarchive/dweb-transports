@@ -1,5 +1,6 @@
 # Change log for dweb-transports
 
+* 0.2.22: Fix fetch on node version (node now has a fetch with a different API from expected)
 * 0.2.21: Separate p_POST from POST in httptools
 * 0.2.20: Separate p_GET from GET in httptools
 * 0.2.19: Move gun to www-dweb-gun.dev.archive.org by default
