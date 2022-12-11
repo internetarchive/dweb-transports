@@ -4,8 +4,8 @@ const queue = require('async/queue');
 const { TransportError } = require('./Errors'); // Standard Dweb Errors
 
 // var fetch,Headers,Request;
-// if (typeof(Window) === "undefined") {
-if (typeof (fetch) === 'undefined') {
+if (typeof(window) === "undefined") { // "fetch" has now been defined on node, to return a ReadableStream, not a ReadStream
+// if (typeof (xxxfetch) === 'undefined') {
   // var fetch = require('whatwg-fetch').fetch; //Not as good as node-fetch-npm, but might be the polyfill needed for browser.safari
   // XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;  // Note this doesnt work if set to a var or const, needed by whatwg-fetch
   /* eslint-disable-next-line no-global-assign */
@@ -109,6 +109,7 @@ async function p_httpfetch(httpurl, init, { wantstream = false, retries = undefi
 
     // fetch throws (on Chrome, untested on Firefox or Node) TypeError: Failed to fetch)
     // Note response.body gets a stream and response.blob gets a blob and response.arrayBuffer gets a buffer.
+    // debug("p_httpfetch: %s %s %o", httpurl, response.status, response.headers);
     if (response.ok) {
       const contenttype = response.headers.get('Content-Type');
       if (wantstream) {
