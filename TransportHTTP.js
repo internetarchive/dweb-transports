@@ -8,7 +8,7 @@ const debug = require('debug')('dweb-transports:http');
 
 defaulthttpoptions = {
     urlbase: 'https://dweb.me',
-    heartbeat: { delay: 30000 } // By default check twice a minute
+    heartbeat: { delay: 300000 } // By default check every 5 minutes (was 2x per minute)
 };
 
 function ObjectDeepEquals(o1, o2) {
@@ -76,13 +76,13 @@ class TransportHTTP extends Transport {
         })
     }
 
-    async p_status(cb) { //TODO-API
+    async p_status(cb) { // TODO-API
         /*
         Return (via cb or promise) a numeric code for the status of a transport.
          */
         if (cb) { try { this.updateStatus(cb) } catch(err) { cb(err)}} else { return new Promise((resolve, reject) => { try { this.updateStatus((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}})} // Promisify pattern v2f
     }
-  updateStatus(cb) { //TODO-API
+  updateStatus(cb) { // TODO-API
     this.updateInfo({silentFinalError: true}, (err, res) => {
       if (err) {
         debug("Error status call to info failed %s", err.message);
@@ -146,7 +146,8 @@ class TransportHTTP extends Transport {
   // createReadStream breaks in browsers ... as 's' doesn't have .pipe but has .pipeTo and .pipeThrough neither of which work with stream.PassThrough
   // TODO See https://github.com/nodejs/readable-stream/issues/406 in case its fixed in which case enable createReadStream in constructor above.
 
-    async p_info() { //TODO-API
+    // Only currently used in p_test
+    async p_info() { // TODO-API
         /*
         Return (via cb or promise) a numeric code for the status of a transport.
          */

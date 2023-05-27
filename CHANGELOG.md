@@ -1,4 +1,5 @@
 # Change log for dweb-transports
+TODO - update to async3 - checked for breaking chnges
 
 * 0.2.22: Fix fetch on node version (node now has a fetch with a different API from expected)
 * 0.2.21: Separate p_POST from POST in httptools

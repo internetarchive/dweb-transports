@@ -269,21 +269,21 @@ class TransportHASH extends Transport {
   }
   */
 
-  async p_info() { //TODO-API
+  async p_info() { // TODO-API
     /*
-    Return (via cb or promise) a numeric code for the status of a transport.
+    Return (via cb or promise) a numeric code for the status of transport.
      */
     return new Promise((resolve, reject) => { try { this.updateInfo((err, res) => { if (err) {reject(err)} else {resolve(res)} })} catch(err) {reject(err)}}) // Promisify pattern v2b (no CB)
   }
 
   updateInfo(cb) {
-    httptools.p_GET(`${this.urlbase}/info`, {retries: 1}, cb);   // Try info, but dont retry (usually heartbeat will reconnect)
+    httptools.p_GET(`${this.urlbase}/info`, {retries: 1}, cb);   // Try info, but do not retry (usually heartbeat will reconnect)
   }
 
-  static async p_test(opts={}) {
-    {console.log("TransportHASH.test")}
+  static async p_test(opts= {}) {
+    { console.log('TransportHASH.test') }
     try {
-      let transport = await this.p_setup(opts);
+      const transport = await this.p_setup(opts);
       console.log("HASH connected");
       let res = await transport.p_info();
       console.log("TransportHASH info=",res);
