@@ -4,6 +4,19 @@
 This is a shim to the IPFS library, (Lists are handled in YJS or OrbitDB)
 See https://github.com/ipfs/js-ipfs but note its often out of date relative to the generic API doc.
 */
+/* Note that I'm told (May 2023) that js-ipfs is being deprecated in favor of Helia https://github.com/ipfs/helia
+ but as far as I can see Helia is incomplete
+ 1: Doesnt appeat to have an equivalent of ipfs.catReadableStream() API
+ 2: Doesnt solve the hanging .get problem https://github.com/ipfs/js-ipfs/issues/1165#issuecomment-1564805572
+  which has just been closed with a reference to AbortSignals, which I cannot see working since
+  the app layer has no way of knowing how long a .get should take before falling back to HTTP.
+
+  Therefore I'm not planning to do the migration to Helia
+  - if anyone wants to please feel free to submit a PR,
+  their migration instructions are at https://github.com/ipfs/helia/wiki/%F0%9F%9A%9B-Migrating-from-js-IPFS
+  and look fairly simple - except for the apparant absence of getReadableStream()
+  (which I would presume will get implemented at some point)
+ */
 
 // TODO-IPFS Note API changes in https://github.com/ipfs/js-ipfs/issues/1721 probably all ipfs.files -> ipfs.
 
